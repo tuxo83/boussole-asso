@@ -457,3 +457,12 @@ h1.en-place-vue .en-place-crayon svg { width: 1.4rem; height: 1.4rem; }
 .en-place-texte .en-place-form textarea { width: 100%; flex-basis: 100%; }
 .en-place-ligne { display: inline-flex; }
 .en-place-ligne .en-place-form { margin: 0; }
+
+/* Mode édition : chaque bloc est enveloppé ; mêmes règles que sans enveloppe, pour que rien ne bouge */
+.contenu-accueil > .bloc-editable > :is(p, ul, blockquote) { max-width: 46rem; }
+.contenu-accueil > .bloc-editable > h2 { font-size: clamp(1.4rem, 3vw, 1.75rem); margin-top: 2.75rem; }
+.contenu-accueil > .bloc-editable > h3 { font-size: 1.3rem; margin-top: 2.5rem; }
+.contenu-accueil > .bloc-editable:first-child > p:first-of-type { max-width: 44rem; margin: 2.25rem auto; text-align: center; font-size: 1.12rem; line-height: 1.7; color: var(--texte); }
+.contenu:not(.contenu-accueil) > .bloc-editable > .bloc-bouton { display: block; margin: 1.5rem 0; }
+.contenu > .bloc-editable > .agenda-visiteur { max-width: none; }
+.contenu > .bloc-editable > .chronologie { max-width: 46rem; }
