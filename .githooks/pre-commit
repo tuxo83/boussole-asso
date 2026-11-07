@@ -1,0 +1,93 @@
+#!/bin/bash
+
+
+
+
+# Installation for ubuntu :
+# sudo snap install beautysh
+# pip install beautysh
+# sudo apt install shellcheck
+
+
+
+
+
+
+
+#########################
+#########################
+######################### Beautifier
+#########################
+#########################
+
+
+######################### bash script
+# Only the scripts already staged: re-adding every .sh of the tree would put
+# unstaged changes and untracked files in the commit, unchecked by the guards below
+while IFS= read -r -d '' path; do
+    beautysh "$path" && git add "$path"
+done < <(git diff --cached --name-only --diff-filter=ACM -z -- '*.sh')
+
+
+
+
+#########################
+#########################
+######################### Guards
+#########################
+#########################
+# AFTER the beautifier, so they see exactly what will be committed. What
+# cannot wait for the push: once it is in a commit it is in the history.
+# - no assistant's name (git identity and the lines the commit ADDS)
+# - the leak guard (names that must not be published, kept outside the repo)
+bash "$(dirname "$0")/check-ai-names.sh" staged || exit 1
+bash "$(dirname "$0")/guard.sh" || exit 1
+
+
+
+
+
+
+
+#########################
+#########################
+######################### Linter
+#########################
+#########################
+linter_ok=1
+
+
+######################### bash script
+while IFS= read -r -d '' path
+do
+
+    if shellcheck "$path"; then
+        echo Linter OK for "$path"
+    else
+        echo Linter NOT OK for "$path"
+        linter_ok=0
+    fi
+
+done < <(find . -name '*.sh' -print0)
+
+
+
+
+
+
+
+######################### end
+if [ $linter_ok -eq 0 ]; then
+    echo Linter NOT OK
+    exit 1
+fi
+
+
+
+
+
+
+
+echo Linter OK
+exit 0
+

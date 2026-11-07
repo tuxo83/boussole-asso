@@ -1,0 +1,56 @@
+#!/bin/bash
+# ---------------------------------------------------------------------------
+# BEFORE A PUSH: everything, because a push is what reaches the servers.
+#
+# auto-git-deploy installs whatever lands on the branch, on every server of
+# the cluster, within minutes. Pushing is the last moment anything can still
+# be stopped.
+#
+# --no-verify still bypasses it, as it bypasses every hook. That is git's
+# design, not a hole to plug here.
+# ---------------------------------------------------------------------------
+set -u
+here="$(dirname "$0")"
+
+echo "--- local guard: names (outside the repository, on purpose)"
+bash "$here/guard.sh" || exit 1
+
+# The messages of the commits being pushed, not only the files: a commit made
+# elsewhere (a merge, a rebase, a machine without these hooks) never passed
+# commit-msg. Git gives one line per ref on stdin:
+# "<local ref> <local sha> <remote ref> <remote sha>".
+echo "--- no assistant signs the commits being pushed"
+pushing=0
+while read -r _local_ref local_sha _remote_ref remote_sha; do
+    [ -z "${local_sha:-}" ] && continue
+    # A branch deletion: nothing is going out
+    case "$local_sha" in *[!0]*) : ;; *) continue ;; esac
+    if [ -z "${remote_sha:-}" ] || ! echo "$remote_sha" | grep -q '[1-9a-f]'; then
+        range="$local_sha"                  # a new ref: everything it carries
+    else
+        range="$remote_sha..$local_sha"     # what this push adds
+    fi
+    bash "$here/check-ai-names.sh" range "$range" || exit 1
+    pushing=1
+done
+# Nothing on stdin (called by hand): look at everything HEAD carries
+if [ "$pushing" = 0 ]; then
+    bash "$here/check-ai-names.sh" range HEAD || exit 1
+fi
+
+# The scripts that run as root on every server: a warning here is a bug there
+echo "--- shellcheck (warnings and errors)"
+if ! command -v shellcheck >/dev/null 2>&1; then
+    echo "REFUSED: shellcheck is not installed (sudo apt install shellcheck)."
+    exit 1
+fi
+files=()
+while IFS= read -r -d '' path; do files+=("$path"); done < <(git ls-files -z -- '*.sh')
+if ! shellcheck -S warning "${files[@]}"; then
+    echo
+    echo "REFUSED: shellcheck finds warnings. Nothing goes out."
+    echo "Fix the cause, never the check."
+    exit 1
+fi
+
+echo "--- all green"

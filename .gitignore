@@ -1,0 +1,5 @@
+# Propres à chaque installation : jamais dans le dépôt
+/app/config/config.php
+/app/uploads/*
+!/app/uploads/.htaccess
+!/app/uploads/.gitkeep
