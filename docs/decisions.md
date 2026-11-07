@@ -32,3 +32,8 @@
 - Le contenu est enregistré en blocs (JSON) et affiché avec nos propres composants : jamais de HTML libre.
 - Blocs dynamiques en nombre limité (liste d'événements, actualités, adhésion, contact, espaces publics), sans plugins.
 - Images : ré-encodées à l'envoi (suppression des métadonnées EXIF, GPS…), formats image uniquement. Une image d'une page publique est publique ; une image ou un fichier d'un espace ou d'un événement n'est servi qu'aux personnes qui ont le droit de voir cet espace.
+
+## Authentification externe (plus tard)
+- Par défaut, la connexion intégrée (fonctionne chez tout hébergeur).
+- À garder possible : un mode facultatif où le serveur (ex. Apache OIDC devant le site) a déjà authentifié la personne ; Boussole lit alors l'e-mail transmis par le serveur (variable du serveur, jamais un en-tête du navigateur) et retrouve le membre. Les droits restent gérés dans Boussole.
+- La connexion est concentrée dans `core/auth.php` (première étape réussie → `login_first_step`) : c'est le seul endroit à brancher.
