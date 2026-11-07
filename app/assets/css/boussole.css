@@ -281,3 +281,5 @@ main h1 { margin-top: 1rem; }
 .pied-nom { font-weight: 700; color: var(--texte); margin: 0 0 .25rem; }
 .pied-liens { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: .25rem 1.25rem; }
 .sous-pages .cartes { grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); }
+/* La classe .conteneur (marges latérales) ne doit pas annuler l'espace vertical de la page */
+main.conteneur { padding-top: 2rem; padding-bottom: 4.5rem; }
