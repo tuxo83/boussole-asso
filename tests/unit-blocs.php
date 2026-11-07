@@ -34,7 +34,7 @@ foreach ($attaques as $attaque) {
     check('neutralisé : ' . mb_strimwidth($attaque, 0, 50, '…') . ' → ' . mb_strimwidth($html, 0, 60, '…'), !$dangereux($html));
 }
 check('gras et italique gardés', rendu([$p('<b>gras</b> et <i>italique</i>')]) === '<p><strong>gras</strong> et <em>italique</em></p>');
-check('lien externe gardé, avec rel', str_contains(rendu([$p('<a href="https://exemple.org">site</a>')]), '<a href="https://exemple.org" rel="noopener noreferrer nofollow">site</a>'));
+check('lien externe gardé, avec rel', str_contains(rendu([$p('<a href="https://exemple.org">site</a>')]), '<a href="https://exemple.org" target="_blank" rel="noopener noreferrer nofollow">site</a>'));
 check('lien interne gardé', str_contains(rendu([$p('<a href="/page/statuts">statuts</a>')]), '<a href="/page/statuts">statuts</a>'));
 check('lien mailto gardé', str_contains(rendu([$p('<a href="mailto:contact@example.org">écrire</a>')]), 'href="mailto:contact@example.org"'));
 check('texte « < » échappé', rendu([$p('3 < 5 & 2 > 1')]) === '<p>3 &lt; 5 &amp; 2 &gt; 1</p>');
@@ -61,7 +61,7 @@ $chiffres = rendu([['type' => 'chiffres', 'data' => ['items' => [['valeur' => '2
 check('chiffres : valeurs échappées, vides ignorées', !str_contains($chiffres, '<script') && substr_count($chiffres, '<strong>') === 1);
 check('bouton : lien dangereux refusé', rendu([['type' => 'bouton', 'data' => ['texte' => 'Go', 'lien' => 'javascript:alert(1)']]]) === '');
 check('bouton : « adhesion » sans lien réglé : rien affiché', rendu([['type' => 'bouton', 'data' => ['texte' => 'Adhérer', 'lien' => 'adhesion']]]) === '');
-check('bouton : lien externe avec rel', str_contains(rendu([['type' => 'bouton', 'data' => ['texte' => 'Voir', 'lien' => 'https://exemple.org/"x', 'style' => 'secondaire']]]), 'href="https://exemple.org/&quot;x" rel="noopener noreferrer"'));
+check('bouton : lien externe avec rel', str_contains(rendu([['type' => 'bouton', 'data' => ['texte' => 'Voir', 'lien' => 'https://exemple.org/"x', 'style' => 'secondaire']]]), 'href="https://exemple.org/&quot;x" target="_blank" rel="noopener noreferrer"'));
 
 echo "Bilan : $ok OK, $ko KO\n";
 exit($ko === 0 ? 0 : 1);
