@@ -1,6 +1,10 @@
 <section class="acces">
   <h1>Confirmez votre identité</h1>
+  <?php if ($deja_connecte): ?>
+  <p><strong>Vous êtes bien connecté.</strong> Cette action (gestion, clé d'API en écriture, sécurité du compte) demande une seconde preuve, différente de la première : choisissez-en une ci-dessous. Elle reste valable jusqu'à la déconnexion.</p>
+  <?php else: ?>
   <p>Une seconde vérification protège les comptes qui gèrent l'association.</p>
+  <?php endif ?>
   <?php if ($erreur): ?><?= c_alerte('erreur', $erreur) ?><?php endif ?>
 
   <?php if ($cle): ?>
