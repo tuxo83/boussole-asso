@@ -183,7 +183,7 @@ function api_page(int $id): array
         throw new ApiErreur('Page introuvable', 404);
     }
     return ['id' => (int) $page['id'], 'slug' => $page['slug'], 'titre' => $page['titre'], 'parent_id' => $page['parent_id'], 'publiee' => (bool) $page['publiee'], 'reservee_membres' => (bool) $page['reservee_membres'],
-        'dans_menu' => (bool) $page['dans_menu'], 'est_accueil' => (bool) $page['est_accueil'], 'blocs' => json_decode($page['blocs'] ?? '{"blocks":[]}', true)];
+        'dans_menu' => (bool) $page['dans_menu'], 'est_accueil' => (bool) $page['est_accueil'], 'ordre' => (int) $page['ordre'], 'blocs' => json_decode($page['blocs'] ?? '{"blocks":[]}', true)];
 }
 
 // Écrire une page : contenu en blocs (format de l'éditeur) ou texte simple (un paragraphe par ligne vide)
@@ -216,12 +216,21 @@ function api_page_ecrire(?int $id, array $args): array
     $publiee = isset($args['publiee']) ? (int) (bool) $args['publiee'] : (int) ($page['publiee'] ?? 0);
     $reservee = isset($args['reservee_membres']) ? (int) (bool) $args['reservee_membres'] : (int) ($page['reservee_membres'] ?? 0);
     $parent = array_key_exists('parent_id', $args) ? page_parent_valide($args['parent_id'], $id) : ($page['parent_id'] ?? null);
+    $menu = isset($args['dans_menu']) ? (int) (bool) $args['dans_menu'] : (int) ($page['dans_menu'] ?? 0);
+    $ordre = isset($args['ordre']) ? max(0, min(9999, (int) $args['ordre'])) : (int) ($page['ordre'] ?? 50);
+    $accueil = isset($args['est_accueil']) ? (int) (bool) $args['est_accueil'] : (int) ($page['est_accueil'] ?? 0);
+    if ($accueil) {
+        $reservee = 0;
+        db_query('UPDATE page SET est_accueil = 0 WHERE id <> ?', [$id ?? 0]);
+    }
     if ($page === null) {
-        db_query('INSERT INTO page (slug, titre, contenu, blocs, parent_id, publiee, reservee_membres) VALUES (?, ?, "", ?, ?, ?, ?)', [page_slug_unique($titre), $titre, $blocs, $parent, $publiee, $reservee]);
+        db_query('INSERT INTO page (slug, titre, contenu, blocs, parent_id, publiee, reservee_membres, dans_menu, ordre, est_accueil) VALUES (?, ?, "", ?, ?, ?, ?, ?, ?, ?)',
+            [page_slug_unique($titre), $titre, $blocs, $parent, $publiee, $reservee, $menu, $ordre, $accueil]);
         $id = (int) db()->lastInsertId();
         journal(null, $member, "Page créée : $titre");
     } else {
-        db_query('UPDATE page SET titre = ?, blocs = ?, parent_id = ?, publiee = ?, reservee_membres = ? WHERE id = ?', [$titre, $blocs, $parent, $publiee, $reservee, $id]);
+        db_query('UPDATE page SET titre = ?, blocs = ?, parent_id = ?, publiee = ?, reservee_membres = ?, dans_menu = ?, ordre = ?, est_accueil = ? WHERE id = ?',
+            [$titre, $blocs, $parent, $publiee, $reservee, $menu, $ordre, $accueil, $id]);
         journal(null, $member, "Page modifiée : $titre");
     }
     return api_page($id);
@@ -293,6 +302,30 @@ function api_cotisation_marquer(string $email, string $date, string $moyen): arr
         throw new ApiErreur('Date AAAA-MM-JJ (pas dans le futur) et moyen : ' . implode(', ', array_keys(COTISATION_MOYENS)));
     }
     return ['email' => $member['email'], 'periode' => cotisation_periode_libelle(cotisation_periode($date)), 'paye_le' => $date, 'moyen' => $moyen];
+}
+
+// Image pour les pages : envoyée en base64, ré-encodée comme à l'envoi depuis l'éditeur (métadonnées supprimées)
+function api_image_ajouter(string $base64): array
+{
+    api_ecriture();
+    if (!has_right(current_member(), 'publications')) {
+        throw new ApiErreur('Droit « publications » nécessaire', 403);
+    }
+    $data = base64_decode(preg_replace('/^data:[^,]*,/', '', $base64), true);
+    if ($data === false || $data === '' || strlen($data) > IMAGE_TAILLE_MAX) {
+        throw new ApiErreur('Image absente, mal encodée (base64) ou trop lourde (8 Mo maximum)');
+    }
+    $tmp = tempnam(sys_get_temp_dir(), 'bsl');
+    file_put_contents($tmp, $data);
+    try {
+        [$chemin, $erreur] = image_enregistrer(['tmp_name' => $tmp, 'size' => strlen($data), 'error' => UPLOAD_ERR_OK], current_member(), false);
+    } finally {
+        @unlink($tmp);
+    }
+    if ($chemin === null) {
+        throw new ApiErreur($erreur);
+    }
+    return ['chemin' => $chemin, 'url' => absolute_url('/' . $chemin), 'bloc' => ['type' => 'image', 'data' => ['chemin' => $chemin, 'legende' => '', 'alt' => '']]];
 }
 
 function api_membres(): array
