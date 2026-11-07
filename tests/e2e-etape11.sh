@@ -72,6 +72,17 @@ check "rappel de cotisation affiché, avec « Masquer »" "$(c "$U/page/agenda" 
 check "rappel masqué jusqu'à la prochaine connexion" "$(post "$U/page/agenda" "$U/compte/rappel-cotisation/masquer" -d 'retour=/page/agenda') $(c "$U/page/agenda" >/dev/null; grep -c 'pas encore enregistrée' "$B")" "303 $U/page/agenda 0"
 check "rappel toujours visible sur « Mon compte », sans croix" "$(c "$U/compte" >/dev/null; grep -c 'pas encore enregistrée' "$B") $(grep -c 'bandeau-fermer' "$B")" "1 0"
 check "rappel revenu à la connexion suivante" "$(c "$U/compte" >/dev/null; T=$(tok); c --data-urlencode "_csrf=$T" "$U/deconnexion" >/dev/null; login_link lea lea@example.org; c "$U/page/agenda" >/dev/null; grep -c 'pas encore enregistrée' "$B")" "1"
+# Arrivée après connexion selon la cotisation (réglable)
+sql "INSERT INTO parametre (cle, valeur) VALUES ('arrivee_cotisant', '/page/statuts'), ('arrivee_non_cotisant', '/espaces') ON DUPLICATE KEY UPDATE valeur = VALUES(valeur)"
+arrivee() { # arrivee <nom> <e-mail> : page où mène la connexion par lien
+    as "$1"; hpost "$U/connexion" "$U/connexion" -d "email=$2" >/dev/null
+    local lien t; lien=$(grep -o 'http://[^ ]*/connexion/lien/[a-f0-9]*' "$MAIL" | tail -1)
+    c "$lien" >/dev/null; t=$(tok); c --data-urlencode "_csrf=$t" "$lien"
+}
+check "connexion, membre pas à jour : arrivée réglée" "$(arrivee lea2 lea@example.org)" "303 $U/espaces"
 sql "INSERT INTO cotisation (membre_id, periode, paye_le, moyen) SELECT id, $(date +%Y), CURDATE(), 'cheque' FROM membre WHERE email = 'lea@example.org'"
+check "connexion, membre à jour : autre arrivée réglée" "$(arrivee lea3 lea@example.org)" "303 $U/page/statuts"
+sql "DELETE FROM parametre WHERE cle IN ('arrivee_cotisant', 'arrivee_non_cotisant')"
+check "sans réglage : « Mon compte »" "$(arrivee lea4 lea@example.org)" "303 $U/compte"
 check "membre à jour : inscription possible" "$(post "$U/espace/diner-cotisants" "$U/espace/diner-cotisants/inscription" -d 'action=voeu' >/dev/null; sql "SELECT statut FROM inscription i JOIN membre m ON m.id = i.membre_id WHERE m.email = 'lea@example.org'")" "retenu"
 bilan
