@@ -10,7 +10,8 @@ return [
             if (current_member() !== null) {
                 redirect('/compte');
             }
-            render('connexion/connexion', ['titre' => 'Connexion', 'email' => '', 'erreur' => null]);
+            $email = mb_substr(trim((string) ($_GET['email'] ?? '')), 0, 190);
+            render('connexion/connexion', ['titre' => 'Connexion', 'email' => filter_var($email, FILTER_VALIDATE_EMAIL) ? $email : '', 'erreur' => null]);
         }],
         ['POST', '/connexion', function () {
             if (!humain_verifier()) {

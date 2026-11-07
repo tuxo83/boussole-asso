@@ -47,23 +47,25 @@ sql "UPDATE page SET parent_id = (SELECT id FROM (SELECT id FROM page WHERE slug
 sql "UPDATE page SET parent_id = NULL WHERE slug = 'comite-directeur'"
 as visiteur4
 check "page réservée : un visiteur est envoyé vers la connexion" "$(c "$U/page/comite-directeur")" "303 $U/connexion"
-check "page réservée : absente du menu pour un visiteur" "$(c "$U/" >/dev/null; grep -c 'Comité directeur' "$B")" "0"
+check "page réservée : dans le menu avec un cadenas pour un visiteur" "$(c "$U/" >/dev/null; grep -c 'class="lien-verrou" title="Réservé aux membres"' "$B")" "1"
 as admin
 check "page réservée : visible et dans le menu une fois connecté" "$(c "$U/page/comite-directeur" | cut -c1-3) $(grep -c 'Président : X' "$B") $(grep -c '>Comité directeur<' "$B")" "200 1 [1-9]*"
 # Agenda public : événement réservé aux membres montré en aperçu, sans détail
 sql "INSERT INTO espace (type, titre, slug, description, visibilite) VALUES ('evenement', 'Visite réservée', 'visite-reservee', 'Détail confidentiel du rendez-vous', 'adherents'), ('evenement', 'Réunion d''équipe', 'reunion-equipe', 'Interne', 'equipe')"
 sql "INSERT INTO page (slug, titre, contenu, blocs, publiee) VALUES ('agenda', 'Agenda', '', '{\"blocks\":[{\"type\":\"boussole\",\"data\":{\"bloc\":\"evenements\"}}]}', 1)"
 as visiteur5
-check "agenda public : un événement réservé est signalé, sans titre ni détail ni lien" "$(c "$U/page/agenda" >/dev/null; grep -c 'Réservé aux membres' "$B") $(grep -c 'Visite réservée\|Détail confidentiel\|visite-reservee' "$B")" "1 0"
+check "agenda public : un événement réservé est signalé, sans titre ni détail ni lien" "$(c "$U/page/agenda" >/dev/null; grep -c 'ruban">Réservé aux membres' "$B") $(grep -c 'Visite réservée\|Détail confidentiel\|visite-reservee' "$B")" "1 0"
 check "agenda public : rien des événements d'équipe" "$(grep -c 'Réunion' "$B")" "0"
+check "carte réservée : connexion puis retour sur l'événement" "$(grep -o 'href="/evenement/[0-9]*"' "$B" | head -1 | grep -c evenement) $(c "$U$(grep -o 'href="/evenement/[0-9]*"' "$B" | head -1 | sed 's/href="//;s/"//')")" "1 303 $U/connexion"
 as admin
 check "membre connecté : détail visible" "$(c "$U/page/agenda" >/dev/null; grep -c 'Détail confidentiel' "$B")" "1"
-# Niveau « membres à jour de cotisation »
-sql "INSERT INTO espace (type, titre, slug, description, visibilite) VALUES ('evenement', 'Dîner des cotisants', 'diner-cotisants', 'Menu et lieu du dîner', 'cotisants')"
+# Événement réservé aux membres : un membre pas à jour le voit, mais doit cotiser pour s'inscrire
+sql "INSERT INTO espace (type, titre, slug, description, visibilite) VALUES ('evenement', 'Dîner des cotisants', 'diner-cotisants', 'Menu et lieu du dîner', 'adherents')"
 sql "INSERT INTO membre (email, prenom, actif) VALUES ('lea@example.org', 'Léa', 1)"
 login_link lea lea@example.org
-check "membre pas à jour : titre et invitation à cotiser, sans détail" "$(c "$U/page/agenda" >/dev/null; grep -c 'Dîner des cotisants' "$B") $(grep -c 'Réglez votre cotisation' "$B") $(grep -c 'Menu et lieu' "$B")" "1 1 0"
-check "membre pas à jour : la page de l'événement est refusée" "$(c "$U/espace/diner-cotisants" | cut -c1-3)" "403"
+check "membre pas à jour : l'événement est visible" "$(c "$U/page/agenda" >/dev/null; grep -c 'Menu et lieu' "$B") $(c "$U/espace/diner-cotisants" | cut -c1-3)" "1 200"
+check "membre pas à jour : invitation à cotiser au lieu de l'inscription" "$(grep -c 'Réglez votre cotisation pour vous inscrire' "$B")" "1"
+check "membre pas à jour : inscription refusée" "$(post "$U/espace/diner-cotisants" "$U/espace/diner-cotisants/inscription" -d 'action=voeu' >/dev/null; sql "SELECT COUNT(*) FROM inscription i JOIN membre m ON m.id = i.membre_id WHERE m.email = 'lea@example.org'")" "0"
 sql "INSERT INTO cotisation (membre_id, periode, paye_le, moyen) SELECT id, $(date +%Y), CURDATE(), 'cheque' FROM membre WHERE email = 'lea@example.org'"
-check "membre à jour : détail visible" "$(c "$U/page/agenda" >/dev/null; grep -c 'Menu et lieu' "$B") $(c "$U/espace/diner-cotisants" | cut -c1-3)" "1 200"
+check "membre à jour : inscription possible" "$(post "$U/espace/diner-cotisants" "$U/espace/diner-cotisants/inscription" -d 'action=voeu' >/dev/null; sql "SELECT statut FROM inscription i JOIN membre m ON m.id = i.membre_id WHERE m.email = 'lea@example.org'")" "retenu"
 bilan

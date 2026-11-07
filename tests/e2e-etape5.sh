@@ -39,8 +39,10 @@ check "bob : liste des membres refusée" "$(api "$BOB_WRITE" "$U/api/membres")" 
 check "MCP initialize" "$(mcp "$BOB_WRITE" '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"test","version":"1"}}}')$(grep -o '"protocolVersion":"[^"]*"' "$B")" '200"protocolVersion":"2025-06-18"'
 check "MCP notification : 202 sans corps" "$(mcp "$BOB_WRITE" '{"jsonrpc":"2.0","method":"notifications/initialized"}')$(wc -c < "$B")" "2020"
 # shellcheck disable=SC2016
-check "MCP tools/list : 21 outils" "$(mcp "$BOB_WRITE" '{"jsonrpc":"2.0","id":2,"method":"tools/list"}'; php -r 'echo count(json_decode(file_get_contents($argv[1]),true)["result"]["tools"]);' "$B")" "20021"
+check "MCP tools/list : 22 outils" "$(mcp "$BOB_WRITE" '{"jsonrpc":"2.0","id":2,"method":"tools/list"}'; php -r 'echo count(json_decode(file_get_contents($argv[1]),true)["result"]["tools"]);' "$B")" "20022"
 check "MCP ajouter_date_cle" "$(mcp "$BOB_WRITE" '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"ajouter_date_cle","arguments":{"slug":"projet-bob","date":"2027-03-01","libelle":"Rendu"}}}'; grep -o '"isError":[a-z]*' "$B")" '200"isError":false'
+check "MCP modifier_espace : archiver puis désarchiver" "$(mcp "$BOB_WRITE" '{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"modifier_espace","arguments":{"slug":"projet-bob","archive":true}}}' >/dev/null; sql "SELECT archive FROM espace WHERE slug = 'projet-bob'"; mcp "$BOB_WRITE" '{"jsonrpc":"2.0","id":6,"method":"tools/call","params":{"name":"modifier_espace","arguments":{"slug":"projet-bob","archive":false}}}' >/dev/null; sql "SELECT archive FROM espace WHERE slug = 'projet-bob'")" "1
+0"
 check "MCP : outil refusé → isError" "$(mcp "$BOB_WRITE" '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"lire_espace","arguments":{"slug":"comite-secret"}}}'; grep -o '"isError":[a-z]*' "$B")" '200"isError":true'
 check "MCP : méthode inconnue → -32601" "$(mcp "$BOB_WRITE" '{"jsonrpc":"2.0","id":5,"method":"resources/list"}'; grep -o '"code":-32601' "$B")" '200"code":-32601'
 check "MCP sans clé : 401" "$(curl -s -o /dev/null -w '%{http_code}' -H 'Content-Type: application/json' -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' "$U/mcp")" "401"
@@ -77,6 +79,14 @@ curl -s -o /dev/null -H "Authorization: Bearer $ADMIN_KEY" -H 'Content-Type: app
 curl -s -o /dev/null -H "Authorization: Bearer $ADMIN_KEY" -H 'Content-Type: application/json' -d '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"creer_page","arguments":{"titre":"Agenda","publiee":true,"dans_menu":true,"ordre":20}}}' "$U/mcp"
 check "MCP : page d'accueil et menu réglés" "$(sql "SELECT CONCAT(est_accueil, dans_menu) FROM page WHERE titre = 'Bienvenue'") $(sql "SELECT CONCAT(est_accueil, dans_menu, ' ', ordre) FROM page WHERE titre = 'Agenda'")" "10 01 20"
 check "accueil : l'image envoyée par le MCP s'affiche" "$(curl -s "$U/" | grep -c "$CHEMIN")" "1"
+IID=$(sql "SELECT id FROM image WHERE chemin = '$CHEMIN'")
+check "médiathèque : on voit où l'image sert" "$(as admin; c "$U/admin/images" >/dev/null; grep -c 'Sert dans : page « Bienvenue »' "$B")" "1"
+check "médiathèque : image utilisée, suppression refusée" "$(as admin; post "$U/admin/images" "$U/admin/images/$IID/supprimer" >/dev/null; [ -f "$ROOT/app/$CHEMIN" ] && sql "SELECT COUNT(*) FROM image WHERE id = $IID")" "1"
+R2=$(curl -s -H "Authorization: Bearer $ADMIN_KEY" -H 'Content-Type: application/json' -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/call\",\"params\":{\"name\":\"ajouter_image\",\"arguments\":{\"base64\":\"$IMG\"}}}" "$U/mcp")
+# shellcheck disable=SC2016
+CHEMIN2=$(echo "$R2" | php -r '$r = json_decode(stream_get_contents(STDIN), true); echo json_decode($r["result"]["content"][0]["text"], true)["chemin"] ?? "";')
+IID2=$(sql "SELECT id FROM image WHERE chemin = '$CHEMIN2'")
+check "médiathèque : image inutilisée supprimée (base et disque)" "$(as admin; post "$U/admin/images" "$U/admin/images/$IID2/supprimer" >/dev/null; sql "SELECT COUNT(*) FROM image WHERE id = $IID2"; [ -f "$ROOT/app/$CHEMIN2" ] && echo encore)" "0"
 
 # Espaces et événements par le MCP
 mcpcall() { curl -s -H "Authorization: Bearer $1" -H 'Content-Type: application/json' -d "{\"jsonrpc\":\"2.0\",\"id\":9,\"method\":\"tools/call\",\"params\":{\"name\":\"$2\",\"arguments\":$3}}" "$U/mcp"; }
@@ -99,6 +109,7 @@ check "regler_site : accroche et lien d'adhésion" "$(mcpcall "$ADM" regler_site
 check "regler_site : lien non https refusé" "$(mcpcall "$ADM" regler_site '{"lien_adhesion":"javascript:alert(1)"}' | grep -o '"isError":[a-z]*')" '"isError":true'
 check "regler_site : mode construction activé, code fourni" "$(mcpcall "$ADM" regler_site '{"site_en_construction":true}' | grep -c 'code_acces[^,]*[0-9]\{6\}') $(sql "SELECT valeur FROM parametre WHERE cle = 'construction_active'")" "1 1"
 mcpcall "$ADM" regler_site '{"site_en_construction":false}' >/dev/null
+check "inviter_membres : jamais connectés invités, e-mail avec la connexion préremplie" "$(mcpcall "$ADM" inviter_membres '{"email":"bob@example.org"}' | grep -o 'invitations[^0-9]*[0-9]*' | grep -o '[0-9]*$') $(grep -c 'connexion?email=bob%40example.org' "$MAIL")" "1 1"
 check "ajouter_membre" "$(mcpcall "$ADM" ajouter_membre '{"email":"carla@example.org","prenom":"Carla"}' | grep -o '"isError":[a-z]*') $(sql "SELECT COUNT(*) FROM membre WHERE email = 'carla@example.org'")" '"isError":false 1'
 sql "INSERT INTO cle_api (membre_id, libelle, prefixe, empreinte, portee, expire_le) SELECT id, 'Bob admin', '0000bbbb', SHA2('bsl_0000bbbb_$(printf 'c%.0s' {1..40})', 256), 'admin', NULL FROM membre WHERE email = 'bob@example.org'"
 check "clé administration d'un non-administrateur : refusée" "$(mcpcall "bsl_0000bbbb_$(printf 'c%.0s' {1..40})" regler_site '{"slogan":"pirate"}' | grep -o '"isError":[a-z]*') $(sql "SELECT valeur FROM parametre WHERE cle = 'slogan'")" '"isError":true Esprit de défense'

@@ -4,6 +4,7 @@
 :root {
   --couleur-principale: #1f4e79;
   --couleur-accent: #c8102e;
+  --acces-membres: #5a2d91;
   --principale-doux: color-mix(in srgb, var(--couleur-principale) 7%, #fff);
   --principale-moyen: color-mix(in srgb, var(--couleur-principale) 18%, #fff);
   --principale-fonce: color-mix(in srgb, var(--couleur-principale) 80%, #000);
@@ -77,6 +78,11 @@ main { padding-top: 2rem; padding-bottom: 4rem; min-height: 60vh; }
 .bouton-principal:hover { background: var(--principale-fonce); }
 .bouton-secondaire { background: var(--fond); color: var(--couleur-principale); }
 .bouton-secondaire:hover { background: var(--principale-doux); }
+.lien-bouton.lien-danger { color: #b42335; }
+.mediatheque { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr)); gap: 1rem; }
+.mediatheque .carte { padding: .6rem; }
+.mediatheque img { display: block; width: 100%; height: 9rem; object-fit: cover; border-radius: calc(var(--rayon) / 2); }
+.mediatheque p { margin: .4rem 0 0; overflow-wrap: anywhere; }
 .lien-bouton { display: inline-flex; align-items: center; min-height: var(--cible); background: none; border: 0; padding: 0 .4rem; color: var(--couleur-principale); text-decoration: underline; text-underline-offset: .18em; cursor: pointer; font: inherit; font-size: .92rem; }
 
 /* Messages */
@@ -283,7 +289,7 @@ main h1 { margin-top: 1rem; }
 .sous-pages .cartes { grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); }
 /* La classe .conteneur (marges latérales) ne doit pas annuler l'espace vertical de la page */
 main.conteneur { padding-top: 2rem; padding-bottom: 4.5rem; }
-.badge-membres { background: #f3ecfb; border-color: #dccbf2; color: #5a2d91; }
+.badge-membres { background: color-mix(in srgb, var(--acces-membres) 10%, #fff); border-color: color-mix(in srgb, var(--acces-membres) 30%, #fff); color: var(--acces-membres); }
 
 /* Cartes : une dernière ligne incomplète (ou une ou deux cartes seules) est centrée */
 .cartes { display: flex; flex-wrap: wrap; justify-content: center; }
@@ -297,16 +303,10 @@ main.conteneur { padding-top: 2rem; padding-bottom: 4.5rem; }
   background: repeating-linear-gradient(135deg, #f7f8fa 0 12px, #eef0f4 12px 24px); }
 .carte-reservee h3 a { color: var(--texte-doux); }
 .carte-reservee .carte-icone { background: #e4e7ec; color: #5b6573; }
-.ruban { display: block; margin: -1.15rem -1.25rem 1rem; padding: .45rem 1.25rem; background: #5a2d91; color: #fff; font-size: .75rem; font-weight: 700;
+.ruban { display: block; margin: -1.15rem -1.25rem 1rem; padding: .45rem 1.25rem; background: var(--acces-membres); color: #fff; font-size: .75rem; font-weight: 700;
   letter-spacing: .05em; text-transform: uppercase; }
 
 /* Prochains événements : vignette de date, code couleur d'accès (public bleu, membres violet, cotisants ambre) */
-:root { --acces-membres: #5a2d91; --acces-cotisants: #8a5a00; }
-.legende-acces { display: flex; flex-wrap: wrap; gap: .25rem 1.25rem; margin: -.25rem 0 1rem; font-size: .88rem; color: var(--texte-doux); }
-.legende-acces span::before { content: ""; display: inline-block; width: .7rem; height: .7rem; border-radius: 50%; margin-right: .4rem; vertical-align: -.05rem; }
-.legende-acces .acces-public::before { background: var(--couleur-principale); }
-.legende-acces .acces-adherents::before { background: var(--acces-membres); }
-.legende-acces .acces-cotisants::before { background: var(--acces-cotisants); }
 .carte-evenement { display: flex; flex-direction: column; overflow: hidden; }
 .evenement-tete { display: flex; align-items: center; gap: .85rem; }
 .evenement-tete h3 { margin: 0; font-size: 1.05rem; }
@@ -314,11 +314,28 @@ main.conteneur { padding-top: 2rem; padding-bottom: 4.5rem; }
   background: var(--couleur-principale); color: #fff; line-height: 1.05; text-align: center; }
 .date-tuile .jour { font-size: 1.45rem; font-weight: 800; }
 .date-tuile .mois { font-size: .72rem; text-transform: uppercase; letter-spacing: .03em; }
-.acces-adherents .date-tuile { background: var(--acces-membres); }
-.acces-cotisants .date-tuile { background: var(--acces-cotisants); }
-.acces-cotisants .ruban { background: var(--acces-cotisants); }
+.acces-membres .date-tuile { background: var(--acces-membres); }
+.acces-public .ruban { background: var(--couleur-principale); }
+.date-icone svg { width: 1.6rem; height: 1.6rem; }
 .carte-evenement .discret { margin: .6rem 0 .2rem; }
 .carte-evenement .lieu { display: flex; align-items: center; gap: .3rem; margin: .2rem 0; font-size: .93rem; }
 .carte-evenement .lieu svg, .carte-evenement .petit svg { width: 1rem; height: 1rem; vertical-align: -.15rem; }
 .carte-evenement .resume { color: var(--texte-doux); font-size: .93rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin: .3rem 0 0; }
 .carte-reservee.carte-evenement .date-tuile { opacity: .75; }
+
+/* Membre connecté pas à jour de cotisation : rappel discret sous l'en-tête */
+.bandeau-cotisation { background: color-mix(in srgb, var(--couleur-accent) 10%, #fff); border-bottom: 1px solid color-mix(in srgb, var(--couleur-accent) 30%, #fff); color: var(--texte); font-size: .92rem; padding: .5rem 0; }
+.bandeau-cotisation a { font-weight: 600; margin-left: .5rem; }
+/* Agenda : bandeau toujours présent (cartes alignées), événements passés atténués */
+.carte-evenement .ruban { min-height: 1.95rem; }
+.cartes-passees .carte-evenement { opacity: .78; }
+.cartes-passees .date-tuile { background: var(--texte-doux); }
+.titre-bloc + .cartes { margin-top: .75rem; }
+/* Contenu réservé vu par un visiteur : cadenas dans le menu et sur les cartes de sous-pages */
+.menu .lien-verrou { opacity: .85; }
+.menu .lien-verrou svg { width: 1rem; height: 1rem; margin-right: .3rem; }
+.carte-page-reservee h3 svg { width: 1.05rem; height: 1.05rem; vertical-align: -.12rem; }
+.agenda-visiteur { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: .3rem; margin: 0 auto 1.5rem; padding: .7rem 1rem; max-width: 46rem; background: var(--fond-doux); border-radius: var(--rayon-petit); font-size: .93rem; text-align: center; }
+.agenda-visiteur svg { width: 1rem; height: 1rem; }
+.titre-avec-lien { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: .25rem 1rem; }
+.titre-avec-lien a { font-weight: 600; white-space: nowrap; }

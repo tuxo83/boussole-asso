@@ -26,6 +26,6 @@
   <button type="submit" class="bouton bouton-secondaire" data-confirmer="Supprimer la page « <?= e($page['titre']) ?> » ?">Supprimer la page</button>
 </form>
 <?php foreach (['editorjs', 'header', 'list', 'quote', 'delimiter'] as $outil): ?>
-<script src="<?= e(url('/assets/vendor/editorjs/' . $outil . '.js')) ?>?v=<?= e(BOUSSOLE_VERSION) ?>"></script>
+<script src="<?= e(asset('/assets/vendor/editorjs/' . $outil . '.js')) ?>"></script>
 <?php endforeach ?>
-<script src="<?= e(url('/assets/js/editeur.js')) ?>?v=<?= e(BOUSSOLE_VERSION) ?>"></script>
+<script src="<?= e(asset('/assets/js/editeur.js')) ?>"></script>
