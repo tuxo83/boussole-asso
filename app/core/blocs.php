@@ -243,23 +243,25 @@ function bloc_dynamique(string $bloc): string
             // pour montrer la vie de l'association ; jamais ceux réservés à une équipe
             $membre = current_member();
             $evenements = array_values(array_filter(db_all('SELECT s.*, e.debut, e.lieu FROM espace s LEFT JOIN evenement e ON e.espace_id = s.id
-                WHERE s.type = "evenement" AND s.visibilite IN ("public", "adherents") AND s.archive = 0 AND (e.debut IS NULL OR e.debut >= CURDATE()) ORDER BY e.debut IS NULL, e.debut'),
-                fn($ev) => $ev['visibilite'] === 'public' || $membre === null || espace_peut_voir($membre, $ev)));
+                WHERE s.type = "evenement" AND s.visibilite IN ("public", "adherents", "cotisants") AND s.archive = 0 AND (e.debut IS NULL OR e.debut >= CURDATE()) ORDER BY e.debut IS NULL, e.debut'),
+                fn($ev) => $ev['visibilite'] === 'public' || $membre === null || espace_peut_voir($membre, $ev) || $ev['visibilite'] === 'cotisants'));
             if (!$evenements) {
                 return '';
             }
-            $html = '<h2 class="titre-bloc">Prochains événements</h2><div class="cartes">';
+            $acces = array_unique(array_column($evenements, 'visibilite'));
+            $legende = count($acces) > 1 ? '<p class="legende-acces">' . implode('', array_map(fn($a) => '<span class="acces-' . $a . '">' . ['public' => 'Public', 'adherents' => 'Membres', 'cotisants' => 'Membres à jour de cotisation'][$a] . '</span>', ['public', 'adherents', 'cotisants'])) . '</p>' : '';
+            $html = '<h2 class="titre-bloc">Prochains événements</h2>' . $legende . '<div class="cartes">';
             foreach ($evenements as $ev) {
-                // Visiteur : rien de l'événement réservé (ni titre, ni lieu, ni lien vers sa page), seulement qu'il existe et sa date
                 if ($ev['visibilite'] !== 'public' && $membre === null) {
-                    $html .= '<article class="carte carte-reservee"><span class="ruban">Réservé aux membres</span><span class="carte-icone">' . c_icone('cadenas') . '</span>'
-                        . '<h3><a href="' . e(url('/connexion')) . '">Événement des membres</a></h3><p><strong>' . e(evenement_date($ev['debut'])) . '</strong></p>'
-                        . '<p class="petit">Connectez-vous pour le découvrir et vous inscrire.</p></article>';
-                    continue;
+                    // Visiteur : rien de l'événement réservé (ni titre, ni lieu, ni lien vers sa page), seulement qu'il existe et sa date
+                    $html .= carte_evenement($ev, 'Événement des membres', '/connexion', '<p class="petit">' . c_icone('cadenas') . ' Connectez-vous pour le découvrir et vous inscrire.</p>', true);
+                } elseif ($ev['visibilite'] === 'cotisants' && !espace_peut_voir($membre, $ev)) {
+                    // Membre pas encore à jour : titre et date, avec l'invitation à cotiser
+                    $html .= carte_evenement($ev, $ev['titre'], '/compte', '<p class="petit">' . c_icone('cadenas') . ' Réglez votre cotisation pour le découvrir et vous inscrire.</p>', true);
+                } else {
+                    $html .= carte_evenement($ev, $ev['titre'], '/espace/' . $ev['slug'], ($ev['lieu'] ? '<p class="lieu">' . c_icone('lieu') . ' ' . e($ev['lieu']) . '</p>' : '')
+                        . '<p class="resume">' . e($ev['description']) . '</p>', false);
                 }
-                $html .= c_carte($ev['titre'], ($ev['visibilite'] !== 'public' ? '<p><span class="badge badge-membres">Réservé aux membres</span></p>' : '')
-                    . '<p><strong>' . e(evenement_date($ev['debut'])) . '</strong>' . ($ev['lieu'] ? ' · ' . e($ev['lieu']) : '') . '</p>'
-                    . '<p>' . e(mb_strimwidth($ev['description'], 0, 110, '…')) . '</p>', '/espace/' . $ev['slug']);
             }
             return $html . '</div>';
         case 'espaces-publics':
@@ -279,4 +281,18 @@ function bloc_dynamique(string $bloc): string
             return '<p>' . c_bouton(current_member() !== null ? 'Mon espace' : 'Espace membres', current_member() !== null ? '/compte' : '/connexion') . '</p>';
     }
     return '';
+}
+
+// Carte d'événement : vignette de date, bandeau d'accès (membres, cotisants), contenu
+function carte_evenement(array $ev, string $titre, string $lien, string $contenu, bool $verrouille): string
+{
+    $mois = ['', 'janv.', 'févr.', 'mars', 'avril', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+    $date = $ev['debut'] !== null
+        ? '<span class="jour">' . (int) date('j', strtotime($ev['debut'])) . '</span><span class="mois">' . $mois[(int) date('n', strtotime($ev['debut']))] . '</span>'
+        : '<span class="mois">date à venir</span>';
+    $bandeau = ['adherents' => 'Réservé aux membres', 'cotisants' => 'Membres à jour de cotisation'][$ev['visibilite']] ?? '';
+    return '<article class="carte carte-evenement acces-' . e($ev['visibilite']) . ($verrouille ? ' carte-reservee' : '') . '">'
+        . ($bandeau !== '' ? '<span class="ruban">' . $bandeau . '</span>' : '')
+        . '<div class="evenement-tete"><span class="date-tuile">' . $date . '</span><h3><a href="' . e(url($lien)) . '">' . e($titre) . '</a></h3></div>'
+        . ($ev['debut'] !== null ? '<p class="discret">' . e(evenement_date($ev['debut'])) . '</p>' : '') . $contenu . '</article>';
 }
