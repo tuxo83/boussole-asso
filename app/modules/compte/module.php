@@ -91,6 +91,7 @@ return [
             unset($_SESSION['totp_en_attente']);
             ajouter_facteur('totp');
             journal(null, $member, 'Application d\'authentification activée');
+            mail_send($member['email'], 'Application d\'authentification activée', "Une application d'authentification vient d'être activée sur votre compte. Si ce n'est pas vous, prévenez l'administrateur.\n");
             flash('succes', 'Application d\'authentification activée.');
             redirect('/compte');
         }],
@@ -124,12 +125,13 @@ return [
     ],
 ];
 
-// Modifier la sécurité du compte : deux preuves si le compte a des droits ou un second facteur déjà configuré
-// (sinon, quelqu'un qui n'a que le mot de passe pourrait ajouter sa propre clé)
+// Modifier la sécurité du compte : deux preuves dès qu'un second facteur existe (sinon, quelqu'un qui n'a que
+// le mot de passe pourrait remplacer la clé). Le tout premier (clé ou application) s'ajoute après une seule preuve :
+// c'est ce qui permet de démarrer quand les e-mails ne partent pas encore. Un e-mail et le journal le signalent.
 function securite_membre(): array
 {
     $member = require_member();
-    if ((member_rights($member['id']) || member_exige_2fa($member)) && count(facteurs()) < 2) {
+    if (member_exige_2fa($member) && count(facteurs()) < 2) {
         $_SESSION['apres_connexion'] = request_path() === '/compte/double-authentification' ? '/compte/double-authentification' : '/compte';
         redirect('/connexion/double-authentification');
     }
