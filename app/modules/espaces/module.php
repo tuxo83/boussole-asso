@@ -118,7 +118,7 @@ return [
                 flash('erreur', 'Date et libellé obligatoires.');
                 redirect('/espace/' . $espace['slug']);
             }
-            db_query('INSERT INTO jalon (espace_id, date_jalon, libelle) VALUES (?, ?, ?)', [$espace['id'], $date, $libelle]);
+            db_query('INSERT INTO jalon (espace_id, date_jalon, libelle, destinataires) VALUES (?, ?, ?, ?)', [$espace['id'], $date, $libelle, ($_POST['destinataires'] ?? '') === 'equipe' ? 'equipe' : 'binome']);
             journal($espace['id'], $member, "Date clé ajoutée : $libelle ($date)");
             redirect('/espace/' . $espace['slug']);
         }],

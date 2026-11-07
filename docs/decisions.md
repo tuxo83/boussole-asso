@@ -30,6 +30,7 @@
 ## Pages du site : éditeur à blocs
 - Éditeur à blocs open source (Editor.js, licence Apache 2.0), embarqué dans le dépôt : aucun CDN, aucun service externe.
 - Le contenu est enregistré en blocs (JSON) et affiché avec nos propres composants : jamais de HTML libre.
+- Rappels : par e-mail, délais réglables en jours avant l'échéance (dates clés : 14 et 3 jours ; organisation d'un événement : 60, 14 et 3 ; participants : 7 et 1), au binôme ou à toute l'équipe ; jamais deux fois le même, et un seul si le cron a manqué des passages.
 - Cotisations : seulement payé / période / date / moyen, saisi par la personne qui a reçu le paiement ; import HelloAsso par fichier CSV (aucune connexion à un service extérieur) ; une relance automatique par période (délai réglable), relance manuelle ; effacement réel après la durée de conservation (2 ans par défaut), validé par le responsable avec météo, export possible avant.
 - Inscriptions : vœux sans course au clic ; groupes 0 (invités) à 3 calculés sur la moyenne des participations sur 12 mois ; tirage reproductible ; liste d'attente avec promotion seulement si une place est réellement libre. Inscrit = participation (pas de pointage des présences pour l'instant).
 - Blocs dynamiques en nombre limité (liste d'événements, actualités, adhésion, contact, espaces publics), sans plugins.

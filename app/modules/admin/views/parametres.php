@@ -17,6 +17,13 @@
     <?= c_champ('css_personnalise', 'CSS personnalisé', ['type' => 'textarea', 'valeur' => $v['css_personnalise'] ?? '', 'aide' => 'Facultatif, chargé après la feuille de style de base.', 'erreur' => $erreurs['css_personnalise'] ?? null]) ?>
   </fieldset>
   <fieldset>
+    <legend>Rappels par e-mail</legend>
+    <p class="petit">Nombres de jours avant l'échéance, séparés par des virgules. Vide : aucun rappel.</p>
+    <?= c_champ('rappel_jalons', 'Dates clés des comités, commissions et projets', ['valeur' => $v['rappel_jalons'] ?? RAPPEL_DELAIS_DEFAUT['rappel_jalons'], 'erreur' => $erreurs['rappel_jalons'] ?? null]) ?>
+    <?= c_champ('rappel_jalons_evenements', "Dates clés de l'organisation des événements", ['valeur' => $v['rappel_jalons_evenements'] ?? RAPPEL_DELAIS_DEFAUT['rappel_jalons_evenements'], 'aide' => 'Ex. 60 : deux mois avant, pour réserver une salle.', 'erreur' => $erreurs['rappel_jalons_evenements'] ?? null]) ?>
+    <?= c_champ('rappel_participants', 'Participants inscrits à un événement', ['valeur' => $v['rappel_participants'] ?? RAPPEL_DELAIS_DEFAUT['rappel_participants'], 'erreur' => $erreurs['rappel_participants'] ?? null]) ?>
+  </fieldset>
+  <fieldset>
     <legend>Envoi des e-mails</legend>
     <?= c_champ('mail_expediteur', 'Adresse d\'expédition', ['type' => 'email', 'valeur' => $v['mail_expediteur'] ?? '', 'erreur' => $erreurs['mail_expediteur'] ?? null]) ?>
     <?= c_champ('smtp_hote', 'Serveur SMTP', ['valeur' => $v['smtp_hote'] ?? '', 'aide' => "Vide : la fonction d'envoi de l'hébergeur est utilisée."]) ?>
