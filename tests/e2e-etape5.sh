@@ -39,7 +39,7 @@ check "bob : liste des membres refusée" "$(api "$BOB_WRITE" "$U/api/membres")" 
 check "MCP initialize" "$(mcp "$BOB_WRITE" '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"test","version":"1"}}}')$(grep -o '"protocolVersion":"[^"]*"' "$B")" '200"protocolVersion":"2025-06-18"'
 check "MCP notification : 202 sans corps" "$(mcp "$BOB_WRITE" '{"jsonrpc":"2.0","method":"notifications/initialized"}')$(wc -c < "$B")" "2020"
 # shellcheck disable=SC2016
-check "MCP tools/list : 15 outils" "$(mcp "$BOB_WRITE" '{"jsonrpc":"2.0","id":2,"method":"tools/list"}'; php -r 'echo count(json_decode(file_get_contents($argv[1]),true)["result"]["tools"]);' "$B")" "20015"
+check "MCP tools/list : 16 outils" "$(mcp "$BOB_WRITE" '{"jsonrpc":"2.0","id":2,"method":"tools/list"}'; php -r 'echo count(json_decode(file_get_contents($argv[1]),true)["result"]["tools"]);' "$B")" "20016"
 check "MCP ajouter_date_cle" "$(mcp "$BOB_WRITE" '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"ajouter_date_cle","arguments":{"slug":"projet-bob","date":"2027-03-01","libelle":"Rendu"}}}'; grep -o '"isError":[a-z]*' "$B")" '200"isError":false'
 check "MCP : outil refusé → isError" "$(mcp "$BOB_WRITE" '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"lire_espace","arguments":{"slug":"comite-secret"}}}'; grep -o '"isError":[a-z]*' "$B")" '200"isError":true'
 check "MCP : méthode inconnue → -32601" "$(mcp "$BOB_WRITE" '{"jsonrpc":"2.0","id":5,"method":"resources/list"}'; grep -o '"code":-32601' "$B")" '200"code":-32601'
@@ -65,6 +65,19 @@ sed -i 's/facteurs|a:[0-9]*:{[^}]*}//' "/var/lib/php/sessions/sess_$SID"
 check "ancienne session : la seconde vérification s'affiche (pas de renvoi vers le compte)" "$(c "$U/connexion/double-authentification" | cut -c1-3) $(grep -c 'Vous êtes bien connecté' "$B")" "200 1"
 stepup_email >/dev/null
 check "après le code e-mail : clé d'écriture possible" "$(post "$U/compte/cles" "$U/compte/cles" -d 'libelle=IA2&portee=ecriture&duree=7')" "303 $U/compte/cles"
+# Pages par le MCP : menu, accueil, image envoyée en base64
+# shellcheck disable=SC2016
+IMG=$(php -r '$i=imagecreatetruecolor(40,30); imagefill($i,0,0,imagecolorallocate($i,30,80,120)); ob_start(); imagejpeg($i); echo base64_encode(ob_get_clean());')
+R=$(curl -s -H "Authorization: Bearer $ADMIN_KEY" -H 'Content-Type: application/json' -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/call\",\"params\":{\"name\":\"ajouter_image\",\"arguments\":{\"base64\":\"$IMG\"}}}" "$U/mcp")
+# shellcheck disable=SC2016
+CHEMIN=$(echo "$R" | php -r '$r = json_decode(stream_get_contents(STDIN), true); echo json_decode($r["result"]["content"][0]["text"], true)["chemin"] ?? "";')
+check "MCP ajouter_image : image ré-encodée dans uploads/" "$([ -f "$ROOT/app/$CHEMIN" ] && echo présente)" "présente"
+check "MCP ajouter_image : faux fichier refusé" "$(curl -s -H "Authorization: Bearer $ADMIN_KEY" -H 'Content-Type: application/json' -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"ajouter_image","arguments":{"base64":"PD9waHAgZWNobyAxOw=="}}}' "$U/mcp" | grep -o '"isError":[a-z]*')" '"isError":true'
+curl -s -o /dev/null -H "Authorization: Bearer $ADMIN_KEY" -H 'Content-Type: application/json' -d "{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"tools/call\",\"params\":{\"name\":\"creer_page\",\"arguments\":{\"titre\":\"Bienvenue\",\"publiee\":true,\"est_accueil\":true,\"blocs\":{\"blocks\":[{\"type\":\"image\",\"data\":{\"chemin\":\"$CHEMIN\",\"alt\":\"Rade\"}}]}}}}" "$U/mcp"
+curl -s -o /dev/null -H "Authorization: Bearer $ADMIN_KEY" -H 'Content-Type: application/json' -d '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"creer_page","arguments":{"titre":"Agenda","publiee":true,"dans_menu":true,"ordre":20}}}' "$U/mcp"
+check "MCP : page d'accueil et menu réglés" "$(sql "SELECT CONCAT(est_accueil, dans_menu) FROM page WHERE titre = 'Bienvenue'") $(sql "SELECT CONCAT(est_accueil, dans_menu, ' ', ordre) FROM page WHERE titre = 'Agenda'")" "10 01 20"
+check "accueil : l'image envoyée par le MCP s'affiche" "$(curl -s "$U/" | grep -c "$CHEMIN")" "1"
+
 # Clé sans limite de durée et configuration MCP prête à copier
 post "$U/compte/cles" "$U/compte/cles" -d 'libelle=Sans limite&portee=lecture&duree=0' >/dev/null; c "$U/compte/cles" >/dev/null
 SL=$(grep -o 'bsl_[a-f0-9]\{8\}_[a-f0-9]\{40\}' "$B" | head -1)

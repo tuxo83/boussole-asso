@@ -7,12 +7,13 @@ const IMAGE_PIXELS_MAX = 40000000;   // protège la mémoire contre les « bombe
 const IMAGE_COTE_MAX = 2000;         // au-delà, l'image est réduite
 
 // Renvoie le chemin de l'image enregistrée (uploads/img-….webp) ou un message d'erreur
-function image_enregistrer(array $file, ?array $member): array
+// $televerse = false : fichier temporaire écrit par Boussole (API), et non envoyé par un formulaire
+function image_enregistrer(array $file, ?array $member, bool $televerse = true): array
 {
     if (!extension_loaded('gd')) {
         return [null, "L'hébergement ne permet pas de traiter les images (extension GD absente)."];
     }
-    if (($file['error'] ?? 1) !== UPLOAD_ERR_OK || $file['size'] > IMAGE_TAILLE_MAX || !is_uploaded_file($file['tmp_name'])) {
+    if (($file['error'] ?? 1) !== UPLOAD_ERR_OK || $file['size'] > IMAGE_TAILLE_MAX || ($televerse && !is_uploaded_file($file['tmp_name']))) {
         return [null, 'Image absente ou trop lourde (8 Mo maximum).'];
     }
     $info = @getimagesize($file['tmp_name']);
