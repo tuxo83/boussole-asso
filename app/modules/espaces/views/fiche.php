@@ -29,7 +29,9 @@
 </form>
 <?php endif ?>
 
+<?php // Une rubrique vide n'est montrée qu'à ceux qui peuvent la remplir ?>
 <div class="colonnes">
+<?php if ($equipe || $peut_gerer): ?>
 <section>
   <h2>Équipe</h2>
   <?php if (!$equipe): ?><p>Personne pour l'instant.</p><?php endif ?>
@@ -54,7 +56,9 @@
   </details>
   <?php endif ?>
 </section>
+<?php endif ?>
 
+<?php if ($jalons || $peut_contribuer): ?>
 <section>
   <h2>Dates clés</h2>
   <?php if (!$jalons): ?><p>Aucune date.</p><?php endif ?>
@@ -82,8 +86,10 @@
   </details>
   <?php endif ?>
 </section>
+<?php endif ?>
 </div>
 
+<?php if ($fichiers || $peut_contribuer): ?>
 <section>
   <h2>Fichiers</h2>
   <?php if (!$fichiers): ?><p>Aucun fichier.</p><?php endif ?>
@@ -105,6 +111,7 @@
   </form>
   <?php endif ?>
 </section>
+<?php endif ?>
 
 <?php if ($enfants || $peut_gerer): ?>
 <section>
