@@ -90,6 +90,13 @@ function boussole_run(): void
                 redirect('/acces?suite=' . rawurlencode($path));
             }
         }
+        // Mot de passe provisoire : rien d'autre tant qu'il n'est pas remplacé (connexion et déconnexion restent possibles)
+        if (!$api && !preg_match('#^/(compte/nouveau-mot-de-passe|connexion|deconnexion|acces|theme\.css|assets/)#', $path)) {
+            $moi = current_member();
+            if ($moi !== null && !empty($moi['mot_de_passe_provisoire'])) {
+                redirect('/compte/nouveau-mot-de-passe');
+            }
+        }
     }
 
     $router = new Router();

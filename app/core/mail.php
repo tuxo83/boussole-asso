@@ -2,12 +2,41 @@
 // Envoi d'e-mails : SMTP si réglé dans l'admin, sinon la fonction mail() de l'hébergeur
 declare(strict_types=1);
 
-function mail_send(string $to, string $subject, string $body): bool
+// Dernière erreur d'envoi, lisible (sans mot de passe) : affichée par le test des réglages
+function mail_erreur(?string $erreur = null, bool $effacer = false): ?string
 {
-    $from = (string) setting('mail_expediteur', '');
+    static $derniere = null;
+    if ($effacer) {
+        $derniere = null;
+    } elseif ($erreur !== null) {
+        $derniere = $erreur;
+        error_log('Boussole e-mail : ' . $erreur);
+    }
+    return $derniere;
+}
+
+// Réglages SMTP : ceux enregistrés, ou ceux d'un formulaire pas encore enregistré (test)
+function mail_reglages(array $autres = []): array
+{
+    return $autres + [
+        'mail_expediteur' => (string) setting('mail_expediteur', ''),
+        'smtp_hote' => (string) setting('smtp_hote', ''),
+        'smtp_port' => (string) setting('smtp_port', '587'),
+        'smtp_securite' => (string) setting('smtp_securite', 'starttls'),
+        'smtp_utilisateur' => (string) setting('smtp_utilisateur', ''),
+        'smtp_mot_de_passe' => secret_decrypt((string) setting('smtp_mot_de_passe', '')) ?? '',
+    ];
+}
+
+// $reglages fourni : test réel, même en développement (pas de fichier à la place de l'envoi)
+function mail_send(string $to, string $subject, string $body, ?array $reglages = null): bool
+{
+    $test = $reglages !== null;
+    $reglages ??= mail_reglages();
+    $from = $reglages['mail_expediteur'];
     $name = (string) setting('nom_association', 'Boussole');
     if ($from === '' || !filter_var($from, FILTER_VALIDATE_EMAIL) || !filter_var($to, FILTER_VALIDATE_EMAIL)) {
-        error_log('Boussole : e-mail non envoyé (expéditeur ou destinataire invalide)');
+        mail_erreur($from === '' ? "aucune adresse d'expédition réglée" : 'adresse d\'expédition ou de destination invalide');
         return false;
     }
     $headers = [
@@ -19,18 +48,22 @@ function mail_send(string $to, string $subject, string $body): bool
     $body64 = chunk_split(base64_encode($body));
 
     // Développement : les e-mails sont écrits dans un fichier au lieu d'être envoyés
-    if (!empty(config()['mail_fichier'])) {
+    if (!$test && !empty(config()['mail_fichier'])) {
         file_put_contents(config()['mail_fichier'], "To: $to\nSubject: $subject\n\n$body\n----\n", FILE_APPEND | LOCK_EX);
         return true;
     }
-    if (setting('smtp_hote', '') !== '') {
-        return smtp_send($from, $to, mail_encode($subject), $headers, $body64);
+    if ($reglages['smtp_hote'] !== '') {
+        return smtp_send($from, $to, mail_encode($subject), $headers, $body64, $reglages);
     }
     $lines = '';
     foreach ($headers as $key => $value) {
         $lines .= "$key: $value\r\n";
     }
-    return mail($to, mail_encode($subject), $body64, $lines);
+    $ok = mail($to, mail_encode($subject), $body64, $lines);
+    if (!$ok) {
+        mail_erreur("la fonction d'envoi de l'hébergeur a refusé le message (aucun serveur SMTP réglé)");
+    }
+    return $ok;
 }
 
 function mail_encode(string $text): string
@@ -38,17 +71,18 @@ function mail_encode(string $text): string
     return preg_match('/[^\x20-\x7e]/', $text) ? '=?UTF-8?B?' . base64_encode($text) . '?=' : $text;
 }
 
-function smtp_send(string $from, string $to, string $subject, array $headers, string $body64): bool
+function smtp_send(string $from, string $to, string $subject, array $headers, string $body64, ?array $reglages = null): bool
 {
-    $host = (string) setting('smtp_hote');
-    $port = (int) setting('smtp_port', '587');
-    $security = (string) setting('smtp_securite', 'starttls');
-    $user = (string) setting('smtp_utilisateur', '');
-    $password = secret_decrypt((string) setting('smtp_mot_de_passe', '')) ?? '';
+    $reglages ??= mail_reglages();
+    $host = $reglages['smtp_hote'];
+    $port = (int) ($reglages['smtp_port'] ?: 587);
+    $security = $reglages['smtp_securite'];
+    $user = $reglages['smtp_utilisateur'];
+    $password = $reglages['smtp_mot_de_passe'];
 
     $socket = @stream_socket_client(($security === 'ssl' ? 'ssl://' : 'tcp://') . "$host:$port", $errno, $errstr, 15);
     if ($socket === false) {
-        error_log("Boussole SMTP : connexion impossible ($errstr)");
+        mail_erreur("connexion impossible à $host:$port ($errstr)");
         return false;
     }
     stream_set_timeout($socket, 15);
@@ -66,7 +100,11 @@ function smtp_send(string $from, string $to, string $subject, array $headers, st
         if ($user !== '') {
             smtp_command($socket, 'AUTH LOGIN', 334);
             smtp_command($socket, base64_encode($user), 334);
-            smtp_command($socket, base64_encode($password), 235);
+            try {
+                smtp_command($socket, base64_encode($password), 235);
+            } catch (RuntimeException $exception) {
+                throw new RuntimeException('identifiant ou mot de passe refusé : ' . $exception->getMessage());
+            }
         }
         smtp_command($socket, "MAIL FROM:<$from>", 250);
         smtp_command($socket, "RCPT TO:<$to>", 250);
@@ -81,7 +119,7 @@ function smtp_send(string $from, string $to, string $subject, array $headers, st
         smtp_command($socket, 'QUIT', 221);
         return true;
     } catch (RuntimeException $exception) {
-        error_log('Boussole SMTP : ' . $exception->getMessage());
+        mail_erreur('SMTP ' . $exception->getMessage());
         return false;
     } finally {
         fclose($socket);

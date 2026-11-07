@@ -78,6 +78,7 @@ main { padding-top: 2rem; padding-bottom: 4rem; min-height: 60vh; }
 .bouton-principal:hover { background: var(--principale-fonce); }
 .bouton-secondaire { background: var(--fond); color: var(--couleur-principale); }
 .bouton-secondaire:hover { background: var(--principale-doux); }
+.test-envoi { margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed var(--bordure); }
 .lien-bouton.lien-danger { color: #b42335; }
 .mediatheque { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr)); gap: 1rem; }
 .mediatheque .carte { padding: .6rem; }
@@ -162,9 +163,9 @@ tr:last-child td { border-bottom: 0; }
 /* Pages : texte en colonne lisible, cartes et chiffres sur toute la largeur */
 .contenu { max-width: none; }
 .contenu > p, .contenu > ul, .contenu > ol, .contenu > blockquote, .contenu > h1, .contenu > h2, .contenu > h3, .contenu > h4 { max-width: 46rem; }
-/* Pages (hors accueil) : la colonne de lecture est centrée, le fil d'Ariane s'aligne dessus */
-.contenu:not(.contenu-accueil) > :is(p, ul, ol, blockquote, h1, h2, h3, h4) { margin-left: auto; margin-right: auto; }
-main > .ariane, main > .sous-pages > h2 { max-width: 46rem; margin-left: auto; margin-right: auto; }
+/* Pages (hors accueil), avis d'Élise : un seul bord gauche commun aux titres, textes et cartes ;
+   46rem limite seulement la longueur des lignes */
+main > .ariane, main > .sous-pages > h2 { max-width: 46rem; }
 .contenu figure { margin: 1.75rem 0; }
 .contenu img { max-width: 100%; height: auto; border-radius: var(--rayon); }
 .contenu figcaption { color: var(--texte-doux); font-size: .92rem; margin-top: .4rem; }
@@ -295,8 +296,12 @@ main.conteneur { padding-top: 2rem; padding-bottom: 4.5rem; }
 .cartes { display: flex; flex-wrap: wrap; justify-content: center; }
 .cartes > .carte { flex: 1 1 18rem; max-width: 24rem; }
 .sous-pages .cartes > .carte { max-width: 24rem; }
-/* Pages (hors accueil) : les boutons se centrent comme la colonne de lecture */
-.contenu:not(.contenu-accueil) > .bloc-bouton { display: block; text-align: center; margin: 1.5rem auto; }
+/* Pages (hors accueil) : grille à colonnes fixes alignée à gauche ; une dernière ligne incomplète reste sous ses colonnes */
+.contenu:not(.contenu-accueil) .cartes, main > .sous-pages .cartes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); justify-content: start; }
+.contenu:not(.contenu-accueil) .cartes > .carte, main > .sous-pages .cartes > .carte { max-width: none; }
+@media (max-width: 60rem) { .contenu:not(.contenu-accueil) .cartes, main > .sous-pages .cartes { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 40rem) { .contenu:not(.contenu-accueil) .cartes, main > .sous-pages .cartes { grid-template-columns: minmax(0, 1fr); } }
+.contenu:not(.contenu-accueil) > .bloc-bouton { display: block; margin: 1.5rem 0; }
 
 /* Événement réservé aux membres, vu par un visiteur : grisé, rayé, ruban en travers, cadenas */
 .carte-reservee { overflow: hidden; color: var(--texte-doux); border-style: dashed; border-color: var(--bordure-forte);
@@ -335,7 +340,7 @@ main.conteneur { padding-top: 2rem; padding-bottom: 4.5rem; }
 .menu .lien-verrou { opacity: .85; }
 .menu .lien-verrou svg { width: 1rem; height: 1rem; margin-right: .3rem; }
 .carte-page-reservee h3 svg { width: 1.05rem; height: 1.05rem; vertical-align: -.12rem; }
-.agenda-visiteur { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: .3rem; margin: 0 auto 1.5rem; padding: .7rem 1rem; max-width: 46rem; background: var(--fond-doux); border-radius: var(--rayon-petit); font-size: .93rem; text-align: center; }
+.agenda-visiteur { display: block; margin: 0 0 1.5rem; padding: .7rem 1rem; max-width: 46rem; background: var(--fond-doux); border-radius: var(--rayon-petit); font-size: .93rem; }
 .agenda-visiteur svg { width: 1rem; height: 1rem; }
 .titre-avec-lien { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: .25rem 1rem; }
 .titre-avec-lien a { font-weight: 600; white-space: nowrap; }

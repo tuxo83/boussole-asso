@@ -32,11 +32,23 @@ return [
             flash('succes', 'Réglages enregistrés.');
             redirect('/admin/parametres');
         }],
+        // Tester les réglages d'envoi tels que saisis, sans les enregistrer ; le formulaire reste rempli
         ['POST', '/admin/mail-test', function () {
             $admin = require_right('admin');
-            $sent = mail_send($admin['email'], 'Test d\'envoi', "Ce message confirme que l'envoi des e-mails fonctionne.\n");
-            flash($sent ? 'succes' : 'erreur', $sent ? "E-mail de test envoyé à {$admin['email']}." : "Échec de l'envoi : vérifiez les réglages (journal d'erreurs du serveur).");
-            redirect('/admin/parametres');
+            [$values] = admin_settings_validate($_POST);
+            $saisis = array_intersect_key($values, array_flip(['mail_expediteur', 'smtp_hote', 'smtp_port', 'smtp_securite', 'smtp_utilisateur']));
+            if (($_POST['smtp_mot_de_passe'] ?? '') !== '') {
+                $saisis['smtp_mot_de_passe'] = (string) $_POST['smtp_mot_de_passe'];
+            }
+            $reglages = mail_reglages($saisis);
+            $dest = trim((string) ($_POST['test_destinataire'] ?? '')) ?: $admin['email'];
+            $voie = $reglages['smtp_hote'] !== '' ? "le serveur {$reglages['smtp_hote']}:{$reglages['smtp_port']}" : "la fonction d'envoi de l'hébergeur (aucun serveur SMTP réglé : le message risque de ne jamais arriver)";
+            $ok = mail_send($dest, "Test d'envoi", "Ce message confirme que l'envoi des e-mails de " . setting('nom_association', 'Boussole') . " fonctionne.\n", $reglages);
+            $test = $ok
+                ? ['succes', "Accepté par $voie pour $dest. Vérifiez la boîte de réception (et les indésirables). Pensez à enregistrer les réglages s'ils sont nouveaux."]
+                : ['erreur', "Échec de l'envoi par $voie : " . (mail_erreur() ?? 'raison inconnue') . '.'];
+            journal(null, $admin, 'Test d\'envoi d\'e-mail : ' . ($ok ? 'réussi' : 'échec'));
+            render('admin/parametres', ['titre' => 'Réglages', 'v' => $values + settings_all(), 'erreurs' => [], 'test_mail' => $test, 'test_destinataire' => $dest]);
         }],
     ],
 ];
