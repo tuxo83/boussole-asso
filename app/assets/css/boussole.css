@@ -298,10 +298,9 @@ main.conteneur { padding-top: 2rem; padding-bottom: 4.5rem; }
 .cartes > .carte { flex: 1 1 18rem; max-width: 24rem; }
 .sous-pages .cartes > .carte { max-width: 24rem; }
 /* Pages (hors accueil) : grille à colonnes fixes alignée à gauche ; une dernière ligne incomplète reste sous ses colonnes */
-.contenu:not(.contenu-accueil) .cartes, main > .sous-pages .cartes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); justify-content: start; }
+/* 3 colonnes au plus ; avec 1 ou 2 cartes seulement, elles se partagent toute la largeur (pas de colonne vide) */
+.contenu:not(.contenu-accueil) .cartes, main > .sous-pages .cartes { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(max(min(100%, 16rem), calc((100% - 2rem) / 3)), 1fr)); }
 .contenu:not(.contenu-accueil) .cartes > .carte, main > .sous-pages .cartes > .carte { max-width: none; }
-@media (max-width: 60rem) { .contenu:not(.contenu-accueil) .cartes, main > .sous-pages .cartes { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 40rem) { .contenu:not(.contenu-accueil) .cartes, main > .sous-pages .cartes { grid-template-columns: minmax(0, 1fr); } }
 .contenu:not(.contenu-accueil) > .bloc-bouton { display: block; margin: 1.5rem 0; }
 
 /* Événement réservé aux membres, vu par un visiteur : grisé, rayé, ruban en travers, cadenas */
