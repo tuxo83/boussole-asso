@@ -131,6 +131,12 @@
     champs(item) { return { valeur: champ(item.valeur, 'Valeur (ex. 236)'), libelle: champ(item.libelle, 'Libellé (ex. cadets)') }; }
   }
 
+  class Frise extends Repetable {
+    static get toolbox() { return { title: 'Frise chronologique', icon: '⋮' }; }
+    static get libelle() { return 'Frise chronologique : date courte (ex. 1976) et texte, dans l\'ordre'; }
+    champs(item) { return { date: champ(item.date, 'Date (ex. 1976)'), texte: champ(item.texte, 'Ce qui s\'est passé') }; }
+  }
+
   class Bouton {
     static get toolbox() { return { title: 'Bouton', icon: '▭' }; }
     constructor({ data }) { this.data = data || {}; }
@@ -160,6 +166,7 @@
       boussole: BlocBoussole,
       cartes: Cartes,
       chiffres: Chiffres,
+      frise: Frise,
       bouton: Bouton,
     },
   });

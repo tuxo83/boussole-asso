@@ -59,6 +59,8 @@ check('cartes : lien javascript: retiré', !str_contains($cartes, 'javascript'))
 check('cartes : lien interne gardé, icône inconnue ignorée, carte sans titre ignorée', str_contains($cartes, 'href="/page/nos-actions"') && substr_count($cartes, '<article') === 2);
 $chiffres = rendu([['type' => 'chiffres', 'data' => ['items' => [['valeur' => '236<b>', 'libelle' => 'cadets"><script>'], ['valeur' => '', 'libelle' => 'vide']]]]]);
 check('chiffres : valeurs échappées, vides ignorées', !str_contains($chiffres, '<script') && substr_count($chiffres, '<strong>') === 1);
+$frise = rendu([['type' => 'frise', 'data' => ['items' => [['date' => '1976<script>', 'texte' => 'Création <b>gras</b> <img src=x onerror=alert(1)>'], ['date' => '', 'texte' => 'sans date'], ['date' => '1988', 'texte' => '']]]]]);
+check('frise : date échappée, texte nettoyé, étapes incomplètes ignorées', !$dangereux($frise) && substr_count($frise, '<li>') === 1 && str_contains($frise, '<strong>gras</strong>'));
 check('bouton : lien dangereux refusé', rendu([['type' => 'bouton', 'data' => ['texte' => 'Go', 'lien' => 'javascript:alert(1)']]]) === '');
 check('bouton : « adhesion » sans lien réglé : rien affiché', rendu([['type' => 'bouton', 'data' => ['texte' => 'Adhérer', 'lien' => 'adhesion']]]) === '');
 check('bouton : lien externe avec rel', str_contains(rendu([['type' => 'bouton', 'data' => ['texte' => 'Voir', 'lien' => 'https://exemple.org/"x', 'style' => 'secondaire']]]), 'href="https://exemple.org/&quot;x" target="_blank" rel="noopener noreferrer"'));
