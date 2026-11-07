@@ -6,6 +6,7 @@ require BOUSSOLE_ROOT . '/core/view.php';
 require BOUSSOLE_ROOT . '/core/components.php';
 require BOUSSOLE_ROOT . '/core/blocs.php';
 function url(string $p = '/'): string { return '/' . ltrim($p, '/'); }
+function setting(string $k, ?string $d = null): ?string { return $d; }
 
 $ok = $ko = 0;
 function check(string $label, bool $test): void { global $ok, $ko; $test ? $ok++ : $ko++; echo ($test ? 'OK  ' : 'KO  ') . $label . "\n"; }
@@ -46,5 +47,21 @@ check('bloc dynamique inconnu ignoré', rendu([['type' => 'boussole', 'data' => 
 check('liste imbriquée, 3 niveaux au plus', substr_count(rendu([['type' => 'list', 'data' => ['style' => 'unordered', 'items' => [['content' => 'a', 'items' => [['content' => 'b', 'items' => [['content' => 'c', 'items' => [['content' => 'd', 'items' => []]]]]]]]]]]]), '<ul>') === 3);
 check('JSON invalide : rien', blocs_rendre('{pas du json') === '');
 check('trop de blocs refusé', blocs_normaliser(json_encode(['blocks' => array_fill(0, BLOCS_MAX + 1, $p('x'))])) === null);
+// Blocs vitrine : cartes, chiffres clés, bouton
+$cartes = rendu([['type' => 'cartes', 'data' => ['items' => [
+    ['icone' => 'ecole', 'titre' => '<script>x</script>Trinôme', 'texte' => 'Texte <b>gras</b><img src=x onerror=alert(1)>', 'lien' => 'javascript:alert(1)'],
+    ['icone' => 'inconnue', 'titre' => 'Cadets', 'texte' => '', 'lien' => '/page/nos-actions'],
+    ['titre' => '', 'texte' => 'sans titre : ignorée'],
+]]]]);
+check('cartes : titre échappé, pas de balise', !str_contains($cartes, '<script') && str_contains($cartes, 'xTrinôme'));
+check('cartes : texte nettoyé (gras gardé, image retirée)', str_contains($cartes, '<strong>gras</strong>') && !str_contains($cartes, 'onerror'));
+check('cartes : lien javascript: retiré', !str_contains($cartes, 'javascript'));
+check('cartes : lien interne gardé, icône inconnue ignorée, carte sans titre ignorée', str_contains($cartes, 'href="/page/nos-actions"') && substr_count($cartes, '<article') === 2);
+$chiffres = rendu([['type' => 'chiffres', 'data' => ['items' => [['valeur' => '236<b>', 'libelle' => 'cadets"><script>'], ['valeur' => '', 'libelle' => 'vide']]]]]);
+check('chiffres : valeurs échappées, vides ignorées', !str_contains($chiffres, '<script') && substr_count($chiffres, '<strong>') === 1);
+check('bouton : lien dangereux refusé', rendu([['type' => 'bouton', 'data' => ['texte' => 'Go', 'lien' => 'javascript:alert(1)']]]) === '');
+check('bouton : « adhesion » sans lien réglé : rien affiché', rendu([['type' => 'bouton', 'data' => ['texte' => 'Adhérer', 'lien' => 'adhesion']]]) === '');
+check('bouton : lien externe avec rel', str_contains(rendu([['type' => 'bouton', 'data' => ['texte' => 'Voir', 'lien' => 'https://exemple.org/"x', 'style' => 'secondaire']]]), 'href="https://exemple.org/&quot;x" rel="noopener noreferrer"'));
+
 echo "Bilan : $ok OK, $ko KO\n";
 exit($ko === 0 ? 0 : 1);
