@@ -48,9 +48,14 @@ return [
             if (!espace_peut_voir($member, $espace)) {
                 $member === null ? require_member() : espace_refus();
             }
+            $ev_seo = $espace['type'] === 'evenement' ? db_one('SELECT * FROM evenement WHERE espace_id = ?', [$espace['id']]) : null;
             render('espaces/fiche', [
                 'titre' => $espace['titre'],
                 'espace' => $espace,
+                // Seuls les événements publics sont proposés aux moteurs ; le reste des espaces est interne
+                'seo' => $espace['visibilite'] === 'public' && $espace['type'] === 'evenement' && !$espace['archive']
+                    ? ['description' => seo_couper($espace['description']), 'type' => 'article', 'jsonld' => $ev_seo ? seo_jsonld_evenement($espace, $ev_seo) : null]
+                    : ['index' => false],
                 'membre' => $member,
                 'parent' => $espace['parent_id'] ? db_one('SELECT * FROM espace WHERE id = ?', [$espace['parent_id']]) : null,
                 'enfants' => array_filter(db_all('SELECT * FROM espace WHERE parent_id = ? AND archive = 0 ORDER BY titre', [$espace['id']]), fn($e) => espace_peut_voir($member, $e)),

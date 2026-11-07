@@ -10,6 +10,8 @@
     <noscript><p class="alerte alerte-erreur">L'éditeur a besoin de JavaScript.</p></noscript>
   </div>
   <input type="hidden" name="blocs" id="champ-blocs" value="<?= e($blocs) ?>">
+  <?= c_champ('description', 'Description pour les moteurs de recherche et les partages', ['type' => 'textarea', 'valeur' => (string) ($page['description'] ?? ''), 'max' => 300,
+      'aide' => 'Une ou deux phrases (160 caractères conseillés). Vide : le début du premier paragraphe est utilisé.']) ?>
   <fieldset>
     <legend>Publication</legend>
     <?= c_champ('parent_id', 'Page parente', ['type' => 'select', 'valeur' => (string) $page['parent_id'], 'choix' => ['' => 'Aucune (premier niveau)'] + array_column($parents, 'titre', 'id')]) ?>

@@ -35,6 +35,7 @@ Le panel s'appuie sur une association de référence : des membres issus d'une f
 | **Karim** | Exploitation et hébergement | Installation chez un hébergeur ordinaire, mises à jour, sauvegardes, journaux |
 | **Paul** | Simplicité du code | Code lisible par un bénévole, rien d'inutile, « moins mais mieux » : chaque ajout doit simplifier ou se justifier |
 | **Anne** | Bénévole d'une autre association (sport, culture…) | Que rien ne soit spécifique à l'association de référence : universalité |
+| **Julien** | Référencement et partage (SEO) | Plan du site et consignes aux robots, titres et descriptions, adresse canonique, aperçus de partage (réseaux, messageries), données structurées (association, événements), performance perçue. Avec Nadia, il veille à ce que **rien de réservé ni d'interne** ne soit proposé aux moteurs, et rien du tout tant que le site est en construction. |
 
 ## Règles du panel
 
@@ -42,3 +43,4 @@ Le panel s'appuie sur une association de référence : des membres issus d'une f
 - Un retour devient une décision, ou est écarté avec sa raison : rien ne reste en suspens.
 - Paul a un droit de veto sur la complexité : une fonction qui complique sans bénéfice clair est retirée ou simplifiée.
 - Thomas et Sophie relisent toute modification qui touche à la connexion ou aux données personnelles.
+- Julien relit toute nouvelle page publique ou tout changement de ce qui est visible sans connexion.
