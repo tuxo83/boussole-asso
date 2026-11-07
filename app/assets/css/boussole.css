@@ -153,7 +153,9 @@ tr:last-child td { border-bottom: 0; }
 
 /* Pages et éditeur */
 .ariane { font-size: .92rem; margin-bottom: .5rem; color: var(--texte-doux); }
-.contenu { max-width: 46rem; }
+/* Pages : texte en colonne lisible, cartes et chiffres sur toute la largeur */
+.contenu { max-width: none; }
+.contenu > p, .contenu > ul, .contenu > ol, .contenu > blockquote, .contenu > h1, .contenu > h2, .contenu > h3, .contenu > h4 { max-width: 46rem; }
 .contenu figure { margin: 1.75rem 0; }
 .contenu img { max-width: 100%; height: auto; border-radius: var(--rayon); }
 .contenu figcaption { color: var(--texte-doux); font-size: .92rem; margin-top: .4rem; }
