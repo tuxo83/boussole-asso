@@ -83,6 +83,11 @@ jobs:
           php-version: ${{ matrix.php }}
           extensions: pdo_mysql, mbstring, gd, dom, curl, zip, openssl
       - name: Tests unitaires et de bout en bout
+        # Le client mysql des scripts de test passe sinon par le socket local (absent ici) :
+        # la base est le service ci-dessus, joignable en TCP
+        env:
+          MYSQL_HOST: 127.0.0.1
+          MYSQL_TCP_PORT: "3306"
         run: |
           php tests/unit-blocs.php
           php tests/unit-webauthn.php
