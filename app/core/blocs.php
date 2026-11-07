@@ -68,7 +68,7 @@ function bloc_inline_nodes(DOMNode $node, int $depth): string
                     break;
                 }
                 $externe = (bool) preg_match('#^https?://#i', $href);
-                $out .= '<a href="' . e($href) . '"' . ($externe ? ' rel="noopener noreferrer nofollow"' : '') . ">$inner</a>";
+                $out .= '<a href="' . e($href) . '"' . ($externe ? ' target="_blank" rel="noopener noreferrer nofollow"' : '') . ">$inner</a>";
                 break;
             default:
                 // Balise inconnue : on garde le texte, pas la balise
@@ -211,12 +211,12 @@ function blocs_rendre(?string $json): string
             'boussole' => bloc_dynamique($d['bloc']),
             'cartes' => '<div class="cartes">' . implode('', array_map(function ($c) {
                 $lien = bloc_lien_resolu($c['lien']);
-                $titre = $lien !== '' ? '<a href="' . e(str_starts_with($lien, '/') ? url($lien) : $lien) . '">' . e($c['titre']) . '</a>' : e($c['titre']);
+                $titre = $lien !== '' ? '<a href="' . e(str_starts_with($lien, '/') ? url($lien) : $lien) . '"' . (preg_match('#^https?://#', $lien) ? ' target="_blank" rel="noopener noreferrer"' : '') . '>' . e($c['titre']) . '</a>' : e($c['titre']);
                 return '<article class="carte carte-action">' . ($c['icone'] !== '' ? '<span class="carte-icone">' . c_icone($c['icone']) . '</span>' : '')
                     . '<h3>' . $titre . '</h3>' . ($c['texte'] !== '' ? '<p>' . $c['texte'] . '</p>' : '') . '</article>';
             }, $d['items'])) . '</div>',
             'chiffres' => '<div class="chiffres">' . implode('', array_map(fn($c) => '<div><strong>' . e($c['valeur']) . '</strong><span>' . e($c['libelle']) . '</span></div>', $d['items'])) . '</div>',
-            'bouton' => ($lien = bloc_lien_resolu($d['lien'])) !== '' ? '<p class="bloc-bouton"><a class="bouton bouton-' . $d['style'] . '" href="' . e(str_starts_with($lien, '/') ? url($lien) : $lien) . '"' . (str_starts_with($lien, '/') ? '' : ' rel="noopener noreferrer"') . '>' . e($d['texte']) . '</a></p>' : '',
+            'bouton' => ($lien = bloc_lien_resolu($d['lien'])) !== '' ? '<p class="bloc-bouton"><a class="bouton bouton-' . $d['style'] . '" href="' . e(str_starts_with($lien, '/') ? url($lien) : $lien) . '"' . (preg_match('#^https?://#', $lien) ? ' target="_blank" rel="noopener noreferrer"' : '') . '>' . e($d['texte']) . '</a></p>' : '',
             default => '',
         };
     }
@@ -261,7 +261,7 @@ function bloc_dynamique(string $bloc): string
             return $html . '</div>';
         case 'adhesion':
             $lien = (string) setting('lien_adhesion', '');
-            return $lien !== '' ? '<p><a class="bouton bouton-principal" href="' . e($lien) . '" rel="noopener noreferrer">Adhérer ou renouveler sur HelloAsso</a></p>' : '';
+            return $lien !== '' ? '<p><a class="bouton bouton-principal" href="' . e($lien) . '" target="_blank" rel="noopener noreferrer">Adhérer ou renouveler sur HelloAsso</a></p>' : '';
         case 'espace-membres':
             return '<p>' . c_bouton(current_member() !== null ? 'Mon espace' : 'Espace membres', current_member() !== null ? '/compte' : '/connexion') . '</p>';
     }
