@@ -63,9 +63,11 @@ ADMIN=$(sql "SELECT id FROM membre WHERE email = 'admin@example.org'")
 post "$U/admin/membres" "$U/admin/membres/$ADMIN" -d 'actif=1' >/dev/null
 check "le dernier administrateur ne peut pas perdre son droit" "$(sql "SELECT droit FROM droit_plateforme WHERE membre_id = $ADMIN")" "admin"
 login_link alice alice@example.org
-check "alice : délégation sans 2FA → activation imposée" "$(c "$U/admin/membres")" "303 $U/compte/double-authentification"
-c "$U/compte/double-authentification" >/dev/null; T=$(tok); S=$(grep -o '<code class="cle">[^<]*' "$B" | sed 's/.*>//; s/ //g')
-c --data-urlencode "_csrf=$T" -d "code=$(totp "$S")" "$U/compte/double-authentification" >/dev/null
+check "alice (lien e-mail seul) : seconde vérification demandée" "$(c "$U/admin/membres")" "303 $U/connexion/double-authentification"
+check "alice : pas de second moyen, elle doit choisir un mot de passe" "$(c "$U/connexion/double-authentification" >/dev/null; grep -c 'Aucun second moyen' "$B")" "1"
+post "$U/compte" "$U/compte/mot-de-passe" -d 'mot_de_passe=alice-mot-de-passe-long&confirmation=alice-mot-de-passe-long' >/dev/null
+c "$U/connexion/double-authentification" >/dev/null; T=$(tok)
+c --data-urlencode "_csrf=$T" -d 'mot_de_passe=alice-mot-de-passe-long' "$U/connexion/double-authentification/mot-de-passe" >/dev/null
 check "alice : gestion des membres accessible" "$(c "$U/admin/membres")" "200 "
 check "alice : pas de cases « droits » (réservé à l'administrateur)" "$(grep -c 'name="droits\[\]"' "$B")" "0"
 check "alice : réglages refusés" "$(c "$U/admin/parametres")" "403 "
