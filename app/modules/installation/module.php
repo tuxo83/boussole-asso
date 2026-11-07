@@ -43,6 +43,11 @@ function installation_validate(array $input): array
     if (!filter_var($v['email_admin'], FILTER_VALIDATE_EMAIL)) {
         $erreurs['email_admin'] = 'Adresse e-mail invalide.';
     }
+    // Le premier administrateur se connecte par mot de passe : l'envoi d'e-mails n'est pas encore réglé
+    $v['mot_de_passe'] = (string) ($input['mot_de_passe'] ?? '');
+    if (mb_strlen($v['mot_de_passe']) < 12 || $v['mot_de_passe'] !== (string) ($input['confirmation'] ?? '')) {
+        $erreurs['mot_de_passe'] = 'Au moins 12 caractères, et la confirmation identique.';
+    }
 
     $config = config();
     if ($config === null) {
@@ -88,6 +93,9 @@ function installation_apply(array $v): void
     migrate($pdo);
     $set = $pdo->prepare('INSERT INTO parametre (cle, valeur) VALUES (?, ?) ON DUPLICATE KEY UPDATE valeur = VALUES(valeur)');
     $set->execute(['nom_association', $v['nom_association']]);
-    $pdo->prepare('INSERT IGNORE INTO membre (email, est_admin) VALUES (?, 1)')->execute([mb_strtolower($v['email_admin'])]);
+    $pdo->prepare('INSERT INTO membre (email, est_admin, mot_de_passe) VALUES (?, 1, ?) ON DUPLICATE KEY UPDATE est_admin = 1, mot_de_passe = VALUES(mot_de_passe)')
+        ->execute([mb_strtolower($v['email_admin']), password_hash($v['mot_de_passe'], PASSWORD_DEFAULT)]);
+    // Adresse du site figée à l'installation : les liens des e-mails ne dépendent pas de l'en-tête Host d'une requête
+    $set->execute(['adresse_site', (is_https() ? 'https://' : 'http://') . ($_SERVER['HTTP_HOST'] ?? 'localhost') . base_path()]);
     $set->execute(['installation_terminee', '1']);
 }
