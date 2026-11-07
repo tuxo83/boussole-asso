@@ -1,51 +1,66 @@
-<?php $action = fn(string $chemin) => e(url('/espace/' . $espace['slug'] . $chemin)); ?>
+<?php
+// Page d'un espace (avis d'Élise et d'Inès) : en haut l'état et ce qu'il faut faire, au milieu on agit
+// (équipe, dates, fichiers), en bas l'administration rangée dans « Gérer l'espace »
+$action = fn(string $chemin) => e(url('/espace/' . $espace['slug'] . $chemin));
+// Nom affiché : prénom et nom, sinon le début de l'adresse (l'adresse complète en infobulle)
+$nom_court = fn(array $p) => trim(($p['prenom'] ?? '') . ' ' . ($p['nom'] ?? '')) ?: strstr((string) $p['email'], '@', true);
+// Chaque point « à traiter » mène à l'endroit où on le règle
+$cible_alerte = fn(string $a) => match (true) {
+    str_contains($a, 'n°') => '#ajout-equipe',
+    str_contains($a, 'fichier') => '#fichiers',
+    str_contains($a, 'date') => '#dates',
+    default => null,
+};
+?>
 <p class="discret"><?= e(ESPACE_TYPES[$espace['type']]) ?><?php if ($parent): ?> · dans <a href="<?= e(url('/espace/' . $parent['slug'])) ?>"><?= e($parent['titre']) ?></a><?php endif ?></p>
 <h1><?= e($espace['titre']) ?></h1>
 <?php if ($espace['archive']): ?>
 <div class="alerte alerte-info" role="status">Cet espace est archivé : il n'apparaît plus dans les listes ni dans l'agenda.
   <?php if ($peut_gerer): ?><form method="post" action="<?= $action('/archiver') ?>" class="en-ligne"><?= csrf_field() ?><button type="submit" class="lien-bouton">Désarchiver</button></form><?php endif ?></div>
 <?php endif ?>
-<p><?= c_meteo($espace['meteo']) ?> · <span class="discret"><?= e(ESPACE_VISIBILITES[$espace['visibilite']]) ?></span></p>
+
+<div class="espace-etat">
+  <?php if ($peut_contribuer): ?>
+  <form method="post" action="<?= $action('/meteo') ?>" class="meteo-choix">
+    <?= csrf_field() ?>
+    <label for="choix-meteo" class="visuellement-cache">Météo de l'espace</label>
+    <select id="choix-meteo" name="meteo" data-envoi-auto>
+      <?php foreach (['soleil' => 'À jour', 'eclaircie' => 'En cours', 'pluie' => 'En retard', 'orage' => 'Bloqué'] as $cle => $libelle): ?>
+      <option value="<?= $cle ?>"<?= $espace['meteo'] === $cle ? ' selected' : '' ?>><?= e($libelle) ?></option>
+      <?php endforeach ?>
+    </select>
+    <button type="submit" class="lien-bouton" data-sans-js>changer</button>
+  </form>
+  <?php else: ?>
+  <?= c_meteo($espace['meteo']) ?>
+  <?php endif ?>
+  <span class="discret"><?= e(ESPACE_VISIBILITES[$espace['visibilite']]) ?></span>
+</div>
 
 <?php if ($alertes && $peut_contribuer): ?>
-<div class="alerte alerte-info" role="status"><strong>À traiter :</strong>
-  <ul><?php foreach ($alertes as $alerte): ?><li><?= e($alerte) ?></li><?php endforeach ?></ul>
+<div class="a-faire" role="status"><strong>À faire</strong>
+  <ul><?php foreach ($alertes as $alerte): $cible = $cible_alerte($alerte); ?><li><?= $cible ? '<a href="' . $cible . '">' . e($alerte) . '</a>' : e($alerte) ?></li><?php endforeach ?></ul>
+  <?php if ($espace['meteo'] === 'soleil' && array_filter($alertes, fn($a) => str_contains($a, 'dépassée'))): ?><p class="petit">Une date clé est dépassée : la météo est-elle toujours « À jour » ?</p><?php endif ?>
 </div>
 <?php endif ?>
 
 <?= c_texte($espace['description']) ?>
 <?php if ($espace['type'] === 'evenement'): ?><?= partial('evenements/bloc', evenement_vue($espace, $membre)) ?><?php endif ?>
 
-<?php if ($peut_contribuer && $espace['meteo'] === 'soleil' && array_filter($alertes, fn($a) => str_contains($a, 'dépassée'))): ?>
-<p class="petit">Une date clé est dépassée : la météo est-elle toujours « À jour » ?</p>
-<?php endif ?>
-<?php if ($peut_contribuer): ?>
-<form method="post" action="<?= $action('/meteo') ?>" class="choix-meteo" aria-label="Changer la météo">
-  <?= csrf_field() ?>
-  <span class="discret">Changer la météo :</span>
-  <?php foreach (['soleil', 'eclaircie', 'pluie', 'orage'] as $cle): ?>
-  <button type="submit" name="meteo" value="<?= $cle ?>" aria-pressed="<?= $espace['meteo'] === $cle ? 'true' : 'false' ?>"><?= c_meteo($cle) ?></button>
-  <?php endforeach ?>
-</form>
-<?php endif ?>
-
 <?php // Une rubrique vide n'est montrée qu'à ceux qui peuvent la remplir ?>
-<div class="colonnes">
+<div class="espace-blocs">
 <?php if ($equipe || $peut_gerer): ?>
-<section>
+<section id="equipe">
   <h2>Équipe</h2>
-  <?php if (!$equipe): ?><p>Personne pour l'instant.</p><?php endif ?>
-  <ul class="liste">
+  <?php if (!$equipe): ?><p class="discret">Personne pour l'instant.</p><?php endif ?>
+  <ul class="liste equipe">
     <?php foreach ($equipe as $personne): ?>
-    <li><strong><?= e(membre_nom($personne)) ?></strong> · <?= e($personne['libelle'] !== '' ? $personne['libelle'] : ESPACE_NIVEAUX[$personne['niveau']]) ?>
-      <?php if ($peut_gerer): ?>
-      <form method="post" action="<?= $action('/equipe/retirer') ?>" class="en-ligne"><?= csrf_field() ?><input type="hidden" name="membre_id" value="<?= (int) $personne['id'] ?>"><button type="submit" class="lien-bouton" data-confirmer="Retirer <?= e(membre_nom($personne)) ?> de l'équipe ?" aria-label="Retirer <?= e(membre_nom($personne)) ?>">retirer</button></form>
-      <?php endif ?>
-    </li>
+    <li><strong title="<?= e($personne['email']) ?>"><?= e($nom_court($personne)) ?></strong>
+      <span class="discret"><?= e($personne['libelle'] !== '' ? $personne['libelle'] : ESPACE_NIVEAUX[$personne['niveau']]) ?></span></li>
     <?php endforeach ?>
   </ul>
   <?php if ($peut_gerer): ?>
-  <details><summary>Ajouter ou changer le rôle de quelqu'un</summary>
+  <details id="ajout-equipe"><summary>+ Ajouter ou modifier</summary>
   <form method="post" action="<?= $action('/equipe') ?>" class="formulaire">
     <?= csrf_field() ?>
     <?= c_champ('email', 'E-mail du membre', ['type' => 'email', 'requis' => true]) ?>
@@ -53,29 +68,39 @@
     <?= c_champ('libelle', 'Libellé affiché (facultatif)', ['aide' => 'Ex. président, secrétaire, sage.', 'max' => 100]) ?>
     <button type="submit" class="bouton bouton-secondaire">Enregistrer</button>
   </form>
+  <?php if ($equipe): ?>
+  <form method="post" action="<?= $action('/equipe/retirer') ?>" class="en-ligne retirer-equipe">
+    <?= csrf_field() ?>
+    <label for="retirer-membre" class="petit">Retirer de l'équipe</label>
+    <select id="retirer-membre" name="membre_id"><?php foreach ($equipe as $personne): ?><option value="<?= (int) $personne['id'] ?>"><?= e($nom_court($personne)) ?></option><?php endforeach ?></select>
+    <button type="submit" class="lien-bouton lien-danger" data-confirmer="Retirer cette personne de l'équipe ?">retirer</button>
+  </form>
+  <?php endif ?>
   </details>
   <?php endif ?>
 </section>
 <?php endif ?>
 
 <?php if ($jalons || $peut_contribuer): ?>
-<section>
+<section id="dates">
   <h2>Dates clés</h2>
-  <?php if (!$jalons): ?><p>Aucune date.</p><?php endif ?>
+  <?php if (!$jalons): ?><p class="discret">Aucune date.</p><?php endif ?>
   <ul class="liste">
     <?php foreach ($jalons as $jalon): $depasse = !$jalon['fait'] && $jalon['date_jalon'] < date('Y-m-d'); ?>
     <li class="<?= $jalon['fait'] ? 'fait' : ($depasse ? 'depasse' : '') ?>">
       <time datetime="<?= e($jalon['date_jalon']) ?>"><?= e(date('d/m/Y', strtotime($jalon['date_jalon']))) ?></time> · <?= e($jalon['libelle']) ?>
       <?= $jalon['fait'] ? ' <span class="discret">(fait)</span>' : ($depasse ? ' <strong>(dépassée)</strong>' : '') ?>
       <?php if ($peut_contribuer): ?>
+      <span class="actions-ligne">
       <form method="post" action="<?= $action('/jalons/' . (int) $jalon['id'] . '/fait') ?>" class="en-ligne"><?= csrf_field() ?><button type="submit" class="lien-bouton"><?= $jalon['fait'] ? 'rouvrir' : 'marquer fait' ?></button></form>
       <form method="post" action="<?= $action('/jalons/' . (int) $jalon['id'] . '/supprimer') ?>" class="en-ligne"><?= csrf_field() ?><button type="submit" class="lien-bouton" data-confirmer="Supprimer la date « <?= e($jalon['libelle']) ?> » ?">supprimer</button></form>
+      </span>
       <?php endif ?>
     </li>
     <?php endforeach ?>
   </ul>
   <?php if ($peut_contribuer): ?>
-  <details><summary>Ajouter une date clé</summary>
+  <details><summary>+ Ajouter une date</summary>
   <form method="post" action="<?= $action('/jalons') ?>" class="formulaire">
     <?= csrf_field() ?>
     <?= c_champ('date_jalon', 'Date', ['type' => 'date', 'requis' => true]) ?>
@@ -87,12 +112,11 @@
   <?php endif ?>
 </section>
 <?php endif ?>
-</div>
 
 <?php if ($fichiers || $peut_contribuer): ?>
-<section>
+<section id="fichiers">
   <h2>Fichiers</h2>
-  <?php if (!$fichiers): ?><p>Aucun fichier.</p><?php endif ?>
+  <?php if (!$fichiers && !$peut_contribuer): ?><p class="discret">Aucun fichier.</p><?php endif ?>
   <ul class="liste">
     <?php foreach ($fichiers as $fichier): ?>
     <li><a href="<?= e(url('/fichier/' . (int) $fichier['id'])) ?>"><?= e($fichier['nom']) ?></a>
@@ -104,54 +128,62 @@
     <?php endforeach ?>
   </ul>
   <?php if ($peut_contribuer): ?>
-  <form method="post" action="<?= $action('/fichiers') ?>" enctype="multipart/form-data" class="en-ligne">
+  <form method="post" action="<?= $action('/fichiers') ?>" enctype="multipart/form-data" class="depot">
     <?= csrf_field() ?>
-    <input type="file" name="fichier" required aria-label="Fichier à déposer">
-    <button type="submit" class="bouton bouton-secondaire">Déposer</button>
+    <label class="zone-depot"><input type="file" name="fichier" required data-envoi-auto><span>Glissez un fichier ici, ou cliquez pour le choisir</span></label>
+    <button type="submit" class="bouton bouton-secondaire" data-sans-js>Déposer</button>
   </form>
   <?php endif ?>
 </section>
 <?php endif ?>
+</div>
 
-<?php if ($enfants || $peut_gerer): ?>
+<?php if ($enfants): ?>
 <section>
   <h2>Sous-espaces</h2>
   <ul class="liste"><?php foreach ($enfants as $enfant): ?><li><a href="<?= e(url('/espace/' . $enfant['slug'])) ?>"><?= e($enfant['titre']) ?></a> · <?= c_meteo($enfant['meteo']) ?></li><?php endforeach ?></ul>
-  <?php if ($peut_gerer): ?><p><?= c_bouton('Créer un sous-espace', '/espaces/nouveau?parent=' . $espace['slug'], 'secondaire') ?></p><?php endif ?>
 </section>
 <?php endif ?>
 
 <?php if ($peut_gerer): ?>
-<details class="separe"><summary>Modifier l'espace</summary>
-<form method="post" action="<?= $action('/modifier') ?>" class="formulaire">
-  <?= csrf_field() ?>
-  <?= c_champ('titre', 'Titre', ['valeur' => $espace['titre'], 'requis' => true, 'max' => 200]) ?>
-  <?= c_champ('type', 'Type', ['type' => 'select', 'valeur' => $espace['type'], 'choix' => ESPACE_TYPES]) ?>
+<details class="separe gerer-espace"><summary>Gérer l'espace</summary>
+  <h3>Modifier</h3>
+  <form method="post" action="<?= $action('/modifier') ?>" class="formulaire">
+    <?= csrf_field() ?>
+    <?= c_champ('titre', 'Titre', ['valeur' => $espace['titre'], 'requis' => true, 'max' => 200]) ?>
+    <?= c_champ('type', 'Type', ['type' => 'select', 'valeur' => $espace['type'], 'choix' => ESPACE_TYPES]) ?>
+    <?php if (is_admin($membre)): ?>
+    <?= c_champ('parent', 'Dans l\'espace', ['type' => 'select', 'valeur' => $parent['slug'] ?? '', 'choix' => ['' => '— Au premier niveau'] + $parents_possibles]) ?>
+    <?php endif ?>
+    <?= c_champ('description', 'Description', ['type' => 'textarea', 'valeur' => $espace['description']]) ?>
+    <?= c_champ('visibilite', 'Qui peut le voir ?', ['type' => 'select', 'valeur' => $espace['visibilite'], 'choix' => ESPACE_VISIBILITES]) ?>
+    <button type="submit" class="bouton bouton-secondaire">Enregistrer</button>
+  </form>
+  <p class="en-ligne">
+    <?= c_bouton('Créer un sous-espace', '/espaces/nouveau?parent=' . $espace['slug'], 'secondaire') ?>
+    <?php if (!$espace['archive']): ?>
+    <form method="post" action="<?= $action('/archiver') ?>" class="en-ligne"><?= csrf_field() ?><button type="submit" class="bouton bouton-secondaire" data-confirmer="Archiver « <?= e($espace['titre']) ?> » ? Il sortira des listes et de l'agenda, sans rien perdre.">Archiver l'espace</button></form>
+    <?php endif ?>
+  </p>
   <?php if (is_admin($membre)): ?>
-  <?= c_champ('parent', 'Dans l\'espace', ['type' => 'select', 'valeur' => $parent['slug'] ?? '', 'choix' => ['' => '— Au premier niveau'] + $parents_possibles]) ?>
+  <div class="zone-sensible">
+    <h3>Zone sensible</h3>
+    <form method="post" action="<?= $action('/supprimer') ?>" class="formulaire">
+      <?= csrf_field() ?>
+      <?= c_champ('confirmation', 'Pour supprimer définitivement l\'espace, ses dates, ses fichiers et ses inscriptions, tapez son nom : ' . $espace['titre'], ['requis' => true, 'max' => 200]) ?>
+      <button type="submit" class="lien-bouton lien-danger">Supprimer définitivement</button>
+    </form>
+  </div>
   <?php endif ?>
-  <?= c_champ('description', 'Description', ['type' => 'textarea', 'valeur' => $espace['description']]) ?>
-  <?= c_champ('visibilite', 'Qui peut le voir ?', ['type' => 'select', 'valeur' => $espace['visibilite'], 'choix' => ESPACE_VISIBILITES]) ?>
-  <button type="submit" class="bouton bouton-secondaire">Enregistrer</button>
-</form>
 </details>
-<div class="en-ligne separe">
-  <?php if (!$espace['archive']): ?>
-  <form method="post" action="<?= $action('/archiver') ?>"><?= csrf_field() ?><button type="submit" class="bouton bouton-secondaire" data-confirmer="Archiver « <?= e($espace['titre']) ?> » ? Il sortira des listes et de l'agenda, sans rien perdre.">Archiver l'espace</button></form>
-  <?php endif ?>
-  <?php if (is_admin($membre)): ?>
-  <form method="post" action="<?= $action('/supprimer') ?>"><?= csrf_field() ?><button type="submit" class="bouton bouton-danger" data-confirmer="Supprimer définitivement « <?= e($espace['titre']) ?> », ses dates, ses fichiers et ses inscriptions ? C'est irréversible.">Supprimer définitivement</button></form>
-  <?php endif ?>
-</div>
 <?php endif ?>
 
 <?php if ($journal): ?>
-<section class="separe">
-  <h2>Journal</h2>
+<details class="separe"><summary>Journal</summary>
   <ul class="liste journal">
     <?php foreach ($journal as $ligne): ?>
     <li><time datetime="<?= e($ligne['le']) ?>"><?= e(date('d/m/Y H:i', strtotime($ligne['le']))) ?></time> · <?= e($ligne['email'] ? membre_nom($ligne) : 'Système') ?> · <?= e($ligne['action']) ?><?= $ligne['via'] === 'ia' ? ' <span class="badge">via IA</span>' : '' ?></li>
     <?php endforeach ?>
   </ul>
-</section>
+</details>
 <?php endif ?>
