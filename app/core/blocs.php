@@ -362,14 +362,17 @@ function page_mode_edition(): bool
     return !empty($_SESSION['mode_edition']);
 }
 
-// Barre discrète en haut d'une page, pour qui peut publier
+// Pour qui peut publier : un petit crayon flottant en bas à droite, qui ne touche pas à la mise en page ;
+// il déplie « Modifier cette page » et « Cliquer sur un bloc » ; en mode édition, il devient « Terminer »
 function page_barre_edition(array $page, bool $actif): string
 {
     $editeur = url('/admin/pages/' . (int) $page['id']);
-    $chemin = request_path();
-    return '<div class="barre-edition" role="region" aria-label="Édition">'
-        . '<a class="bouton bouton-secondaire" href="' . e($editeur) . '">' . c_icone('crayon') . 'Modifier cette page</a>'
-        . '<a class="lien-bouton" href="' . e(url($chemin) . '?edition=' . ($actif ? '0' : '1')) . '">' . ($actif ? 'Arrêter de cliquer pour modifier' : 'Cliquer sur un bloc pour le modifier') . '</a>'
-        . '</div>';
+    $ici = url(request_path());
+    if ($actif) {
+        return '<div class="crayon-flottant actif"><a class="crayon-bouton" href="' . e($ici . '?edition=0') . '">' . c_icone('crayon') . 'Terminer</a>'
+            . '<a class="crayon-lien" href="' . e($editeur) . '">Ouvrir l\'éditeur</a></div>';
+    }
+    return '<details class="crayon-flottant"><summary class="crayon-bouton" aria-label="Modifier la page">' . c_icone('crayon') . '</summary>'
+        . '<div class="crayon-menu"><a href="' . e($ici . '?edition=1') . '">Cliquer sur un bloc pour le modifier</a><a href="' . e($editeur) . '">Ouvrir l\'éditeur de la page</a></div></details>';
 }
 
