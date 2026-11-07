@@ -9,7 +9,7 @@
   <?php $ma = cotisation_a_jour($membre); $depuis = cotisation_depuis($membre); ?>
   <?= c_carte('Ma cotisation ' . cotisation_periode_libelle(cotisation_periode()), $ma
       ? '<p><span class="badge badge-ok">À jour</span></p><p class="petit">Payée le ' . e(date('d/m/Y', strtotime($ma['paye_le']))) . ($depuis !== null && $depuis < cotisation_periode() ? ' · fidèle depuis ' . e(cotisation_periode_libelle($depuis)) : '') . '</p>'
-      : '<p><span class="badge">Pas encore à jour</span></p><p class="petit">Si vous avez déjà payé, l\'enregistrement peut prendre quelques jours.</p>') ?>
+      : '<p><span class="badge">Pas encore à jour</span></p>' . (setting('lien_adhesion', '') !== '' ? c_bouton('Payer ma cotisation', (string) setting('lien_adhesion'), 'principal') . '<p class="petit">Utilisez la même adresse e-mail que votre compte.</p>' : '<p class="petit">Si vous avez déjà payé, l\'enregistrement peut prendre quelques jours.</p>')) ?>
   <?php $inscriptions = evenement_mes_inscriptions($membre); ?>
   <?= c_carte('Mes inscriptions', $inscriptions ? '<ul class="liste">' . implode('', array_map(fn($i) => '<li><a href="' . e(url('/espace/' . $i['slug'])) . '">' . e($i['titre']) . '</a> <span class="discret">· ' . e(evenement_date($i['debut'])) . ' · ' . e(INSCRIPTION_STATUTS[$i['statut']]) . ($i['statut'] === 'attente' ? ' n°' . (int) $i['rang'] : '') . '</span></li>', $inscriptions)) . '</ul>' : '<p>Aucune inscription à venir.</p>') ?>
   <?= c_carte("Clés d'API (IA, MCP)", '<p>Donner à un outil ou à une IA un accès avec vos droits.</p>' . c_bouton('Mes clés', '/compte/cles', 'secondaire')) ?>

@@ -14,7 +14,7 @@
   <li style="--niveau: <?= (int) $page['niveau'] ?>">
     <a href="<?= e(url('/admin/pages/' . (int) $page['id'])) ?>"><?= e($page['titre']) ?></a>
     <span class="discret">
-      <?= $page['est_accueil'] ? '· page d\'accueil ' : '' ?><?= $page['publiee'] ? '· publiée' : '· brouillon' ?><?= $page['dans_menu'] && $page['parent_id'] === null ? ' · dans le menu' : '' ?>
+      <?= $page['est_accueil'] ? '· page d\'accueil ' : '' ?><?= $page['publiee'] ? '· publiée' : '· brouillon' ?><?= $page['reservee_membres'] ? ' · membres seulement' : '' ?><?= $page['dans_menu'] && $page['parent_id'] === null ? ' · dans le menu' : '' ?>
     </span>
     <?php if ($page['publiee']): ?> · <a href="<?= e(url('/page/' . $page['slug'])) ?>">voir</a><?php endif ?>
   </li>

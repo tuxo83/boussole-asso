@@ -16,6 +16,9 @@ return [
                     FROM membre m LEFT JOIN cotisation c ON c.membre_id = m.id AND c.periode = ? LEFT JOIN membre s ON s.id = c.saisi_par
                     LEFT JOIN cotisation_relance r ON r.membre_id = m.id AND r.periode = ? WHERE m.actif = 1 ORDER BY c.paye_le IS NOT NULL, m.nom, m.prenom, m.email', [$periode, $periode]),
                 'effacer' => $effacer,
+                'doublons' => db_all('SELECT d.*, m.prenom, m.nom, m.email, c.paye_le AS premier_le, c.moyen AS premier_moyen FROM cotisation_doublon d JOIN membre m ON m.id = d.membre_id
+                    LEFT JOIN cotisation c ON c.membre_id = d.membre_id AND c.periode = d.periode WHERE d.traite = 0 ORDER BY d.signale_le'),
+                'nb_attente' => (int) db_value('SELECT COUNT(*) FROM membre WHERE en_attente = 1'),
                 'import' => $_SESSION['import_bilan'] ?? null,
             ]);
             unset($_SESSION['import_bilan']);
@@ -133,6 +136,12 @@ return [
             // Toujours 200 : HelloAsso ne réessaie pas inutilement, et l'appelant n'apprend rien
             http_response_code(200);
         }],
+        ['POST', '/cotisations/doublon', function () {
+            $par = require_right('cotisations');
+            db_query('UPDATE cotisation_doublon SET traite = 1 WHERE membre_id = ? AND periode = ? AND paye_le = ?', [(int) ($_POST['membre_id'] ?? 0), (int) ($_POST['periode'] ?? 0), (string) ($_POST['paye_le'] ?? '')]);
+            journal(null, $par, 'Paiement en double marqué traité');
+            redirect('/cotisations');
+        }],
         ['POST', '/cotisations/reglages', function () {
             $par = require_right('cotisations');
             $mois = (int) ($_POST['cotisation_mois_debut'] ?? 1);
@@ -144,6 +153,8 @@ return [
                 setting_set('cotisation_mois_debut', (string) $mois);
                 setting_set('cotisation_relance_jours', (string) $jours);
                 setting_set('cotisation_conservation_ans', (string) $ans);
+                $lien = trim((string) ($_POST['lien_adhesion'] ?? ''));
+                setting_set('lien_adhesion', preg_match('#^https://[^\s"<>]+$#', $lien) ? mb_substr($lien, 0, 300) : '');
                 journal(null, $par, 'Réglages des cotisations modifiés');
                 flash('succes', 'Réglages enregistrés.');
             }

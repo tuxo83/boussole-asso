@@ -10,7 +10,9 @@ function c_carte(string $titre, string $contenu_html, ?string $lien = null): str
 
 function c_bouton(string $libelle, string $lien, string $style = 'principal'): string
 {
-    return '<a class="bouton bouton-' . e($style) . '" href="' . e(url($lien)) . '">' . e($libelle) . '</a>';
+    // Lien externe (ex. HelloAsso) gardé tel quel, lien interne préfixé par l'adresse du site
+    $externe = preg_match('#^https://#', $lien) === 1;
+    return '<a class="bouton bouton-' . e($style) . '" href="' . e($externe ? $lien : url($lien)) . '"' . ($externe ? ' rel="noopener noreferrer"' : '') . '>' . e($libelle) . '</a>';
 }
 
 function c_alerte(string $type, string $message): string

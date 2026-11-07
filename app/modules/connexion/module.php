@@ -32,8 +32,8 @@ return [
                 render('connexion/connexion', ['titre' => 'Connexion', 'email' => $email, 'erreur' => 'E-mail ou mot de passe incorrect.']);
                 return;
             }
-            // Même réponse que l'adresse existe ou non : on ne révèle pas qui est inscrit
-            if ($member !== null) {
+            // Même réponse que l'adresse existe ou non : on ne révèle pas qui est inscrit (ni qui est désactivé)
+            if ($member !== null && (int) $member['actif']) {
                 [$link, $code] = create_login_token($member);
                 $site = (string) setting('nom_association', 'Boussole');
                 mail_send($member['email'], "Connexion à $site",
