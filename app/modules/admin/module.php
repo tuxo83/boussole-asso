@@ -76,6 +76,7 @@ function admin_settings_validate(array $input): array
         'rappel_participants' => $text('rappel_participants', 50),
         'construction_active' => ($input['construction_active'] ?? '') === '1' ? '1' : '',
         'construction_code' => preg_replace('/\D/', '', $text('construction_code', 20)),
+        'journal_conservation_ans' => (string) max(1, min(10, (int) ($input['journal_conservation_ans'] ?? 3))),
         'arrivee_cotisant' => connexion_arrivee_valide($text('arrivee_cotisant', 120)) ? $text('arrivee_cotisant', 120) : '',
         'arrivee_non_cotisant' => connexion_arrivee_valide($text('arrivee_non_cotisant', 120)) ? $text('arrivee_non_cotisant', 120) : '',
     ];
