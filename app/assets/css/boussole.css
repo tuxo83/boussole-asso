@@ -283,3 +283,4 @@ main h1 { margin-top: 1rem; }
 .sous-pages .cartes { grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); }
 /* La classe .conteneur (marges latérales) ne doit pas annuler l'espace vertical de la page */
 main.conteneur { padding-top: 2rem; padding-bottom: 4.5rem; }
+.badge-membres { background: #f3ecfb; border-color: #dccbf2; color: #5a2d91; }
