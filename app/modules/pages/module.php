@@ -19,6 +19,12 @@ return [
             render('pages/page', [
                 'titre' => $page['titre'],
                 'page' => $page,
+                'seo' => [
+                    'description' => ($page['description'] ?? '') ?: seo_description_auto($page['blocs']),
+                    'image' => seo_image_auto($page['blocs']),
+                    'type' => 'article',
+                    'index' => !$page['reservee_membres'],
+                ],
                 'chemin' => page_ancetres($page),
                 'enfants' => db_all('SELECT slug, titre, reservee_membres FROM page WHERE parent_id = ? AND publiee = 1 ORDER BY ordre, titre', [$page['id']]),
             ]);
@@ -63,8 +69,8 @@ return [
             if ($accueil) {
                 db_query('UPDATE page SET est_accueil = 0');
             }
-            db_query('UPDATE page SET titre = ?, blocs = ?, parent_id = ?, publiee = ?, dans_menu = ?, ordre = ?, est_accueil = ?, reservee_membres = ? WHERE id = ?', [
-                $titre, $blocs, page_parent_valide($_POST['parent_id'] ?? null, (int) $page['id']),
+            db_query('UPDATE page SET titre = ?, description = ?, blocs = ?, parent_id = ?, publiee = ?, dans_menu = ?, ordre = ?, est_accueil = ?, reservee_membres = ? WHERE id = ?', [
+                $titre, mb_substr(trim((string) ($_POST['description'] ?? '')), 0, 300) ?: null, $blocs, page_parent_valide($_POST['parent_id'] ?? null, (int) $page['id']),
                 empty($_POST['publiee']) ? 0 : 1, empty($_POST['dans_menu']) ? 0 : 1, (int) ($_POST['ordre'] ?? 50), $accueil,
                 empty($_POST['reservee_membres']) || $accueil ? 0 : 1, $page['id'],
             ]);
