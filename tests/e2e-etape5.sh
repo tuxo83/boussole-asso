@@ -39,7 +39,7 @@ check "bob : liste des membres refusée" "$(api "$BOB_WRITE" "$U/api/membres")" 
 check "MCP initialize" "$(mcp "$BOB_WRITE" '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"test","version":"1"}}}')$(grep -o '"protocolVersion":"[^"]*"' "$B")" '200"protocolVersion":"2025-06-18"'
 check "MCP notification : 202 sans corps" "$(mcp "$BOB_WRITE" '{"jsonrpc":"2.0","method":"notifications/initialized"}')$(wc -c < "$B")" "2020"
 # shellcheck disable=SC2016
-check "MCP tools/list : 10 outils" "$(mcp "$BOB_WRITE" '{"jsonrpc":"2.0","id":2,"method":"tools/list"}'; php -r 'echo count(json_decode(file_get_contents($argv[1]),true)["result"]["tools"]);' "$B")" "20010"
+check "MCP tools/list : 12 outils" "$(mcp "$BOB_WRITE" '{"jsonrpc":"2.0","id":2,"method":"tools/list"}'; php -r 'echo count(json_decode(file_get_contents($argv[1]),true)["result"]["tools"]);' "$B")" "20012"
 check "MCP ajouter_date_cle" "$(mcp "$BOB_WRITE" '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"ajouter_date_cle","arguments":{"slug":"projet-bob","date":"2027-03-01","libelle":"Rendu"}}}'; grep -o '"isError":[a-z]*' "$B")" '200"isError":false'
 check "MCP : outil refusé → isError" "$(mcp "$BOB_WRITE" '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"lire_espace","arguments":{"slug":"comite-secret"}}}'; grep -o '"isError":[a-z]*' "$B")" '200"isError":true'
 check "MCP : méthode inconnue → -32601" "$(mcp "$BOB_WRITE" '{"jsonrpc":"2.0","id":5,"method":"resources/list"}'; grep -o '"code":-32601' "$B")" '200"code":-32601'

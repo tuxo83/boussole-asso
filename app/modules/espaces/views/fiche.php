@@ -10,6 +10,7 @@
 <?php endif ?>
 
 <?= c_texte($espace['description']) ?>
+<?php if ($espace['type'] === 'evenement'): ?><?= partial('evenements/bloc', evenement_vue($espace, $membre)) ?><?php endif ?>
 
 <?php if ($peut_contribuer && $espace['meteo'] === 'soleil' && array_filter($alertes, fn($a) => str_contains($a, 'dépassée'))): ?>
 <p class="petit">Une date clé est dépassée : la météo est-elle toujours « À jour » ?</p>

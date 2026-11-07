@@ -37,6 +37,12 @@ function db_all(string $sql, array $params = []): array
     return db_query($sql, $params)->fetchAll();
 }
 
+function db_value(string $sql, array $params = []): mixed
+{
+    $value = db_query($sql, $params)->fetchColumn();
+    return $value === false ? null : $value;
+}
+
 function db_one(string $sql, array $params = []): ?array
 {
     $row = db_query($sql, $params)->fetch();

@@ -30,6 +30,7 @@
 ## Pages du site : éditeur à blocs
 - Éditeur à blocs open source (Editor.js, licence Apache 2.0), embarqué dans le dépôt : aucun CDN, aucun service externe.
 - Le contenu est enregistré en blocs (JSON) et affiché avec nos propres composants : jamais de HTML libre.
+- Inscriptions : vœux sans course au clic ; groupes 0 (invités) à 3 calculés sur la moyenne des participations sur 12 mois ; tirage reproductible ; liste d'attente avec promotion seulement si une place est réellement libre. Inscrit = participation (pas de pointage des présences pour l'instant).
 - Blocs dynamiques en nombre limité (liste d'événements, actualités, adhésion, contact, espaces publics), sans plugins.
 - Images : ré-encodées à l'envoi (suppression des métadonnées EXIF, GPS…), formats image uniquement. Une image d'une page publique est publique ; une image ou un fichier d'un espace ou d'un événement n'est servi qu'aux personnes qui ont le droit de voir cet espace.
 

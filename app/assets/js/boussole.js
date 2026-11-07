@@ -50,3 +50,16 @@ document.querySelectorAll('[data-confirmer]').forEach(function (button) {
     if (!window.confirm(button.getAttribute('data-confirmer'))) { event.preventDefault(); }
   });
 });
+
+// Validation d'une liste d'événement : compteur de retenus, dépassement signalé (pas bloqué)
+(function () {
+  const form = document.getElementById('validation');
+  if (!form) { return; }
+  const places = parseInt(form.querySelector('[data-places]').dataset.places, 10);
+  const update = function () {
+    const count = form.querySelectorAll('input[name="retenus[]"]:checked').length;
+    document.getElementById('compte-retenus').textContent = count;
+    document.getElementById('depassement').hidden = count <= places;
+  };
+  form.addEventListener('change', update);
+})();

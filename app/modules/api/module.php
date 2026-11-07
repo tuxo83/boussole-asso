@@ -16,6 +16,8 @@ return [
         ['GET', '/api/pages/{id}', fn(array $p) => api_repondre(fn() => api_page((int) $p['id']))],
         ['POST', '/api/pages', fn() => api_repondre(fn() => api_page_ecrire(null, api_corps()))],
         ['POST', '/api/pages/{id}', fn(array $p) => api_repondre(fn() => api_page_ecrire((int) $p['id'], api_corps()))],
+        ['GET', '/api/evenements', fn() => api_repondre(fn() => api_evenements())],
+        ['POST', '/api/evenements/{slug}/inscription', fn(array $p) => api_repondre(fn() => api_inscription($p['slug'], (string) (api_corps()['action'] ?? 'voeu')))],
         ['GET', '/api/membres', fn() => api_repondre(fn() => api_membres())],
         ['POST', '/mcp', fn() => mcp_repondre()],
         // Transport HTTP du MCP sans flux serveur : GET n'est pas proposé
@@ -69,6 +71,9 @@ function mcp_outils(): array
             'inputSchema' => $objet(['titre' => $texte('Titre'), 'texte' => $texte('Texte simple'), 'blocs' => ['type' => 'object'], 'parent_id' => ['type' => 'integer'], 'publiee' => ['type' => 'boolean']], ['titre'])],
         ['name' => 'modifier_page', 'description' => 'Modifier une page (titre, contenu, parent, publication).',
             'inputSchema' => $objet(['id' => ['type' => 'integer'], 'titre' => $texte('Titre'), 'texte' => $texte('Texte simple'), 'blocs' => ['type' => 'object'], 'parent_id' => ['type' => 'integer'], 'publiee' => ['type' => 'boolean']], ['id'])],
+        ['name' => 'lister_evenements', 'description' => "Événements à venir visibles, avec date, lieu, places et ma situation (vœu, inscrit, liste d'attente…).", 'inputSchema' => $objet([])],
+        ['name' => 'inscription_evenement', 'description' => "M'inscrire à un événement ou me désister (pour moi seulement). Places limitées : on dépose un vœu, attribué à la clôture de façon équitable.",
+            'inputSchema' => $objet(['slug' => $texte("Identifiant de l'événement"), 'action' => ['type' => 'string', 'enum' => ['voeu', 'retirer', 'desister', 'confirmer', 'decliner']]], ['slug', 'action'])],
         ['name' => 'lister_membres', 'description' => 'Membres (droit « membres » nécessaire).', 'inputSchema' => $objet([])],
     ];
 }
@@ -85,6 +90,8 @@ function mcp_appeler(string $name, array $a): array
         'lire_page' => api_page((int) ($a['id'] ?? 0)),
         'creer_page' => api_page_ecrire(null, $a),
         'modifier_page' => api_page_ecrire((int) ($a['id'] ?? 0), $a),
+        'lister_evenements' => api_evenements(),
+        'inscription_evenement' => api_inscription((string) ($a['slug'] ?? ''), (string) ($a['action'] ?? '')),
         'lister_membres' => api_membres(),
         default => throw new ApiErreur("Outil inconnu : $name", 404),
     };
@@ -123,7 +130,7 @@ function mcp_repondre(): void
                 'protocolVersion' => $version,
                 'capabilities' => ['tools' => (object) []],
                 'serverInfo' => ['name' => 'boussole', 'version' => BOUSSOLE_VERSION],
-                'instructions' => 'Outils pour ' . setting('nom_association', 'cette association') . ' : espaces, dates clés, pages du site. Les droits sont ceux du membre propriétaire de la clé.',
+                'instructions' => 'Outils pour ' . setting('nom_association', 'cette association') . ' : espaces, dates clés, pages du site, événements et inscriptions. Les droits sont ceux du membre propriétaire de la clé.',
             ]]);
             return;
         case 'ping':

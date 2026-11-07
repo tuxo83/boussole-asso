@@ -5,6 +5,8 @@
   <?= c_carte('Double authentification', (int) $membre['totp_actif'] === 1
       ? '<p>Active.</p>'
       : '<p>Inactive' . (member_rights($membre['id']) ? ' : obligatoire pour la gestion.' : '.') . '</p>' . c_bouton('Activer', '/compte/double-authentification')) ?>
+  <?php $inscriptions = evenement_mes_inscriptions($membre); ?>
+  <?= c_carte('Mes inscriptions', $inscriptions ? '<ul class="liste">' . implode('', array_map(fn($i) => '<li><a href="' . e(url('/espace/' . $i['slug'])) . '">' . e($i['titre']) . '</a> <span class="discret">· ' . e(evenement_date($i['debut'])) . ' · ' . e(INSCRIPTION_STATUTS[$i['statut']]) . ($i['statut'] === 'attente' ? ' n°' . (int) $i['rang'] : '') . '</span></li>', $inscriptions)) . '</ul>' : '<p>Aucune inscription à venir.</p>') ?>
   <?= c_carte("Clés d'API (IA, MCP)", '<p>Donner à un outil ou à une IA un accès avec vos droits.</p>' . c_bouton('Mes clés', '/compte/cles', 'secondaire')) ?>
   <?php if (is_admin($membre)): ?>
   <?= c_carte("Toutes les clés", '<p>Voir et révoquer les clés de tous les membres.</p>' . c_bouton('Toutes les clés', '/admin/cles', 'secondaire')) ?>
