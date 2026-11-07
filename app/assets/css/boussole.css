@@ -92,3 +92,19 @@ details summary { cursor: pointer; color: var(--couleur-principale); margin: .5r
 .fiche-membre.inactif summary { color: #6a6a6a; }
 .petit { font-size: .92rem; margin: .25rem 0; }
 .carte p { margin: .35rem 0; }
+
+/* Pages et éditeur */
+.ariane { font-size: .92rem; margin-bottom: .5rem; }
+.contenu figure { margin: 1.5rem 0; }
+.contenu img { max-width: 100%; height: auto; border-radius: var(--rayon); }
+.contenu figcaption { color: #4a4a4a; font-size: .92rem; }
+.contenu blockquote { border-left: 4px solid var(--couleur-accent); margin: 1.5rem 0; padding: .25rem 1rem; }
+.contenu hr { border: 0; border-top: 1px solid var(--bordure); margin: 2rem 0; }
+.sous-pages { margin-top: 2rem; }
+.arbre li { padding-left: calc(var(--niveau) * 1.5rem); }
+.formulaire.large { max-width: 52rem; }
+.editeur { border: 1px solid #8a94a3; border-radius: var(--rayon); padding: 1rem 1rem 1rem 3.5rem; min-height: 12rem; background: #fff; }
+.bloc-image { display: flex; flex-direction: column; gap: .5rem; }
+.bloc-image img { max-width: 100%; max-height: 20rem; object-fit: contain; }
+.bloc-image input[type="text"], .bloc-image input:not([type]) { font: inherit; padding: .4rem; border: 1px solid var(--bordure); border-radius: var(--rayon); }
+.bloc-dynamique { background: var(--fond-doux); padding: .75rem; border-radius: var(--rayon); }

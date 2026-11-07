@@ -5,6 +5,9 @@
   <?= c_carte('Double authentification', (int) $membre['totp_actif'] === 1
       ? '<p>Active.</p>'
       : '<p>Inactive' . (member_rights($membre['id']) ? ' : obligatoire pour la gestion.' : '.') . '</p>' . c_bouton('Activer', '/compte/double-authentification')) ?>
+  <?php if (has_right($membre, 'publications')): ?>
+  <?= c_carte('Pages du site', '<p>Créer et modifier les pages publiques.</p>' . c_bouton('Gérer les pages', '/admin/pages', 'secondaire')) ?>
+  <?php endif ?>
   <?php if (has_right($membre, 'membres')): ?>
   <?= c_carte('Membres', '<p>Ajouter, modifier, donner des droits.</p>' . c_bouton('Gérer les membres', '/admin/membres', 'secondaire')) ?>
   <?php endif ?>

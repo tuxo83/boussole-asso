@@ -8,6 +8,7 @@ return [
         ['GET', '/', function () {
             render('accueil/accueil', [
                 'presentation' => (string) setting('presentation', ''),
+                'page' => db_one('SELECT * FROM page WHERE est_accueil = 1 AND publiee = 1 LIMIT 1'),
             ]);
         }],
         // CSS personnalisé de l'installation, servi comme une feuille de style (jamais dans le HTML)
