@@ -2,9 +2,10 @@
 <?php if ($erreur): ?><?= c_alerte('erreur', $erreur) ?><?php endif ?>
 <p><?= e($membre['email']) ?></p>
 <div class="grille">
-  <?= c_carte('Double authentification', (int) $membre['totp_actif'] === 1
-      ? '<p>Active.</p>'
-      : '<p>Inactive' . (member_rights($membre['id']) ? ' : obligatoire pour la gestion.' : '.') . '</p>' . c_bouton('Activer', '/compte/double-authentification')) ?>
+  <?php $nb_cles = (int) db_value('SELECT COUNT(*) FROM cle_securite WHERE membre_id = ?', [$membre['id']]); ?>
+  <?= c_carte('Sécurité du compte', '<p>' . ($nb_cles ? $nb_cles . ' clé(s) de sécurité' : 'Aucune clé de sécurité') . ((int) $membre['totp_actif'] === 1 ? ' · application active' : '') . '</p>'
+      . (member_rights($membre['id']) && !$nb_cles && !(int) $membre['totp_actif'] ? '<p class="petit">Conseillé pour la gestion : ajoutez une clé (sinon un code par e-mail vous sera demandé).</p>' : '')
+      . c_bouton('Gérer', '/compte/double-authentification', 'secondaire')) ?>
   <?php $ma = cotisation_a_jour($membre); $depuis = cotisation_depuis($membre); ?>
   <?= c_carte('Ma cotisation ' . cotisation_periode_libelle(cotisation_periode()), $ma
       ? '<p><span class="badge badge-ok">À jour</span></p><p class="petit">Payée le ' . e(date('d/m/Y', strtotime($ma['paye_le']))) . ($depuis !== null && $depuis < cotisation_periode() ? ' · fidèle depuis ' . e(cotisation_periode_libelle($depuis)) : '') . '</p>'

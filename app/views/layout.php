@@ -45,7 +45,7 @@ $chemin = request_path();
 <footer class="pied">
   <div class="conteneur">
     <p><?= e(setting('pied_de_page', '') ?? '') ?></p>
-    <p class="discret"><?= e(t('pied.propulse')) ?></p>
+    <p class="discret"><a href="<?= e(BOUSSOLE_DEPOT) ?>" rel="noopener"><?= e(t('pied.propulse')) ?></a>, logiciel libre</p>
   </div>
 </footer>
 <script src="<?= e(url('/assets/js/boussole.js')) ?>?v=<?= e(BOUSSOLE_VERSION) ?>" defer></script>
