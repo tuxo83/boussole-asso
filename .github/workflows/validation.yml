@@ -56,20 +56,26 @@ jobs:
           fi
 
   tests:
-    name: Tests complets PHP ${{ matrix.php }}
+    name: Tests complets PHP ${{ matrix.php }}, ${{ matrix.base.nom }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         # La plus ancienne version encore rencontrée chez les hébergeurs, et la plus récente
         php: ["8.1", "8.5"]
+        # Les hébergeurs proposent MariaDB ou MySQL : leurs syntaxes divergent (ex. ADD COLUMN IF NOT EXISTS)
+        base:
+          - { nom: "MariaDB 11", image: "mariadb:11", sante: "healthcheck.sh --connect" }
+          - { nom: "MySQL 8.0", image: "mysql:8.0", sante: "mysqladmin ping -h 127.0.0.1 -ptests-seulement" }
+          - { nom: "MySQL 8.4", image: "mysql:8.4", sante: "mysqladmin ping -h 127.0.0.1 -ptests-seulement" }
     services:
-      mariadb:
-        image: mariadb:11
+      base:
+        image: ${{ matrix.base.image }}
         env:
           MARIADB_ROOT_PASSWORD: tests-seulement
+          MYSQL_ROOT_PASSWORD: tests-seulement
         ports: ["3306:3306"]
-        options: --health-cmd="healthcheck.sh --connect" --health-interval=5s --health-retries=20
+        options: --health-cmd="${{ matrix.base.sante }}" --health-interval=5s --health-retries=30
     steps:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
@@ -80,6 +86,7 @@ jobs:
         run: |
           php tests/unit-blocs.php
           php tests/unit-webauthn.php
+          php tests/unit-migrations.php
           for t in 2 3 5 6 7 8 9 11 12; do
             bash "tests/e2e-etape$t.sh" boussole_test root tests-seulement "$RUNNER_TEMP/e2e$t"
           done
