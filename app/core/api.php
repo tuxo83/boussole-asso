@@ -2,7 +2,30 @@
 // API et MCP : clés personnelles, et les actions communes (mêmes droits que sur le site)
 declare(strict_types=1);
 
-const CLE_DUREES = [7 => '7 jours', 30 => '30 jours', 90 => '90 jours', 365 => '1 an'];
+const CLE_DUREES = [7 => '7 jours', 30 => '30 jours', 90 => '90 jours', 365 => '1 an', 0 => 'Sans limite (révocable à tout moment)'];
+
+function cle_active(array $cle): bool
+{
+    return !$cle['revoquee'] && ($cle['expire_le'] === null || $cle['expire_le'] >= date('Y-m-d'));
+}
+
+function cle_validite(array $cle): string
+{
+    return match (true) {
+        (bool) $cle['revoquee'] => 'révoquée',
+        $cle['expire_le'] === null => 'sans limite de durée',
+        cle_active($cle) => "jusqu'au " . date('d/m/Y', strtotime($cle['expire_le'])),
+        default => 'expirée',
+    };
+}
+
+// Configuration MCP prête à coller dans un client MCP : adresse du serveur et clé
+function mcp_configuration(string $cle): string
+{
+    $nom = trim(preg_replace('/[^a-z0-9]+/', '-', mb_strtolower(iconv('UTF-8', 'ASCII//TRANSLIT', (string) setting('nom_association', 'boussole')) ?: 'boussole')), '-') ?: 'boussole';
+    return json_encode(['mcpServers' => [$nom => ['type' => 'http', 'url' => absolute_url('/mcp'), 'headers' => ['Authorization' => 'Bearer ' . $cle]]]],
+        JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+}
 
 final class ApiErreur extends RuntimeException
 {
@@ -36,8 +59,8 @@ function api_creer_cle(array $member, string $libelle, string $portee, int $jour
 {
     $prefixe = bin2hex(random_bytes(4));
     $cle = 'bsl_' . $prefixe . '_' . bin2hex(random_bytes(20));
-    db_query('INSERT INTO cle_api (membre_id, libelle, prefixe, empreinte, portee, expire_le) VALUES (?, ?, ?, ?, ?, CURDATE() + INTERVAL ? DAY)',
-        [$member['id'], $libelle, $prefixe, hash('sha256', $cle), $portee === 'ecriture' ? 'ecriture' : 'lecture', $jours]);
+    db_query('INSERT INTO cle_api (membre_id, libelle, prefixe, empreinte, portee, expire_le) VALUES (?, ?, ?, ?, ?, IF(? = 0, NULL, CURDATE() + INTERVAL ? DAY))',
+        [$member['id'], $libelle, $prefixe, hash('sha256', $cle), $portee === 'ecriture' ? 'ecriture' : 'lecture', $jours, $jours]);
     return $cle;
 }
 
@@ -51,7 +74,7 @@ function api_authentifier(): void
     if (ip_blocked() || too_many_attempts('api|' . $m[2], 600, 15)) {
         throw new ApiErreur('Trop de requêtes, réessayez plus tard', 429);
     }
-    $cle = db_one('SELECT * FROM cle_api WHERE prefixe = ? AND revoquee = 0 AND expire_le >= CURDATE()', [$m[2]]);
+    $cle = db_one('SELECT * FROM cle_api WHERE prefixe = ? AND revoquee = 0 AND (expire_le IS NULL OR expire_le >= CURDATE())', [$m[2]]);
     if ($cle === null || !hash_equals($cle['empreinte'], hash('sha256', $m[1]))) {
         too_many_attempts('ip|' . client_ip(), 30);
         throw new ApiErreur('Clé d\'API invalide, expirée ou révoquée', 401);

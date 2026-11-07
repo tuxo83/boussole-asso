@@ -2,9 +2,14 @@
 <p>Une clé permet à un outil ou à une IA (connexion MCP) d'agir avec <strong>vos</strong> droits, jamais plus. Les actions faites avec une clé sont marquées « via IA » dans les journaux.</p>
 <?php if ($nouvelle): ?>
 <div class="alerte alerte-succes" role="status">
-  <p><strong>Votre nouvelle clé</strong> : copiez-la maintenant, elle ne sera plus affichée.</p>
-  <p><code class="cle"><?= e($nouvelle) ?></code></p>
-  <p class="petit">Adresse du serveur MCP : <code><?= e(absolute_url('/mcp')) ?></code> · en-tête <code>Authorization: Bearer …</code></p>
+  <p><strong>Clé créée.</strong> Elle ne sera plus affichée : copiez-la maintenant.</p>
+  <h3>Le plus simple : copier la configuration</h3>
+  <p class="petit">À coller dans le réglage « serveurs MCP » de votre outil d'IA (son fichier de configuration). Elle contient déjà l'adresse et la clé.</p>
+  <pre class="config" id="config-mcp"><?= e(mcp_configuration($nouvelle)) ?></pre>
+  <p><button type="button" class="bouton bouton-principal" data-copier="config-mcp">Copier la configuration</button></p>
+  <h3>Ou les deux informations séparément</h3>
+  <?= c_tableau(['', ''], [['Adresse du serveur', absolute_url('/mcp')], ['Clé', $nouvelle]]) ?>
+  <p class="petit">Pour un outil technique : la clé s'envoie dans l'en-tête HTTP <code>Authorization</code>, précédée du mot <code>Bearer</code> et d'un espace.</p>
 </div>
 <?php endif ?>
 <form method="post" action="<?= e(url('/compte/cles')) ?>" class="formulaire">
@@ -17,9 +22,9 @@
 <?php if ($cles): ?>
 <h2>Mes clés</h2>
 <ul class="liste">
-  <?php foreach ($cles as $cle): $active = !$cle['revoquee'] && $cle['expire_le'] >= date('Y-m-d'); ?>
+  <?php foreach ($cles as $cle): $active = cle_active($cle); ?>
   <li><strong><?= e($cle['libelle']) ?></strong> <span class="discret">· bsl_<?= e($cle['prefixe']) ?>_… · <?= $cle['portee'] === 'ecriture' ? 'lecture et écriture' : 'lecture seule' ?>
-    · <?= $cle['revoquee'] ? 'révoquée' : ($active ? "jusqu'au " . e(date('d/m/Y', strtotime($cle['expire_le']))) : 'expirée') ?>
+    · <?= e(cle_validite($cle)) ?>
     · <?= $cle['derniere_utilisation'] ? 'utilisée le ' . e(date('d/m/Y H:i', strtotime($cle['derniere_utilisation']))) : 'jamais utilisée' ?></span>
     <?php if ($active): ?>
     <form method="post" action="<?= e(url('/compte/cles/' . (int) $cle['id'] . '/revoquer')) ?>" class="en-ligne"><?= csrf_field() ?><button type="submit" class="lien-bouton" data-confirmer="Révoquer la clé « <?= e($cle['libelle']) ?> » ?">révoquer</button></form>
