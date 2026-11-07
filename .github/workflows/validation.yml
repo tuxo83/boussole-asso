@@ -54,3 +54,32 @@ jobs:
             echo "Adresse IP trouvée : à retirer"
             exit 1
           fi
+
+  tests:
+    name: Tests complets PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # La plus ancienne version encore rencontrée chez les hébergeurs, et la plus récente
+        php: ["8.1", "8.5"]
+    services:
+      mariadb:
+        image: mariadb:11
+        env:
+          MARIADB_ROOT_PASSWORD: tests-seulement
+        ports: ["3306:3306"]
+        options: --health-cmd="healthcheck.sh --connect" --health-interval=5s --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: pdo_mysql, mbstring, gd, dom, curl, zip, openssl
+      - name: Tests unitaires et de bout en bout
+        run: |
+          php tests/unit-blocs.php
+          for t in 2 3 5 6 7 8 9; do
+            bash "tests/e2e-etape$t.sh" boussole_test root tests-seulement "$RUNNER_TEMP/e2e$t"
+          done
+          bash tests/e2e-installateur.sh boussole_test root tests-seulement "$RUNNER_TEMP/installateur"

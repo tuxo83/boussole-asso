@@ -22,6 +22,8 @@ function bloc_inline(string $html): string
     }
     $doc = new DOMDocument();
     $previous = libxml_use_internal_errors(true);
+    // Un « < » qui n'ouvre pas une balise est du texte (« 3 < 5 ») : les anciennes versions de libxml le perdraient
+    $html = preg_replace('/<(?![a-zA-Z\/!])/', '&lt;', $html);
     $doc->loadHTML('<?xml encoding="utf-8"?><div>' . $html . '</div>', LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
     libxml_clear_errors();
     libxml_use_internal_errors($previous);
