@@ -8,6 +8,7 @@ const BLOCS_DYNAMIQUES = [
     'evenements' => 'Liste des événements publics',
     'espaces-publics' => 'Liste des espaces publics',
     'espace-membres' => 'Bouton « Espace membres »',
+    'adhesion' => 'Bouton « Adhérer » (lien HelloAsso des réglages)',
 ];
 
 // Mise en forme en ligne : on reconstruit le HTML à partir d'une liste blanche, jamais de copie brute
@@ -194,6 +195,9 @@ function bloc_dynamique(string $bloc): string
                 $html .= c_carte($espace['titre'], '<p>' . e(mb_strimwidth($espace['description'], 0, 200, '…')) . '</p>', '/espace/' . $espace['slug']);
             }
             return $html . '</div>';
+        case 'adhesion':
+            $lien = (string) setting('lien_adhesion', '');
+            return $lien !== '' ? '<p><a class="bouton bouton-principal" href="' . e($lien) . '" rel="noopener noreferrer">Adhérer ou renouveler sur HelloAsso</a></p>' : '';
         case 'espace-membres':
             return '<p>' . c_bouton(current_member() !== null ? 'Mon espace' : 'Espace membres', current_member() !== null ? '/compte' : '/connexion') . '</p>';
     }

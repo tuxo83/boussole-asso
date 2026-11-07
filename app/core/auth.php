@@ -15,7 +15,8 @@ function current_member(): ?array
     if ($member === false) {
         $member = null;
         if (!empty($_SESSION['membre_id']) && !empty($_SESSION['connecte'])) {
-            $member = db_one('SELECT * FROM membre WHERE id = ?', [$_SESSION['membre_id']]);
+            // Compte désactivé ou en attente : la session ouverte cesse aussitôt
+            $member = db_one('SELECT * FROM membre WHERE id = ? AND actif = 1', [$_SESSION['membre_id']]);
         }
     }
     return $member;
@@ -90,6 +91,10 @@ function member_exige_2fa(array $member): bool
 // Première étape réussie (mot de passe, lien ou code) : la session est connectée, ou attend le 2e facteur
 function login_first_step(array $member, string $facteur): void
 {
+    if (!(int) $member['actif']) {
+        flash('erreur', (int) ($member['en_attente'] ?? 0) ? 'Votre adhésion est en attente de validation : vous recevrez un e-mail dès qu\'elle sera validée.' : 'Ce compte est désactivé. Contactez l\'association.');
+        redirect('/connexion');
+    }
     session_regenerate_id(true);
     $_SESSION['membre_id'] = (int) $member['id'];
     $_SESSION['facteurs'] = [$facteur];

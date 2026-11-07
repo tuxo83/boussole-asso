@@ -14,6 +14,7 @@
     <legend>Publication</legend>
     <?= c_champ('parent_id', 'Page parente', ['type' => 'select', 'valeur' => (string) $page['parent_id'], 'choix' => ['' => 'Aucune (premier niveau)'] + array_column($parents, 'titre', 'id')]) ?>
     <label class="case"><input type="checkbox" name="publiee" value="1"<?= $page['publiee'] ? ' checked' : '' ?>> Publiée (visible par tous)</label>
+    <label class="case"><input type="checkbox" name="reservee_membres" value="1"<?= $page['reservee_membres'] ? ' checked' : '' ?>> Réservée aux membres connectés (ex. comité directeur, documents internes)</label>
     <label class="case"><input type="checkbox" name="dans_menu" value="1"<?= $page['dans_menu'] ? ' checked' : '' ?>> Dans le menu (pages de premier niveau)</label>
     <label class="case"><input type="checkbox" name="est_accueil" value="1"<?= $page['est_accueil'] ? ' checked' : '' ?>> Contenu de la page d'accueil</label>
     <?= c_champ('ordre', 'Ordre (plus petit = plus haut)', ['type' => 'number', 'valeur' => (string) $page['ordre']]) ?>

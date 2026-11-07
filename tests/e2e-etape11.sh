@@ -41,4 +41,13 @@ check "essais limités (10 par 15 minutes)" "$(post "$U/acces" "$U/acces" -d 'co
 reglages '' 654321 >/dev/null
 check "mode désactivé : site ouvert, plus de bandeau" "$(as visiteur3; c "$U/" | cut -c1-3) $(grep -c 'bandeau-construction' "$B")" "200 0"
 check "page d'accès inutile : renvoi à l'accueil" "$(c "$U/acces")" "303 $U/"
+# Pages réservées aux membres connectés
+sql "INSERT INTO page (slug, titre, contenu, blocs, publiee, dans_menu, reservee_membres) VALUES ('comite-directeur', 'Comité directeur', '', '{\"blocks\":[{\"type\":\"paragraph\",\"data\":{\"text\":\"Président : X\"}}]}', 1, 1, 1), ('association', 'L''association', '', '{\"blocks\":[]}', 1, 1, 0)"
+sql "UPDATE page SET parent_id = (SELECT id FROM (SELECT id FROM page WHERE slug = 'association') t) WHERE slug = 'comite-directeur'"
+sql "UPDATE page SET parent_id = NULL WHERE slug = 'comite-directeur'"
+as visiteur4
+check "page réservée : un visiteur est envoyé vers la connexion" "$(c "$U/page/comite-directeur")" "303 $U/connexion"
+check "page réservée : absente du menu pour un visiteur" "$(c "$U/" >/dev/null; grep -c 'Comité directeur' "$B")" "0"
+as admin
+check "page réservée : visible et dans le menu une fois connecté" "$(c "$U/page/comite-directeur" | cut -c1-3) $(grep -c 'Président : X' "$B") $(grep -c '>Comité directeur<' "$B")" "200 1 [1-9]*"
 bilan
