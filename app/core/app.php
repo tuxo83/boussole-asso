@@ -25,6 +25,7 @@ require __DIR__ . '/cotisations.php';
 require __DIR__ . '/rappels.php';
 require __DIR__ . '/helloasso.php';
 require __DIR__ . '/taches.php';
+require __DIR__ . '/construction.php';
 require __DIR__ . '/api.php';
 
 // Configuration écrite par install.sh ou par l'assistant d'installation ; null tant qu'elle n'existe pas
@@ -79,6 +80,12 @@ function boussole_run(): void
     }
     if ($installed) {
         migrate_if_needed();
+        if (construction_active()) {
+            header('X-Robots-Tag: noindex, nofollow');
+            if (!construction_autorise($path)) {
+                redirect('/acces?suite=' . rawurlencode($path));
+            }
+        }
     }
 
     $router = new Router();

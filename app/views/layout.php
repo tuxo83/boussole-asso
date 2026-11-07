@@ -18,6 +18,9 @@ $chemin = request_path();
 </head>
 <body>
 <a class="lien-evitement" href="#contenu">Aller au contenu</a>
+<?php if (installation_done() && construction_active()): ?>
+<div class="bandeau-construction" role="note"><?= c_icone('attention') ?><span><strong>Site en construction</strong> : version de travail, contenu en cours de rédaction.</span></div>
+<?php endif ?>
 <header class="entete">
   <div class="conteneur entete-interne">
     <a class="marque" href="<?= e(url('/')) ?>">

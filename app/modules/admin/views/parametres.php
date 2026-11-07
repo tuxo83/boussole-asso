@@ -17,6 +17,11 @@
     <?= c_champ('css_personnalise', 'CSS personnalisé', ['type' => 'textarea', 'valeur' => $v['css_personnalise'] ?? '', 'aide' => 'Facultatif, chargé après la feuille de style de base.', 'erreur' => $erreurs['css_personnalise'] ?? null]) ?>
   </fieldset>
   <fieldset>
+    <legend>Site en construction</legend>
+    <label class="case"><input type="checkbox" name="construction_active" value="1"<?= ($v['construction_active'] ?? '') === '1' ? ' checked' : '' ?>> Site en construction : bandeau sur chaque page, code d'accès pour les visiteurs</label>
+    <?= c_champ('construction_code', "Code d'accès (6 chiffres)", ['valeur' => $v['construction_code'] ?? '', 'aide' => 'À transmettre aux personnes invitées à voir le site. Vide : un code est tiré au hasard. Les membres connectés n\'en ont pas besoin. Changer le code ferme l\'accès à ceux qui avaient l\'ancien.', 'erreur' => $erreurs['construction_code'] ?? null]) ?>
+  </fieldset>
+  <fieldset>
     <legend>Rappels par e-mail</legend>
     <p class="petit">Nombres de jours avant l'échéance, séparés par des virgules. Vide : aucun rappel.</p>
     <?= c_champ('rappel_jalons', 'Dates clés des comités, commissions et projets', ['valeur' => $v['rappel_jalons'] ?? RAPPEL_DELAIS_DEFAUT['rappel_jalons'], 'erreur' => $erreurs['rappel_jalons'] ?? null]) ?>
