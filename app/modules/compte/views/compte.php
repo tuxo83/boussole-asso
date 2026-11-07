@@ -16,7 +16,7 @@
   <?= c_champ('confirmation', 'Confirmation', ['type' => 'password']) ?>
   <button type="submit" class="bouton bouton-secondaire">Enregistrer</button>
 </form>
-<form method="post" action="<?= e(url('/deconnexion')) ?>">
+<form method="post" action="<?= e(url('/deconnexion')) ?>" class="separe">
   <?= csrf_field() ?>
   <button type="submit" class="bouton bouton-secondaire">Se déconnecter</button>
 </form>

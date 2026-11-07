@@ -38,3 +38,8 @@
     });
   });
 })();
+
+// Sélecteur de couleur : affiche la valeur choisie à côté de la pastille
+document.querySelectorAll('.couleur input[type="color"]').forEach(function (input) {
+  input.addEventListener('input', function () { input.nextElementSibling.textContent = input.value; });
+});

@@ -21,13 +21,13 @@
     <?= c_champ('mail_expediteur', 'Adresse d\'expédition', ['type' => 'email', 'valeur' => $v['mail_expediteur'] ?? '', 'erreur' => $erreurs['mail_expediteur'] ?? null]) ?>
     <?= c_champ('smtp_hote', 'Serveur SMTP', ['valeur' => $v['smtp_hote'] ?? '', 'aide' => "Vide : la fonction d'envoi de l'hébergeur est utilisée."]) ?>
     <?= c_champ('smtp_port', 'Port', ['valeur' => $v['smtp_port'] ?? '587', 'erreur' => $erreurs['smtp_port'] ?? null]) ?>
-    <?= c_champ('smtp_securite', 'Sécurité (starttls, ssl ou aucune)', ['valeur' => $v['smtp_securite'] ?? 'starttls', 'erreur' => $erreurs['smtp_securite'] ?? null]) ?>
+    <?= c_champ('smtp_securite', 'Sécurité de la connexion', ['type' => 'select', 'valeur' => $v['smtp_securite'] ?? 'starttls', 'choix' => ['starttls' => 'STARTTLS (port 587, le plus courant)', 'ssl' => 'SSL / TLS (port 465)', 'aucune' => 'Aucune (déconseillé)'], 'erreur' => $erreurs['smtp_securite'] ?? null]) ?>
     <?= c_champ('smtp_utilisateur', 'Utilisateur', ['valeur' => $v['smtp_utilisateur'] ?? '']) ?>
     <?= c_champ('smtp_mot_de_passe', 'Mot de passe', ['type' => 'password', 'aide' => 'Laisser vide pour garder le mot de passe enregistré.']) ?>
   </fieldset>
   <button type="submit" class="bouton bouton-principal">Enregistrer</button>
 </form>
-<form method="post" action="<?= e(url('/admin/mail-test')) ?>">
+<form method="post" action="<?= e(url('/admin/mail-test')) ?>" class="separe">
   <?= csrf_field() ?>
   <button type="submit" class="bouton bouton-secondaire">Envoyer un e-mail de test</button>
 </form>
