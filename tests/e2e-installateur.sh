@@ -39,7 +39,7 @@ kill $SITE; php -S 127.0.0.1:8093 -t "$W/site" "$ROOT/tests/router-serveur-php.p
 SITE=$!; sleep 1
 c "http://127.0.0.1:8093/installation" >/dev/null
 check "l'assistant demande le code" "$(grep -c 'name="code_installation"' "$B")" "1"
-form() { c "http://127.0.0.1:8093/installation" >/dev/null; c --data-urlencode "_csrf=$(tok)" -d "db_host=127.0.0.1&db_port=3306&db_name=$DB&db_user=$DBU" --data-urlencode "db_password=$DBP" \
+form() { c "http://127.0.0.1:8093/installation" >/dev/null; c --data-urlencode "_csrf=$(tok)" -d "db_host=${MYSQL_HOST:-127.0.0.1}&db_port=${MYSQL_TCP_PORT:-3306}&db_name=$DB&db_user=$DBU" --data-urlencode "db_password=$DBP" \
     -d "nom_association=Asso test&email_admin=admin@example.org&mot_de_passe=motdepasse-tres-long&confirmation=motdepasse-tres-long&code_installation=$1" "http://127.0.0.1:8093/installation"; }
 check "mauvais code : refusé" "$(form FAUX-CODE) $(grep -c 'installation incorrect' "$B")" "422 1"
 check "bon code : installation terminée" "$(form "$CODE")" "303"
