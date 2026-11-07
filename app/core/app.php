@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 define('BOUSSOLE_ROOT', dirname(__DIR__));
 define('BOUSSOLE_VERSION', '0.1.0');
+// Code source (lien du pied de page)
+const BOUSSOLE_DEPOT = 'https://github.com/tuxo83/boussole-asso';
 
 require __DIR__ . '/db.php';
 require __DIR__ . '/migrate.php';
@@ -14,6 +16,7 @@ require __DIR__ . '/csrf.php';
 require __DIR__ . '/settings.php';
 require __DIR__ . '/secret.php';
 require __DIR__ . '/totp.php';
+require __DIR__ . '/webauthn.php';
 require __DIR__ . '/mail.php';
 require __DIR__ . '/auth.php';
 require __DIR__ . '/humain.php';
