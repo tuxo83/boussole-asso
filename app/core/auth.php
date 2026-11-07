@@ -17,10 +17,25 @@ function current_member(): ?array
     return $member;
 }
 
-// Les rôles de gestion doivent avoir la double authentification active et vérifiée pour cette session
-function needs_second_factor(array $member): bool
+// Droits de plateforme : 'admin' (tout), ou une délégation 'cotisations', 'membres', 'publications'
+function member_rights(int|string $memberId): array
 {
-    return (int) $member['est_admin'] === 1;
+    static $cache = [];
+    return $cache[$memberId] ??= array_column(db_all('SELECT droit FROM droit_plateforme WHERE membre_id = ?', [$memberId]), 'droit');
+}
+
+function has_right(?array $member, string $right): bool
+{
+    if ($member === null) {
+        return false;
+    }
+    $rights = member_rights($member['id']);
+    return in_array('admin', $rights, true) || in_array($right, $rights, true);
+}
+
+function is_admin(?array $member): bool
+{
+    return $member !== null && in_array('admin', member_rights($member['id']), true);
 }
 
 function require_member(): array
@@ -33,16 +48,17 @@ function require_member(): array
     return $member;
 }
 
-function require_admin(): array
+// Gestion de la plateforme : le droit demandé (l'administrateur les a tous), et la double authentification active
+function require_right(string $right = 'admin'): array
 {
     $member = require_member();
-    if ((int) $member['est_admin'] !== 1) {
+    if (!has_right($member, $right)) {
         http_response_code(403);
         render('erreur', ['titre' => 'Accès réservé']);
         exit;
     }
     if (!(int) $member['totp_actif']) {
-        flash('info', "La double authentification est obligatoire pour l'administration : activez-la d'abord.");
+        flash('info', 'La double authentification est obligatoire pour la gestion : activez-la d\'abord.');
         redirect('/compte/double-authentification');
     }
     return $member;

@@ -72,3 +72,23 @@ h1 { font-size: clamp(1.6rem, 5vw, 2.2rem); }
 .couleur { display: flex; align-items: center; gap: .75rem; }
 .couleur input[type="color"] { width: 3.5rem; height: 2.5rem; padding: .15rem; border: 1px solid #8a94a3; border-radius: var(--rayon); }
 .couleur output { font-family: ui-monospace, monospace; }
+
+/* Espaces */
+.colonnes { display: grid; grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr)); gap: 0 2rem; }
+.liste { list-style: none; padding: 0; }
+.liste li { padding: .4rem 0; border-bottom: 1px solid var(--fond-doux); }
+.liste .depasse { color: #8a1020; }
+.liste .fait { color: #5a5a5a; text-decoration: line-through; }
+.en-ligne { display: inline-flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin: .25rem 0; }
+.en-ligne select { font: inherit; padding: .4rem; }
+.lien-bouton { background: none; border: 0; padding: 0 .25rem; color: var(--couleur-principale); text-decoration: underline; cursor: pointer; font: inherit; font-size: .9rem; }
+.alertes-mini { color: #8a5a00; font-size: .95rem; margin: 0; }
+.alerte ul { margin: .25rem 0 0; }
+details summary { cursor: pointer; color: var(--couleur-principale); margin: .5rem 0; }
+.badge { background: var(--fond-doux); border: 1px solid var(--bordure); border-radius: 999px; padding: 0 .5rem; font-size: .8rem; }
+.journal li { font-size: .92rem; }
+.case { display: flex; align-items: center; gap: .5rem; margin: .4rem 0; }
+.fiche-membre { border-bottom: 1px solid var(--bordure); padding: .25rem 0; }
+.fiche-membre.inactif summary { color: #6a6a6a; }
+.petit { font-size: .92rem; margin: .25rem 0; }
+.carte p { margin: .35rem 0; }

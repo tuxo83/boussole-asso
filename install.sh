@@ -21,6 +21,7 @@ fi
 rsync -a --delete \
     --exclude '/config/config.php' \
     --include '/uploads/.htaccess' --exclude '/uploads/*' \
+    --include '/stockage/.htaccess' --exclude '/stockage/*' \
     "$SCRIPT_DIR/app/" "$HTML_DIR/" || exit 1
 
 ######################### Base de données

@@ -86,6 +86,14 @@ function c_tableau(array $colonnes, array $lignes): string
     return $html . '</tbody></table>';
 }
 
+function taille_lisible(int $octets): string
+{
+    if ($octets < 1024) {
+        return $octets . ' octets';
+    }
+    return $octets < 1048576 ? round($octets / 1024) . ' Ko' : number_format($octets / 1048576, 1, ',', ' ') . ' Mo';
+}
+
 // Texte saisi dans l'admin : paragraphes et retours à la ligne, sans aucun HTML
 function c_texte(string $texte): string
 {

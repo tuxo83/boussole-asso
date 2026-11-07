@@ -8,11 +8,11 @@ return [
     'ordre' => 95,
     'routes' => [
         ['GET', '/admin/parametres', function () {
-            require_admin();
+            require_right('admin');
             render('admin/parametres', ['titre' => 'Réglages', 'v' => settings_all(), 'erreurs' => []]);
         }],
         ['POST', '/admin/parametres', function () {
-            $admin = require_admin();
+            $admin = require_right('admin');
             [$values, $erreurs] = admin_settings_validate($_POST);
             $logo = admin_logo_upload($_FILES['logo'] ?? null, $erreurs);
             if ($erreurs) {
@@ -33,7 +33,7 @@ return [
             redirect('/admin/parametres');
         }],
         ['POST', '/admin/mail-test', function () {
-            $admin = require_admin();
+            $admin = require_right('admin');
             $sent = mail_send($admin['email'], 'Test d\'envoi', "Ce message confirme que l'envoi des e-mails fonctionne.\n");
             flash($sent ? 'succes' : 'erreur', $sent ? "E-mail de test envoyé à {$admin['email']}." : "Échec de l'envoi : vérifiez les réglages (journal d'erreurs du serveur).");
             redirect('/admin/parametres');

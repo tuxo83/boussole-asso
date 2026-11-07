@@ -93,9 +93,14 @@ function installation_apply(array $v): void
     migrate($pdo);
     $set = $pdo->prepare('INSERT INTO parametre (cle, valeur) VALUES (?, ?) ON DUPLICATE KEY UPDATE valeur = VALUES(valeur)');
     $set->execute(['nom_association', $v['nom_association']]);
-    $pdo->prepare('INSERT INTO membre (email, est_admin, mot_de_passe) VALUES (?, 1, ?) ON DUPLICATE KEY UPDATE est_admin = 1, mot_de_passe = VALUES(mot_de_passe)')
+    $pdo->prepare('INSERT INTO membre (email, mot_de_passe) VALUES (?, ?) ON DUPLICATE KEY UPDATE mot_de_passe = VALUES(mot_de_passe)')
         ->execute([mb_strtolower($v['email_admin']), password_hash($v['mot_de_passe'], PASSWORD_DEFAULT)]);
+    $pdo->prepare("INSERT IGNORE INTO droit_plateforme (membre_id, droit) SELECT id, 'admin' FROM membre WHERE email = ?")
+        ->execute([mb_strtolower($v['email_admin'])]);
     // Adresse du site figée à l'installation : les liens des e-mails ne dépendent pas de l'en-tête Host d'une requête
     $set->execute(['adresse_site', (is_https() ? 'https://' : 'http://') . ($_SERVER['HTTP_HOST'] ?? 'localhost') . base_path()]);
+    // Expéditeur par défaut, sinon les liens de connexion ne partent pas (modifiable dans les réglages)
+    $host = preg_replace('/:\d+$/', '', (string) ($_SERVER['HTTP_HOST'] ?? 'localhost'));
+    $set->execute(['mail_expediteur', 'noreply@' . (filter_var("x@$host", FILTER_VALIDATE_EMAIL) ? $host : 'localhost.localdomain')]);
     $set->execute(['installation_terminee', '1']);
 }
