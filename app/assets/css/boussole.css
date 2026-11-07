@@ -1,0 +1,61 @@
+/* Boussole : feuille de style de base. Les couleurs viennent des paramètres (variables CSS),
+   une feuille personnalisée peut tout surcharger (chargée après celle-ci). */
+:root {
+  --couleur-principale: #1f4e79;
+  --couleur-accent: #c8102e;
+  --texte: #1a1a1a;
+  --fond: #ffffff;
+  --fond-doux: #f3f5f8;
+  --bordure: #d0d6de;
+  --rayon: 6px;
+  --largeur: 72rem;
+  font-size: 106.25%;
+}
+* { box-sizing: border-box; }
+body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; line-height: 1.55; color: var(--texte); background: var(--fond); }
+.conteneur { max-width: var(--largeur); margin: 0 auto; padding: 0 1rem; }
+a { color: var(--couleur-principale); }
+.lien-evitement { position: absolute; left: -999px; }
+.lien-evitement:focus { left: 1rem; top: 1rem; background: #fff; padding: .5rem; z-index: 10; }
+
+.entete { background: var(--couleur-principale); color: #fff; }
+.entete-interne { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; padding-top: .75rem; padding-bottom: .75rem; }
+.marque { display: flex; align-items: center; gap: .75rem; color: #fff; text-decoration: none; font-weight: 700; font-size: 1.2rem; }
+.menu { display: flex; flex-wrap: wrap; gap: .25rem 1rem; list-style: none; margin: 0; padding: 0; }
+.menu a { color: #fff; text-decoration: none; padding: .25rem 0; border-bottom: 2px solid transparent; }
+.menu a:hover, .menu a[aria-current="page"] { border-bottom-color: #fff; }
+
+main { padding-top: 1.5rem; padding-bottom: 3rem; min-height: 60vh; }
+.bandeau h1 { margin-bottom: .25rem; }
+.slogan { font-size: 1.2rem; color: #4a4a4a; margin-top: 0; }
+
+.pied { background: var(--fond-doux); border-top: 1px solid var(--bordure); padding: 1.5rem 0; font-size: .95rem; }
+.discret { color: #5a5a5a; font-size: .85rem; }
+
+.carte { border: 1px solid var(--bordure); border-radius: var(--rayon); padding: 1rem 1.25rem; background: var(--fond); }
+.grille { display: grid; grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr)); gap: 1rem; }
+
+.bouton { display: inline-block; padding: .6rem 1.1rem; border-radius: var(--rayon); border: 2px solid var(--couleur-principale); text-decoration: none; font: inherit; cursor: pointer; }
+.bouton-principal { background: var(--couleur-principale); color: #fff; }
+.bouton-secondaire { background: transparent; color: var(--couleur-principale); }
+
+.alerte { padding: .75rem 1rem; border-radius: var(--rayon); border-left: 4px solid; }
+.alerte-info { background: #eef4fb; border-color: var(--couleur-principale); }
+.alerte-succes { background: #edf7ee; border-color: #2e7d32; }
+.alerte-erreur { background: #fdecee; border-color: #b00020; }
+
+.formulaire { max-width: 36rem; }
+fieldset { border: 1px solid var(--bordure); border-radius: var(--rayon); margin: 0 0 1.25rem; padding: 1rem; }
+.champ { display: flex; flex-direction: column; gap: .25rem; margin-bottom: 1rem; }
+.champ input, .champ textarea { font: inherit; padding: .5rem; border: 1px solid #8a94a3; border-radius: var(--rayon); }
+.champ small { color: #4a4a4a; }
+.champ .erreur { color: #b00020; }
+:focus-visible { outline: 3px solid var(--couleur-accent); outline-offset: 2px; }
+
+table { border-collapse: collapse; width: 100%; }
+th, td { text-align: left; padding: .5rem; border-bottom: 1px solid var(--bordure); }
+.meteo { white-space: nowrap; }
+
+@media (max-width: 40rem) {
+  .entete-interne { flex-direction: column; align-items: flex-start; }
+}

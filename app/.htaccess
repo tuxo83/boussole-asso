@@ -1,0 +1,9 @@
+# Boussole : toutes les adresses passent par index.php
+# Sans mod_rewrite, les adresses en index.php/... fonctionnent quand même
+Options -Indexes
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^ index.php [QSA,L]
+</IfModule>
