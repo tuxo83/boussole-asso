@@ -32,9 +32,9 @@
   <p>Active.</p>
 <?php else: ?>
 <ol>
-  <li>Dans votre application d'authentification (FreeOTP, Aegis, Google Authenticator…), ajoutez un compte avec cette clé :
-    <p><code class="cle"><?= e(trim(chunk_split($secret, 4, ' '))) ?></code></p>
-    <p class="discret">ou ce lien, si l'application le permet : <code><?= e(totp_uri($secret, $membre['email'])) ?></code></p>
+  <li>Dans votre application d'authentification (FreeOTP, Aegis, Google Authenticator…), scannez ce QR code :
+    <div class="qrcode" data-qrcode="<?= e(totp_uri($secret, $membre['email'])) ?>" role="img" aria-label="QR code à scanner avec l'application"></div>
+    <p class="discret">ou saisissez cette clé : <code class="cle"><?= e(trim(chunk_split($secret, 4, ' '))) ?></code></p>
   </li>
   <li>Saisissez le code à 6 chiffres qu'elle affiche.</li>
 </ol>
@@ -45,4 +45,5 @@
 </form>
 <?php endif ?>
 </details>
+<script src="<?= e(url('/assets/vendor/qrcode/qrcode.js')) ?>?v=<?= e(BOUSSOLE_VERSION) ?>" defer></script>
 <script src="<?= e(url('/assets/js/cles.js')) ?>?v=<?= e(BOUSSOLE_VERSION) ?>" defer></script>

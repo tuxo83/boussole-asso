@@ -54,3 +54,12 @@
     });
   }
 })();
+
+// QR code de l'application d'authentification, calculé dans le navigateur (aucun service extérieur)
+document.querySelectorAll('[data-qrcode]').forEach(function (box) {
+  if (typeof qrcode === 'undefined') { return; }
+  const qr = qrcode(0, 'M');
+  qr.addData(box.dataset.qrcode);
+  qr.make();
+  box.innerHTML = qr.createSvgTag({ cellSize: 5, margin: 4, scalable: true });
+});
