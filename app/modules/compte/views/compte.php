@@ -13,6 +13,10 @@
   <?php $inscriptions = evenement_mes_inscriptions($membre); ?>
   <?= c_carte('Mes inscriptions', $inscriptions ? '<ul class="liste">' . implode('', array_map(fn($i) => '<li><a href="' . e(url('/espace/' . $i['slug'])) . '">' . e($i['titre']) . '</a> <span class="discret">· ' . e(evenement_date($i['debut'])) . ' · ' . e(INSCRIPTION_STATUTS[$i['statut']]) . ($i['statut'] === 'attente' ? ' n°' . (int) $i['rang'] : '') . '</span></li>', $inscriptions)) . '</ul>' : '<p>Aucune inscription à venir.</p>') ?>
   <?= c_carte("Clés d'API (IA, MCP)", '<p>Donner à un outil ou à une IA un accès avec vos droits.</p>' . c_bouton('Mes clés', '/compte/cles', 'secondaire')) ?>
+</div>
+<?php if (member_rights($membre['id'])): ?>
+<h2>Gestion de l'association</h2>
+<div class="grille">
   <?php if (is_admin($membre)): ?>
   <?= c_carte("Toutes les clés", '<p>Voir et révoquer les clés de tous les membres.</p>' . c_bouton('Toutes les clés', '/admin/cles', 'secondaire')) ?>
   <?php endif ?>
@@ -29,6 +33,7 @@
   <?= c_carte('Administration', '<p>Nom, apparence, envoi des e-mails.</p>' . c_bouton('Réglages', '/admin/parametres', 'secondaire')) ?>
   <?php endif ?>
 </div>
+<?php endif ?>
 <h2>Mot de passe</h2>
 <form method="post" action="<?= e(url('/compte/mot-de-passe')) ?>" class="formulaire">
   <?= csrf_field() ?>

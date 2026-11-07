@@ -7,6 +7,7 @@
 </article>
 <?php if ($enfants): ?>
 <nav aria-label="Sous-pages" class="sous-pages">
-  <ul class="liste"><?php foreach ($enfants as $enfant): ?><li><a href="<?= e(url('/page/' . $enfant['slug'])) ?>"><?= e($enfant['titre']) ?></a></li><?php endforeach ?></ul>
+  <h2>À lire aussi</h2>
+  <div class="cartes"><?php foreach ($enfants as $enfant): ?><article class="carte carte-action"><h3><a href="<?= e(url('/page/' . $enfant['slug'])) ?>"><?= e($enfant['titre']) ?></a></h3><?= !empty($enfant['reservee_membres']) ? '<p>Réservé aux membres</p>' : '' ?></article><?php endforeach ?></div>
 </nav>
 <?php endif ?>
