@@ -61,19 +61,39 @@ function require_right(string $right = 'admin'): array
         render('erreur', ['titre' => 'Accès réservé']);
         exit;
     }
-    if (!(int) $member['totp_actif']) {
-        flash('info', 'La double authentification est obligatoire pour la gestion : activez-la d\'abord.');
-        redirect('/compte/double-authentification');
+    // Gestion : deux facteurs différents dans cette session (API : la clé suffit, elle est créée par un compte à deux facteurs)
+    if (api_member() === null && count(facteurs()) < 2) {
+        $_SESSION['apres_connexion'] = request_path();
+        flash('info', 'Pour la gestion, confirmez votre identité une seconde fois.');
+        redirect('/connexion/double-authentification');
     }
     return $member;
 }
 
+// Facteurs prouvés dans cette session : 'mdp' (mot de passe), 'email' (lien ou code reçu), 'cle' (FIDO2), 'totp' (application)
+function facteurs(): array
+{
+    return $_SESSION['facteurs'] ?? [];
+}
+
+function ajouter_facteur(string $facteur): void
+{
+    $_SESSION['facteurs'] = array_values(array_unique([...facteurs(), $facteur]));
+}
+
+// Second facteur toujours exigé quand la personne en a configuré un (clé ou application)
+function member_exige_2fa(array $member): bool
+{
+    return (int) $member['totp_actif'] === 1 || (int) db_value('SELECT COUNT(*) FROM cle_securite WHERE membre_id = ?', [$member['id']]) > 0;
+}
+
 // Première étape réussie (mot de passe, lien ou code) : la session est connectée, ou attend le 2e facteur
-function login_first_step(array $member): void
+function login_first_step(array $member, string $facteur): void
 {
     session_regenerate_id(true);
     $_SESSION['membre_id'] = (int) $member['id'];
-    if ((int) $member['totp_actif'] === 1) {
+    $_SESSION['facteurs'] = [$facteur];
+    if (member_exige_2fa($member)) {
         $_SESSION['connecte'] = false;
         redirect('/connexion/double-authentification');
     }

@@ -37,7 +37,14 @@ check "installation : mot de passe trop court refusé" "$(c --data-urlencode "_c
 check "installation complète" "$(c --data-urlencode "_csrf=$T" -d 'nom_association=Asso test&email_admin=Admin@example.org&mot_de_passe=motdepasse-tres-long&confirmation=motdepasse-tres-long' "$U/installation")" "303 $U/"
 check "connexion : mauvais mot de passe" "$(hpost "$U/connexion" "$U/connexion" -d 'email=admin@example.org&mot_de_passe=faux')" "422 "
 check "connexion : bon mot de passe" "$(hpost "$U/connexion" "$U/connexion" -d 'email=ADMIN@example.org&mot_de_passe=motdepasse-tres-long')" "303 $U/compte"
-check "admin sans double authentification → activation imposée" "$(c "$U/admin/parametres")" "303 $U/compte/double-authentification"
+check "admin avec une seule preuve → seconde vérification demandée" "$(c "$U/admin/parametres")" "303 $U/connexion/double-authentification"
+c "$U/connexion/double-authentification" >/dev/null; T=$(tok)
+check "second facteur : code par e-mail proposé, pas d'application exigée" "$(grep -c 'M&#039;envoyer un code\|M.envoyer un code' "$B")" "1"
+c --data-urlencode "_csrf=$T" "$U/connexion/double-authentification/envoyer-code" >/dev/null
+c "$U/connexion/double-authentification" >/dev/null; T=$(tok)
+check "code e-mail : mauvais code refusé" "$(c --data-urlencode "_csrf=$T" -d 'code=000000' "$U/connexion/double-authentification/code")" "422 "
+c "$U/connexion/double-authentification" >/dev/null; T=$(tok)
+check "code e-mail : bon code, retour à la page demandée" "$(c --data-urlencode "_csrf=$T" -d "code=$(grep -o 'Votre code de confirmation : [0-9]*' "$MAIL" | tail -1 | grep -o '[0-9]*$')" "$U/connexion/double-authentification/code")" "303 $U/admin/parametres"
 c "$U/compte/double-authentification" >/dev/null; T=$(tok); S=$(grep -o '<code class="cle">[^<]*' "$B" | sed 's/.*>//; s/ //g')
 check "activation 2FA : mauvais code" "$(c --data-urlencode "_csrf=$T" -d 'code=000000' "$U/compte/double-authentification")" "422 "
 check "activation 2FA : bon code" "$(c --data-urlencode "_csrf=$T" -d "code=$(totp "$S")" "$U/compte/double-authentification")" "303 $U/compte"

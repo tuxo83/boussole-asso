@@ -40,10 +40,17 @@ login_link() { # login_link <nom> <e-mail> : connexion par lien magique
     local lien; lien=$(grep -o 'http://[^ ]*/connexion/lien/[a-f0-9]*' "$MAIL" | tail -1)
     c "$lien" >/dev/null; local t; t=$(tok); c --data-urlencode "_csrf=$t" "$lien" >/dev/null
 }
+stepup_email() { # second facteur par code e-mail (après une connexion par mot de passe)
+    c "$U/connexion/double-authentification" >/dev/null; local t; t=$(tok)
+    c --data-urlencode "_csrf=$t" "$U/connexion/double-authentification/envoyer-code" >/dev/null
+    c "$U/connexion/double-authentification" >/dev/null; t=$(tok)
+    c --data-urlencode "_csrf=$t" -d "code=$(grep -o 'Votre code de confirmation : [0-9]*' "$MAIL" | tail -1 | grep -o '[0-9]*$')" "$U/connexion/double-authentification/code"
+}
 install_admin() { # installation, connexion par mot de passe, double authentification
     as admin; c "$U/installation" >/dev/null; local t; t=$(tok)
     c --data-urlencode "_csrf=$t" -d 'nom_association=Asso test&email_admin=admin@example.org&mot_de_passe=motdepasse-tres-long&confirmation=motdepasse-tres-long' "$U/installation" >/dev/null
     hpost "$U/connexion" "$U/connexion" -d 'email=admin@example.org&mot_de_passe=motdepasse-tres-long' >/dev/null
+    stepup_email
     c "$U/compte/double-authentification" >/dev/null; t=$(tok); ADMIN_TOTP=$(grep -o '<code class="cle">[^<]*' "$B" | sed 's/.*>//; s/ //g')
     c --data-urlencode "_csrf=$t" -d "code=$(totp "$ADMIN_TOTP")" "$U/compte/double-authentification" >/dev/null
 }
