@@ -23,6 +23,7 @@ function c_alerte(string $type, string $message): string
 
 // Icônes dessinées (traits simples, couleur du texte) : pas d'émojis, rendu identique partout
 const ICONES = [
+    'crayon' => '<path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/>',
     'soleil' => '<circle cx="12" cy="12" r="4.5"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/>',
     'eclaircie' => '<circle cx="9" cy="8.5" r="3.5"/><path d="M9 2.5v1.3M3 8.5h1.3M4.8 4.3l.9.9M13.2 4.3l-.9.9"/><path d="M8.5 20h9a3.5 3.5 0 0 0 .3-7 5 5 0 0 0-9.5 1.2A3 3 0 0 0 8.5 20z" fill="currentColor" fill-opacity=".12"/>',
     'pluie' => '<path d="M7.5 15h10a3.8 3.8 0 0 0 .3-7.6 5.5 5.5 0 0 0-10.5 1.4A3.2 3.2 0 0 0 7.5 15z" fill="currentColor" fill-opacity=".12"/><path d="M8.5 18l-1 2.5M12.5 18l-1 2.5M16.5 18l-1 2.5"/>',

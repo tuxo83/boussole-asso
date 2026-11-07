@@ -189,6 +189,20 @@
     },
   });
 
+  // Arrivée depuis « cliquer pour modifier » (#bloc-N) : on va droit au bloc, mis en évidence, curseur dedans
+  editor.isReady.then(function () {
+    const cible = /^#bloc-(\d+)$/.exec(window.location.hash);
+    if (!cible) { return; }
+    const bloc = editor.blocks.getBlockByIndex(parseInt(cible[1], 10));
+    if (!bloc) { return; }
+    bloc.holder.scrollIntoView({ block: 'center' });
+    bloc.holder.classList.add('bloc-cible');
+    setTimeout(function () { bloc.holder.classList.remove('bloc-cible'); }, 2500);
+    try { editor.caret.setToBlock(parseInt(cible[1], 10), 'end'); } catch (e) { /* bloc sans zone de texte */ }
+    const champ = bloc.holder.querySelector('input, textarea, select');
+    if (champ) { champ.focus({ preventScroll: true }); }
+  });
+
   let saving = false;
   form.addEventListener('submit', function (event) {
     if (saving) { return; }

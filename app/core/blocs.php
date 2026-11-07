@@ -208,16 +208,17 @@ function bloc_liste_items(mixed $items, int $depth): array
 }
 
 // Affichage : le contenu est normalisé une seconde fois (défense en profondeur)
-function blocs_rendre(?string $json): string
+// $edition : adresse de l'éditeur de la page ; chaque bloc devient cliquable et mène à son endroit dans l'éditeur
+function blocs_rendre(?string $json, ?string $edition = null): string
 {
     $normalise = $json !== null ? blocs_normaliser($json) : null;
     if ($normalise === null) {
         return '';
     }
     $html = '';
-    foreach (json_decode($normalise, true)['blocks'] as $block) {
+    foreach (json_decode($normalise, true)['blocks'] as $n => $block) {
         $d = $block['data'];
-        $html .= match ($block['type']) {
+        $morceau = match ($block['type']) {
             'paragraph' => $d['text'] !== '' ? "<p>{$d['text']}</p>" : '',
             'header' => "<h{$d['level']}>{$d['text']}</h{$d['level']}>",
             'list' => bloc_liste_html($d['items'], $d['style']),
@@ -237,6 +238,9 @@ function blocs_rendre(?string $json): string
             'bouton' => ($lien = bloc_lien_resolu($d['lien'])) !== '' ? '<p class="bloc-bouton"><a class="bouton bouton-' . $d['style'] . '" href="' . e(str_starts_with($lien, '/') ? url($lien) : $lien) . '"' . (preg_match('#^https?://#', $lien) ? ' target="_blank" rel="noopener noreferrer"' : '') . '>' . e($d['texte']) . '</a></p>' : '',
             default => '',
         };
+        $html .= $edition !== null && $morceau !== ''
+            ? '<div class="bloc-editable" data-bloc="' . $n . '"><a class="bloc-crayon" href="' . e($edition . '#bloc-' . $n) . '">' . c_icone('crayon') . 'Modifier</a>' . $morceau . '</div>'
+            : $morceau;
     }
     return $html;
 }
@@ -344,3 +348,28 @@ function cartes_evenements(array $evenements, bool $passes = false): string
     }
     return $html . '</div>';
 }
+
+// Mode « cliquer pour modifier » des pages, pour qui peut publier : ?edition=1 l'active, ?edition=0 le coupe
+function page_mode_edition(): bool
+{
+    $membre = current_member();
+    if ($membre === null || !has_right($membre, 'publications')) {
+        return false;
+    }
+    if (isset($_GET['edition'])) {
+        $_SESSION['mode_edition'] = $_GET['edition'] === '1';
+    }
+    return !empty($_SESSION['mode_edition']);
+}
+
+// Barre discrète en haut d'une page, pour qui peut publier
+function page_barre_edition(array $page, bool $actif): string
+{
+    $editeur = url('/admin/pages/' . (int) $page['id']);
+    $chemin = request_path();
+    return '<div class="barre-edition" role="region" aria-label="Édition">'
+        . '<a class="bouton bouton-secondaire" href="' . e($editeur) . '">' . c_icone('crayon') . 'Modifier cette page</a>'
+        . '<a class="lien-bouton" href="' . e(url($chemin) . '?edition=' . ($actif ? '0' : '1')) . '">' . ($actif ? 'Arrêter de cliquer pour modifier' : 'Cliquer sur un bloc pour le modifier') . '</a>'
+        . '</div>';
+}
+

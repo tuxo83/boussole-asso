@@ -3,6 +3,8 @@
 <form method="post" action="<?= e(url('/admin/pages/' . (int) $page['id'])) ?>" class="formulaire large" id="formulaire-page">
   <?= csrf_field() ?>
   <?= c_champ('titre', 'Titre', ['valeur' => $page['titre'], 'requis' => true, 'max' => 200]) ?>
+  <?= c_champ('description', 'Description pour les moteurs de recherche et les partages', ['type' => 'textarea', 'lignes' => 2, 'valeur' => (string) ($page['description'] ?? ''), 'max' => 300,
+      'aide' => 'Une ou deux phrases (160 caractères conseillés). Vide : le début du premier paragraphe est utilisé.']) ?>
   <div class="champ">
     <span class="libelle" id="libelle-contenu">Contenu</span>
     <div id="editeur" class="editeur" aria-labelledby="libelle-contenu" data-blocs="<?= e($blocs) ?>" data-envoi-image="<?= e(url('/admin/images')) ?>" data-blocs-dynamiques="<?= e(json_encode(BLOCS_DYNAMIQUES, JSON_UNESCAPED_UNICODE)) ?>" data-icones="<?= e(json_encode(['' => 'sans icône', 'ecole' => 'école', 'personnes' => 'personnes', 'bouclier' => 'bouclier', 'ancre' => 'ancre', 'medaille' => 'médaille', 'reseau' => 'réseau', 'ecran' => 'numérique', 'calendrier' => 'calendrier', 'lieu' => 'lieu'], JSON_UNESCAPED_UNICODE)) ?>"></div>
@@ -10,8 +12,6 @@
     <noscript><p class="alerte alerte-erreur">L'éditeur a besoin de JavaScript.</p></noscript>
   </div>
   <input type="hidden" name="blocs" id="champ-blocs" value="<?= e($blocs) ?>">
-  <?= c_champ('description', 'Description pour les moteurs de recherche et les partages', ['type' => 'textarea', 'valeur' => (string) ($page['description'] ?? ''), 'max' => 300,
-      'aide' => 'Une ou deux phrases (160 caractères conseillés). Vide : le début du premier paragraphe est utilisé.']) ?>
   <fieldset>
     <legend>Publication</legend>
     <?= c_champ('parent_id', 'Page parente', ['type' => 'select', 'valeur' => (string) $page['parent_id'], 'choix' => ['' => 'Aucune (premier niveau)'] + array_column($parents, 'titre', 'id')]) ?>
