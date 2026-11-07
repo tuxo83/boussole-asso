@@ -13,6 +13,7 @@ return [
                 'titre' => 'Membres',
                 'gestionnaire' => $gestionnaire,
                 'membres' => db_all('SELECT m.*, t.libelle AS type_libelle FROM membre m LEFT JOIN type_membre t ON t.id = m.type_membre_id WHERE m.en_attente = 0 ORDER BY m.actif DESC, m.nom, m.prenom, m.email'),
+                'jamais' => (int) db_value('SELECT COUNT(*) FROM membre WHERE actif = 1 AND derniere_connexion IS NULL AND en_attente = 0'),
                 'en_attente' => db_all('SELECT m.*, c.paye_le, c.periode FROM membre m LEFT JOIN cotisation c ON c.membre_id = m.id WHERE m.en_attente = 1 ORDER BY m.cree_le'),
                 'types' => db_all('SELECT * FROM type_membre ORDER BY ordre, libelle'),
             ]);
@@ -91,12 +92,52 @@ return [
             }
             redirect('/admin/membres');
         }],
+        // Invitation de bienvenue : un membre, ou tous ceux qui ne se sont jamais connectés
+        ['POST', '/admin/membres/inviter', function () {
+            $gestionnaire = require_right('membres');
+            $id = (int) ($_POST['membre_id'] ?? 0);
+            $liste = $id > 0
+                ? db_all('SELECT * FROM membre WHERE id = ? AND actif = 1', [$id])
+                : db_all('SELECT * FROM membre WHERE actif = 1 AND derniere_connexion IS NULL AND en_attente = 0');
+            foreach ($liste as $member) {
+                membre_inviter($member, $gestionnaire);
+            }
+            flash('succes', count($liste) . ' invitation(s) envoyée(s).');
+            redirect('/admin/membres');
+        }],
         ['POST', '/admin/types-membre', function () {
             $gestionnaire = require_right('admin');
             $libelle = mb_substr(trim((string) ($_POST['libelle'] ?? '')), 0, 100);
             if ($libelle !== '') {
                 db_query('INSERT IGNORE INTO type_membre (libelle) VALUES (?)', [$libelle]);
                 journal(null, $gestionnaire, "Type de membre ajouté : $libelle");
+            }
+            redirect('/admin/membres');
+        }],
+        // Effacer un membre (administrateur) : compte, cotisations, inscriptions et clés disparaissent ; son nom est retiré du journal
+        ['POST', '/admin/membres/{id}/effacer', function (array $p) {
+            $gestionnaire = require_right('admin');
+            $cible = db_one('SELECT * FROM membre WHERE id = ?', [(int) $p['id']]);
+            if ($cible === null) {
+                redirect('/admin/membres');
+            }
+            if ((int) $cible['id'] === (int) $gestionnaire['id']) {
+                flash('erreur', 'Vous ne pouvez pas effacer votre propre compte.');
+                redirect('/admin/membres');
+            }
+            $nom = membre_nom($cible);
+            membre_effacer($cible, $gestionnaire, "à la demande de l'administrateur");
+            flash('succes', "Membre « $nom » effacé.");
+            redirect('/admin/membres');
+        }],
+        // Retirer un type : les membres qui l'avaient restent, sans type
+        ['POST', '/admin/types-membre/{id}/supprimer', function (array $p) {
+            $gestionnaire = require_right('admin');
+            $type = db_one('SELECT * FROM type_membre WHERE id = ?', [(int) $p['id']]);
+            if ($type !== null) {
+                db_query('DELETE FROM type_membre WHERE id = ?', [$type['id']]);
+                journal(null, $gestionnaire, 'Type de membre retiré : ' . $type['libelle']);
+                flash('succes', 'Type « ' . $type['libelle'] . ' » retiré.');
             }
             redirect('/admin/membres');
         }],

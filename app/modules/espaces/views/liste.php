@@ -1,4 +1,5 @@
-<h1>Espaces</h1>
+<h1><?= $archives ? 'Espaces archivés' : 'Espaces' ?></h1>
+<?php if ($archives): ?><p><a href="<?= e(url('/espaces')) ?>">← Espaces en cours</a></p><?php elseif ($nb_archives > 0): ?><p class="petit"><a href="<?= e(url('/espaces?archives=1')) ?>">Espaces archivés (<?= $nb_archives ?>)</a></p><?php endif ?>
 <?php if (is_admin($membre)): ?><p><?= c_bouton('Nouvel espace', '/espaces/nouveau') ?></p><?php endif ?>
 <?php if (!$espaces): ?><p>Aucun espace pour l'instant.</p><?php endif ?>
 <div class="grille">

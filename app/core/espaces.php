@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 const ESPACE_TYPES = ['comite' => 'Comité', 'commission' => 'Commission', 'projet' => 'Projet', 'evenement' => 'Événement'];
 const ESPACE_NIVEAUX = ['n1' => 'N°1 (responsable)', 'n2' => 'N°2 (suppléant)', 'membre' => 'Membre', 'associe' => 'Associé'];
-const ESPACE_VISIBILITES = ['equipe' => "L'équipe de l'espace", 'cotisants' => 'Les membres à jour de cotisation', 'adherents' => 'Tous les membres connectés', 'public' => 'Tout le monde (public)'];
+const ESPACE_VISIBILITES = ['equipe' => "L'équipe de l'espace", 'adherents' => 'Tous les membres connectés', 'public' => 'Tout le monde (public)'];
 const ESPACE_INACTIVITE_JOURS = 30;
 
 function espace_niveau(?array $member, array $espace): ?string
@@ -21,8 +21,7 @@ function espace_peut_voir(?array $member, array $espace): bool
     return match ($espace['visibilite']) {
         'public' => true,
         'adherents' => $member !== null,
-        // À jour de cotisation ; l'équipe de l'espace et l'administrateur voient toujours
-        'cotisants' => $member !== null && (cotisation_a_jour($member) !== null || is_admin($member) || espace_niveau($member, $espace) !== null),
+        'cotisants' => $member !== null, // ancienne valeur, traitée comme « membres »
         default => is_admin($member) || espace_niveau($member, $espace) !== null,
     };
 }
@@ -98,4 +97,10 @@ function membre_nom(array $member): string
 {
     $name = trim($member['prenom'] . ' ' . $member['nom']);
     return $name !== '' ? $name : $member['email'];
+}
+
+// S'inscrire à un événement réservé aux membres : être à jour de cotisation (l'équipe et l'administrateur, toujours)
+function espace_inscription_ouverte(?array $member, array $espace): bool
+{
+    return $espace['visibilite'] === 'public' || ($member !== null && (cotisation_a_jour($member) !== null || is_admin($member) || espace_niveau($member, $espace) !== null));
 }

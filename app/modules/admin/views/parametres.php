@@ -14,6 +14,7 @@
     <?= c_champ('logo', 'Logo', ['type' => 'file', 'aide' => 'PNG, JPEG ou WebP, 1 Mo maximum.', 'erreur' => $erreurs['logo'] ?? null]) ?>
     <?= c_champ('couleur_principale', 'Couleur principale', ['type' => 'color', 'valeur' => $v['couleur_principale'] ?? '#1f4e79', 'erreur' => $erreurs['couleur_principale'] ?? null]) ?>
     <?= c_champ('couleur_accent', "Couleur d'accent", ['type' => 'color', 'valeur' => $v['couleur_accent'] ?? '#c8102e', 'erreur' => $erreurs['couleur_accent'] ?? null]) ?>
+    <?= c_champ('couleur_membres', 'Couleur « réservé aux membres » (agenda)', ['type' => 'color', 'valeur' => $v['couleur_membres'] ?? '#5a2d91', 'erreur' => $erreurs['couleur_membres'] ?? null, 'aide' => 'Choisir une couleur foncée : le texte blanc doit rester lisible dessus.']) ?>
     <?= c_champ('css_personnalise', 'CSS personnalisé', ['type' => 'textarea', 'valeur' => $v['css_personnalise'] ?? '', 'aide' => 'Facultatif, chargé après la feuille de style de base.', 'erreur' => $erreurs['css_personnalise'] ?? null]) ?>
   </fieldset>
   <fieldset>

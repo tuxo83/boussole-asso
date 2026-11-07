@@ -1,4 +1,5 @@
 <h1>Pages du site</h1>
+<p><a href="<?= e(url('/admin/images')) ?>">Images envoyées (médiathèque)</a></p>
 <form method="post" action="<?= e(url('/admin/pages')) ?>" class="en-ligne">
   <?= csrf_field() ?>
   <input type="text" name="titre" required maxlength="200" aria-label="Titre de la nouvelle page" placeholder="Titre de la nouvelle page">

@@ -15,6 +15,7 @@ phase() { tr -d '\n' < "$B" | grep -o 'aria-current="step">[[:space:]]*<strong>[
 J() { date -d "+$1 days" +%Y-%m-%dT%H:%M; }
 
 install_admin
+sql "REPLACE INTO parametre (cle, valeur) VALUES ('inscription_cotisants', '0')"  # ce test porte sur l'attribution, pas sur la cotisation
 sql "REPLACE INTO parametre (cle, valeur) VALUES ('cotisation_relance_jours', '0'), ('rappel_participants', ''), ('rappel_jalons', ''), ('rappel_jalons_evenements', '')"
 for p in alice bruno chloe david emma farid; do post "$U/admin/membres" "$U/admin/membres" -d "email=$p@example.org&prenom=${p^}" >/dev/null; done
 for p in alice bruno chloe david emma farid; do login_link "$p" "$p@example.org"; done

@@ -10,6 +10,7 @@ mails() { grep -c "^To: $1@" "$MAIL" 2>/dev/null; }
 J() { date -d "+$1 days" +%Y-%m-%d; }
 
 install_admin
+sql "REPLACE INTO parametre (cle, valeur) VALUES ('inscription_cotisants', '0')"  # inscriptions sans condition de cotisation dans ce test
 for p in bob carl dan; do post "$U/admin/membres" "$U/admin/membres" -d "email=$p@example.org&prenom=${p^}" >/dev/null; done
 post "$U/espaces/nouveau" "$U/espaces/nouveau" -d 'type=projet&titre=Projet phare&visibilite=equipe' >/dev/null
 post "$U/espace/projet-phare" "$U/espace/projet-phare/equipe" -d 'email=bob@example.org&niveau=n1' >/dev/null

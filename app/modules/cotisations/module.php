@@ -153,6 +153,7 @@ return [
                 setting_set('cotisation_mois_debut', (string) $mois);
                 setting_set('cotisation_relance_jours', (string) $jours);
                 setting_set('cotisation_conservation_ans', (string) $ans);
+                setting_set('inscription_cotisants', ($_POST['inscription_cotisants'] ?? '') === '1' ? '1' : '0');
                 $lien = trim((string) ($_POST['lien_adhesion'] ?? ''));
                 setting_set('lien_adhesion', preg_match('#^https://[^\s"<>]+$#', $lien) ? mb_substr($lien, 0, 300) : '');
                 journal(null, $par, 'Réglages des cotisations modifiés');

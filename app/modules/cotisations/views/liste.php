@@ -125,6 +125,7 @@ $actuelle = cotisation_periode();
   <?= csrf_field() ?>
   <?= c_champ('cotisation_mois_debut', 'La période de cotisation commence en', ['type' => 'select', 'valeur' => (string) cotisation_mois_debut(), 'choix' => array_combine(range(1, 12), ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'])]) ?>
   <?= c_champ('cotisation_relance_jours', 'Relance automatique, en jours après le début de la période (0 = jamais)', ['type' => 'number', 'valeur' => (string) setting('cotisation_relance_jours', '30')]) ?>
+  <label class="case"><input type="checkbox" name="inscription_cotisants" value="1"<?= setting('inscription_cotisants', '1') === '1' ? ' checked' : '' ?>> S'inscrire à un événement réservé aux membres demande d'être à jour de cotisation</label>
   <?= c_champ('lien_adhesion', "Lien d'adhésion HelloAsso (formulaire public)", ['type' => 'url', 'valeur' => (string) setting('lien_adhesion', ''), 'aide' => 'Affiché par le bloc « Adhérer » des pages et dans Mon compte. Les paiements lus créent un compte en attente pour les nouveaux.']) ?>
   <?= c_champ('cotisation_conservation_ans', 'Effacer les données après combien d\'années sans cotisation', ['type' => 'number', 'valeur' => (string) setting('cotisation_conservation_ans', '2')]) ?>
   <button type="submit" class="bouton bouton-secondaire">Enregistrer</button>
