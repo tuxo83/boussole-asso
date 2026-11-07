@@ -33,6 +33,13 @@ return [
             flash('succes', 'Mot de passe enregistré.');
             redirect('/compte');
         }],
+        // Rappel de cotisation masqué jusqu'à la prochaine connexion
+        ['POST', '/compte/rappel-cotisation/masquer', function () {
+            require_member();
+            $_SESSION['rappel_cotisation_masque'] = true;
+            $retour = (string) ($_POST['retour'] ?? '/');
+            redirect(str_starts_with($retour, '/') && !str_starts_with($retour, '//') ? $retour : '/');
+        }],
         // Après un mot de passe provisoire donné par l'administrateur : en choisir un à soi, différent
         ['GET', '/compte/nouveau-mot-de-passe', function () {
             $member = require_member();
