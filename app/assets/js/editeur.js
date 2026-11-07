@@ -69,11 +69,22 @@
   }
 
   const icones = JSON.parse(holder.dataset.icones || '{}');
-  const champ = function (valeur, aide) {
-    const input = document.createElement('input');
-    input.value = valeur || '';
+  // Le contenu enregistré est du HTML : &#039; → ' pour l'afficher tel qu'on le lit sur le site
+  const decoder = function (html) { const t = document.createElement('textarea'); t.innerHTML = html || ''; return t.value; };
+  const champ = function (valeur, aide, classe, multiligne) {
+    const input = document.createElement(multiligne ? 'textarea' : 'input');
+    input.value = decoder(valeur);
     input.placeholder = aide;
-    input.className = 'champ-bloc';
+    input.setAttribute('aria-label', aide);
+    input.className = 'champ-bloc' + (classe ? ' ' + classe : '');
+    if (multiligne) {
+      // La zone grandit avec son texte : tout est visible, comme sur le site
+      input.rows = 1;
+      const ajuster = function () { input.style.height = 'auto'; input.style.height = input.scrollHeight + 2 + 'px'; };
+      input.addEventListener('input', ajuster);
+      requestAnimationFrame(ajuster);
+      window.addEventListener('load', ajuster);
+    }
     return input;
   };
 
@@ -82,12 +93,14 @@
     constructor({ data }) { this.data = data || {}; this.lignes = []; }
     render() {
       this.box = document.createElement('div');
-      this.box.className = 'bloc-repetable';
+      // Chaque type a son apparence d'édition, proche de son rendu sur le site
+      this.box.className = 'bloc-repetable ' + (this.constructor.apparence || '');
       const titre = document.createElement('p');
       titre.className = 'bloc-repetable-titre';
       titre.textContent = this.constructor.libelle;
       this.box.append(titre);
       this.liste = document.createElement('div');
+      this.liste.className = 'bloc-repetable-liste';
       this.box.append(this.liste);
       (this.data.items && this.data.items.length ? this.data.items : [{}]).forEach((item) => this.ajouter(item));
       const plus = document.createElement('button');
@@ -105,7 +118,7 @@
       Object.values(champs).forEach((c) => ligne.append(c));
       const moins = document.createElement('button');
       moins.type = 'button';
-      moins.className = 'lien-bouton';
+      moins.className = 'lien-bouton bloc-retirer';
       moins.textContent = 'retirer';
       moins.addEventListener('click', () => { ligne.remove(); this.lignes = this.lignes.filter((l) => l.champs !== champs); });
       ligne.append(moins);
@@ -117,24 +130,29 @@
 
   class Cartes extends Repetable {
     static get toolbox() { return { title: 'Cartes', icon: '▦' }; }
-    static get libelle() { return 'Cartes : icône, titre, texte court, lien (facultatif)'; }
+    static get libelle() { return 'Cartes'; }
+    static get apparence() { return 'edition-cartes'; }
     champs(item) {
       const icone = document.createElement('select');
+      icone.setAttribute('aria-label', 'Icône');
+      icone.className = 'champ-icone';
       Object.entries(icones).forEach(([k, v]) => { const o = document.createElement('option'); o.value = k; o.textContent = v; o.selected = k === (item.icone || ''); icone.append(o); });
-      return { icone: icone, titre: champ(item.titre, 'Titre'), texte: champ(item.texte, 'Texte court'), lien: champ(item.lien, 'Lien : /page/… ou https://…') };
+      return { icone: icone, titre: champ(item.titre, 'Titre de la carte', 'champ-titre'), texte: champ(item.texte, 'Texte court', 'champ-texte', true), lien: champ(item.lien, 'Lien (facultatif) : /page/… ou https://…', 'champ-lien') };
     }
   }
 
   class Chiffres extends Repetable {
     static get toolbox() { return { title: 'Chiffres clés', icon: '#' }; }
-    static get libelle() { return 'Chiffres clés : valeur et libellé (6 au plus)'; }
-    champs(item) { return { valeur: champ(item.valeur, 'Valeur (ex. 236)'), libelle: champ(item.libelle, 'Libellé (ex. cadets)') }; }
+    static get libelle() { return 'Chiffres clés (6 au plus)'; }
+    static get apparence() { return 'edition-chiffres'; }
+    champs(item) { return { valeur: champ(item.valeur, 'Valeur (ex. 236)', 'champ-valeur'), libelle: champ(item.libelle, 'Libellé (ex. cadets)', 'champ-libelle') }; }
   }
 
   class Frise extends Repetable {
     static get toolbox() { return { title: 'Frise chronologique', icon: '⋮' }; }
-    static get libelle() { return 'Frise chronologique : date courte (ex. 1976) et texte, dans l\'ordre'; }
-    champs(item) { return { date: champ(item.date, 'Date (ex. 1976)'), texte: champ(item.texte, 'Ce qui s\'est passé') }; }
+    static get libelle() { return 'Frise chronologique (dans l\'ordre)'; }
+    static get apparence() { return 'edition-frise'; }
+    champs(item) { return { date: champ(item.date, 'Année', 'champ-date'), texte: champ(item.texte, 'Ce qui s\'est passé', 'champ-texte', true) }; }
   }
 
   class Bouton {
