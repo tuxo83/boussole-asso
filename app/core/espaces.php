@@ -93,6 +93,13 @@ function slug_unique(string $title): string
     return $slug;
 }
 
+// Le journal des actions n'est gardé qu'un temps (réglable, 3 ans par défaut), comme l'annonce la page de confidentialité
+function journal_purger(): int
+{
+    $ans = max(1, min(10, (int) setting('journal_conservation_ans', '3')));
+    return db()->exec('DELETE FROM journal WHERE le < NOW() - INTERVAL ' . $ans . ' YEAR') ?: 0;
+}
+
 function membre_nom(array $member): string
 {
     $name = trim($member['prenom'] . ' ' . $member['nom']);
