@@ -90,3 +90,5 @@ details summary { cursor: pointer; color: var(--couleur-principale); margin: .5r
 .case { display: flex; align-items: center; gap: .5rem; margin: .4rem 0; }
 .fiche-membre { border-bottom: 1px solid var(--bordure); padding: .25rem 0; }
 .fiche-membre.inactif summary { color: #6a6a6a; }
+.petit { font-size: .92rem; margin: .25rem 0; }
+.carte p { margin: .35rem 0; }

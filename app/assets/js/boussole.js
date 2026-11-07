@@ -43,3 +43,10 @@
 document.querySelectorAll('.couleur input[type="color"]').forEach(function (input) {
   input.addEventListener('input', function () { input.nextElementSibling.textContent = input.value; });
 });
+
+// Actions irréversibles : confirmation (data-confirmer) ; sans JavaScript, l'action passe directement
+document.querySelectorAll('[data-confirmer]').forEach(function (button) {
+  button.addEventListener('click', function (event) {
+    if (!window.confirm(button.getAttribute('data-confirmer'))) { event.preventDefault(); }
+  });
+});

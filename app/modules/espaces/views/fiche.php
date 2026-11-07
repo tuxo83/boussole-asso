@@ -11,6 +11,9 @@
 
 <?= c_texte($espace['description']) ?>
 
+<?php if ($peut_contribuer && $espace['meteo'] === 'soleil' && array_filter($alertes, fn($a) => str_contains($a, 'dépassée'))): ?>
+<p class="petit">Une date clé est dépassée : la météo est-elle toujours « À jour » ?</p>
+<?php endif ?>
 <?php if ($peut_contribuer): ?>
 <form method="post" action="<?= $action('/meteo') ?>" class="en-ligne">
   <?= csrf_field() ?>
@@ -32,7 +35,7 @@
     <?php foreach ($equipe as $personne): ?>
     <li><strong><?= e(membre_nom($personne)) ?></strong> · <?= e($personne['libelle'] !== '' ? $personne['libelle'] : ESPACE_NIVEAUX[$personne['niveau']]) ?>
       <?php if ($peut_gerer): ?>
-      <form method="post" action="<?= $action('/equipe/retirer') ?>" class="en-ligne"><?= csrf_field() ?><input type="hidden" name="membre_id" value="<?= (int) $personne['id'] ?>"><button type="submit" class="lien-bouton">retirer</button></form>
+      <form method="post" action="<?= $action('/equipe/retirer') ?>" class="en-ligne"><?= csrf_field() ?><input type="hidden" name="membre_id" value="<?= (int) $personne['id'] ?>"><button type="submit" class="lien-bouton" data-confirmer="Retirer <?= e(membre_nom($personne)) ?> de l'équipe ?" aria-label="Retirer <?= e(membre_nom($personne)) ?>">retirer</button></form>
       <?php endif ?>
     </li>
     <?php endforeach ?>
@@ -83,9 +86,9 @@
   <ul class="liste">
     <?php foreach ($fichiers as $fichier): ?>
     <li><a href="<?= e(url('/fichier/' . (int) $fichier['id'])) ?>"><?= e($fichier['nom']) ?></a>
-      <span class="discret">· <?= e(number_format($fichier['taille'] / 1024, 0, ',', ' ')) ?> Ko · <?= e(date('d/m/Y', strtotime($fichier['depose_le']))) ?></span>
+      <span class="discret">· <?= e(taille_lisible((int) $fichier['taille'])) ?> · <?= e(date('d/m/Y', strtotime($fichier['depose_le']))) ?></span>
       <?php if ($peut_gerer): ?>
-      <form method="post" action="<?= e(url('/fichier/' . (int) $fichier['id'] . '/supprimer')) ?>" class="en-ligne"><?= csrf_field() ?><button type="submit" class="lien-bouton">supprimer</button></form>
+      <form method="post" action="<?= e(url('/fichier/' . (int) $fichier['id'] . '/supprimer')) ?>" class="en-ligne"><?= csrf_field() ?><button type="submit" class="lien-bouton" data-confirmer="Supprimer le fichier <?= e($fichier['nom']) ?> ?" aria-label="Supprimer <?= e($fichier['nom']) ?>">supprimer</button></form>
       <?php endif ?>
     </li>
     <?php endforeach ?>
