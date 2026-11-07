@@ -4,8 +4,11 @@
 <div class="grille">
   <?= c_carte('Double authentification', (int) $membre['totp_actif'] === 1
       ? '<p>Active.</p>'
-      : '<p>Inactive' . ((int) $membre['est_admin'] === 1 ? ' : obligatoire pour l\'administration.' : '.') . '</p>' . c_bouton('Activer', '/compte/double-authentification')) ?>
-  <?php if ((int) $membre['est_admin'] === 1): ?>
+      : '<p>Inactive' . (member_rights($membre['id']) ? ' : obligatoire pour la gestion.' : '.') . '</p>' . c_bouton('Activer', '/compte/double-authentification')) ?>
+  <?php if (has_right($membre, 'membres')): ?>
+  <?= c_carte('Membres', '<p>Ajouter, modifier, donner des droits.</p>' . c_bouton('Gérer les membres', '/admin/membres', 'secondaire')) ?>
+  <?php endif ?>
+  <?php if (is_admin($membre)): ?>
   <?= c_carte('Administration', '<p>Nom, apparence, envoi des e-mails.</p>' . c_bouton('Réglages', '/admin/parametres', 'secondaire')) ?>
   <?php endif ?>
 </div>

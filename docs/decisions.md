@@ -26,3 +26,9 @@
 - Trois axes indépendants : **type de membre** (statut dans l'association), **rôle dans un espace** (gérer cet espace), **droits de plateforme** (gérer une partie du site).
 - Droits de plateforme : **administrateur** (tout), et trois délégations : **cotisations**, **membres**, **publications** (accueil, pages, actualités).
 - Aucun droit ne découle d'une fonction (président, secrétaire…) : on attribue explicitement. Tout droit de plateforme impose la double authentification.
+
+## Pages du site : éditeur à blocs
+- Éditeur à blocs open source (Editor.js, licence Apache 2.0), embarqué dans le dépôt : aucun CDN, aucun service externe.
+- Le contenu est enregistré en blocs (JSON) et affiché avec nos propres composants : jamais de HTML libre.
+- Blocs dynamiques en nombre limité (liste d'événements, actualités, adhésion, contact, espaces publics), sans plugins.
+- Images : ré-encodées à l'envoi (suppression des métadonnées EXIF, GPS…), formats image uniquement. Une image d'une page publique est publique ; une image ou un fichier d'un espace ou d'un événement n'est servi qu'aux personnes qui ont le droit de voir cet espace.
