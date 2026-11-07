@@ -57,6 +57,16 @@ php -r '$i=imagecreatetruecolor(4,4); imagepng($i,$argv[1]);' "$W/logo.png" 2>/d
 printf '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>' > "$W/logo.svg"
 check "réglages : logo SVG refusé" "$(c -F "_csrf=$T" -F 'nom_association=Asso test' -F 'couleur_principale=#123456' -F 'couleur_accent=#654321' -F 'smtp_securite=starttls' -F "logo=@$W/logo.svg" "$U/admin/parametres")" "422 "
 check "réglages valides + CSS + expéditeur" "$(c -F "_csrf=$T" -F 'nom_association=Asso test' -F 'couleur_principale=#123456' -F 'couleur_accent=#654321' -F 'smtp_securite=starttls' -F 'css_personnalise=body{color:#111}' -F 'mail_expediteur=noreply@example.org' "$U/admin/parametres")" "303 $U/admin/parametres"
+# Tester l'envoi des e-mails avec les réglages saisis, sans les enregistrer (faux serveur SMTP local)
+PSMTP=$((20000 + RANDOM % 20000))
+python3 "$(dirname "$0")/smtp_simule.py" "$PSMTP" & SMTP_PID=$!; sleep 0.5
+mailtest() { c "$U/admin/parametres" >/dev/null; local t; t=$(tok); c --data-urlencode "_csrf=$t" -d "$SMTPD&smtp_mot_de_passe=$1" "$U/admin/mail-test"; }
+SMTPD="nom_association=Asso test&couleur_principale=%23123456&couleur_accent=%23654321&mail_expediteur=noreply@example.org&smtp_hote=127.0.0.1&smtp_port=$PSMTP&smtp_securite=aucune&smtp_utilisateur=u&test_destinataire=moi@example.org"
+check "test d'envoi : accepté par le serveur saisi" "$(mailtest bon >/dev/null; grep -c "Accepté par le serveur 127.0.0.1:$PSMTP pour moi@example.org" "$B")" "1"
+check "test d'envoi : réglages non enregistrés, formulaire resté rempli" "$(mysql -N -u "$DBU" -p"$DBP" "$DB" -e "SELECT COUNT(*) FROM parametre WHERE cle = 'smtp_hote' AND valeur = '127.0.0.1'" 2>/dev/null) $(grep -c "value=\"$PSMTP\"" "$B")" "0 1"
+check "test d'envoi : mot de passe refusé, raison affichée" "$(mailtest mauvais >/dev/null; grep -c 'identifiant ou mot de passe refusé' "$B")" "1"
+kill "$SMTP_PID"
+check "test d'envoi : serveur injoignable, raison affichée" "$(mailtest bon >/dev/null; grep -c "connexion impossible à 127.0.0.1:$PSMTP" "$B")" "1"
 check "feuille CSS personnalisée servie" "$(c "$U/theme.css")$(cat "$B")" "200 body{color:#111}"
 c "$U/" >/dev/null; check "couleur appliquée dans la page" "$(grep -c -- '--couleur-principale:#123456' "$B")" "1"
 c "$U/compte" >/dev/null; T=$(tok); c --data-urlencode "_csrf=$T" "$U/deconnexion" >/dev/null
