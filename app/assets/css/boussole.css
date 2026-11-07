@@ -398,3 +398,25 @@ main.conteneur { padding-top: 2rem; padding-bottom: 4.5rem; }
 .edition-cartes .champ-bloc, .edition-cartes .champ-icone, .edition-frise .champ-bloc { flex: none; min-height: 0; }
 .edition-cartes .champ-texte { min-height: 2.6rem; overflow: hidden; resize: none; }
 .edition-frise .champ-texte { min-height: 2.6rem; overflow: hidden; resize: none; }
+
+/* Page d'un espace (Élise et Inès) : état en haut, trois blocs d'action, administration repliée en bas */
+.espace-etat { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; margin: -.25rem 0 1rem; }
+.meteo-choix select { font: inherit; font-weight: 600; font-size: .92rem; min-height: 2.2rem; padding: .2rem 2rem .2rem .8rem; border: 1px solid var(--bordure-forte); border-radius: 999px; background-color: var(--principale-doux); color: var(--couleur-principale); cursor: pointer; }
+.a-faire { max-width: 46rem; margin: 0 0 1.25rem; padding: .7rem 1rem; border-left: 4px solid var(--couleur-accent); background: color-mix(in srgb, var(--couleur-accent) 7%, #fff); border-radius: 0 var(--rayon-petit) var(--rayon-petit) 0; }
+.a-faire ul { margin: .3rem 0 0; padding-left: 1.2rem; }
+.espace-blocs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem 2rem; margin: 1.5rem 0; }
+@media (max-width: 60rem) { .espace-blocs { grid-template-columns: minmax(0, 1fr); } }
+.espace-blocs h2 { font-size: 1.15rem; margin: 0 0 .5rem; }
+.espace-blocs details summary { color: var(--couleur-principale); font-weight: 600; cursor: pointer; margin-top: .4rem; }
+.equipe li { display: flex; flex-direction: column; gap: 0; }
+.actions-ligne { display: inline-flex; gap: .1rem; }
+.retirer-equipe { margin-top: .75rem; gap: .4rem; align-items: center; }
+.zone-depot { position: relative; display: flex; align-items: center; justify-content: center; min-height: 5rem; padding: .75rem; border: 2px dashed var(--bordure-forte); border-radius: var(--rayon); color: var(--texte-doux); text-align: center; font-size: .92rem; cursor: pointer; }
+.zone-depot input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.zone-depot:hover, .zone-depot.survol, .zone-depot:focus-within { border-color: var(--couleur-principale); color: var(--couleur-principale); background: var(--principale-doux); }
+.gerer-espace > summary { font-weight: 700; cursor: pointer; }
+.gerer-espace h3 { font-size: 1rem; margin: 1.25rem 0 .5rem; }
+.zone-sensible { margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #f2c3c8; }
+.zone-sensible h3 { color: #a3192b; }
+.visuellement-cache { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+[hidden] { display: none !important; }
