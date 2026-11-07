@@ -23,10 +23,16 @@ return [
                 flash('erreur', implode(' ', $erreurs));
                 redirect('/espace/' . $espace['slug']);
             }
-            $billetterie = strtolower(trim(preg_replace('#^.*/#', '', trim((string) ($_POST['helloasso_formulaire'] ?? '')))));
-            db_query('INSERT INTO evenement (espace_id, debut, lieu, mode, places, cloture, helloasso_formulaire) VALUES (?, ?, ?, ?, ?, ?, ?)
-                ON DUPLICATE KEY UPDATE debut = VALUES(debut), lieu = VALUES(lieu), mode = VALUES(mode), places = VALUES(places), cloture = VALUES(cloture), helloasso_formulaire = VALUES(helloasso_formulaire)',
-                [$espace['id'], $debut, mb_substr(trim((string) ($_POST['lieu'] ?? '')), 0, 200), $mode, $places ?: null, $cloture, mb_substr($billetterie, 0, 150) ?: ($ev['helloasso_formulaire'] ?? null)]);
+            // Lien de paiement HelloAsso : son dernier segment est le nom du formulaire de billetterie (lecture automatique des paiements)
+            $lien = trim((string) ($_POST['lien_paiement'] ?? ''));
+            $lien = preg_match('#^https://[^\s"<>]+$#', $lien) ? mb_substr($lien, 0, 300) : null;
+            $billetterie = $lien !== null && str_contains($lien, 'helloasso.com') ? strtolower(preg_replace('#^.*/#', '', rtrim(strtok($lien, '?'), '/'))) : null;
+            $reglement = isset(EVENEMENT_REGLEMENTS[$_POST['reglement'] ?? '']) ? $_POST['reglement'] : 'aucun';
+            db_query('INSERT INTO evenement (espace_id, debut, lieu, mode, places, cloture, helloasso_formulaire, reglement, lien_paiement, delai_jours, dernieres_jours) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON DUPLICATE KEY UPDATE debut = VALUES(debut), lieu = VALUES(lieu), mode = VALUES(mode), places = VALUES(places), cloture = VALUES(cloture), helloasso_formulaire = VALUES(helloasso_formulaire),
+                reglement = VALUES(reglement), lien_paiement = VALUES(lien_paiement), delai_jours = VALUES(delai_jours), dernieres_jours = VALUES(dernieres_jours)',
+                [$espace['id'], $debut, mb_substr(trim((string) ($_POST['lieu'] ?? '')), 0, 200), $mode, $places ?: null, $cloture, $billetterie ? mb_substr($billetterie, 0, 150) : null,
+                    $reglement, $lien, max(1, min(60, (int) ($_POST['delai_jours'] ?? 5))), max(0, min(90, (int) ($_POST['dernieres_jours'] ?? 7)))]);
             journal($espace['id'], $member, "Réglages de l'événement modifiés");
             // Plus de places après attribution : la liste d'attente en profite
             evenement_promouvoir(evenement_de($espace));
@@ -60,6 +66,17 @@ return [
                 db_query('UPDATE evenement SET cloture = NOW() WHERE espace_id = ?', [$espace['id']]);
                 journal($espace['id'], $member, 'Clôture anticipée des vœux');
                 evenement_cloturer(evenement_de($espace));
+            }
+            redirect('/espace/' . $espace['slug']);
+        }],
+        // Paiement reçu autrement (espèces, chèque, ou sans connexion HelloAsso) : l'organisateur le note
+        ['POST', '/espace/{slug}/paye', function (array $p) {
+            [$espace, $member] = evenement_action($p['slug'], 'gerer');
+            $inscrit = db_one('SELECT m.* FROM inscription i JOIN membre m ON m.id = i.membre_id WHERE i.evenement_id = ? AND i.membre_id = ? AND i.paye_le IS NULL', [$espace['id'], (int) ($_POST['membre_id'] ?? 0)]);
+            if ($inscrit !== null) {
+                db_query('UPDATE inscription SET paye_le = CURDATE() WHERE evenement_id = ? AND membre_id = ?', [$espace['id'], $inscrit['id']]);
+                journal($espace['id'], $member, 'Paiement noté : ' . membre_nom($inscrit));
+                evenement_regler(evenement_de($espace));
             }
             redirect('/espace/' . $espace['slug']);
         }],
@@ -119,6 +136,7 @@ function evenement_lire_date(string $value): ?string
 function evenement_vue(array $espace, ?array $member): array
 {
     evenements_cloturer_echus();
+    evenement_regler(evenement_de($espace));
     $ev = evenement_de($espace);
     $gere = espace_peut_gerer($member, $espace);
     return [

@@ -45,7 +45,7 @@ check "vrai paiement + notification : bob à jour aussitôt" "$(sql "SELECT moye
 
 # Billetterie d'un événement
 post "$U/espaces/nouveau" "$U/espaces/nouveau" -d 'type=evenement&titre=Dîner du phare&visibilite=adherents' >/dev/null
-post "$U/espace/diner-du-phare" "$U/espace/diner-du-phare/evenement" -d "mode=ouvert&debut=$(date -d '+20 days' +%Y-%m-%d)T19:30&helloasso_formulaire=https://www.helloasso.com/associations/les-amis-du-phare/evenements/diner-$P" >/dev/null
+post "$U/espace/diner-du-phare" "$U/espace/diner-du-phare/evenement" -d "mode=ouvert&debut=$(date -d '+20 days' +%Y-%m-%d)T19:30&lien_paiement=https://www.helloasso.com/associations/les-amis-du-phare/evenements/diner-$P" >/dev/null
 check "billetterie enregistrée" "$(sql "SELECT helloasso_formulaire FROM evenement")" "diner-$P"
 as carl; login_link carl carl@example.org; post "$U/espace/diner-du-phare" "$U/espace/diner-du-phare/inscription" -d 'action=voeu' >/dev/null
 echo "[{\"date\":\"$(date +%Y-%m-%d)T09:00:00+01:00\",\"state\":\"Authorized\",\"payer\":{\"email\":\"carl@example.org\"}}]" > "$HA/paiements-Event-diner-$P.json"

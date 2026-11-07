@@ -5,7 +5,7 @@ set -u
 # shellcheck disable=SC1091
 source "$(dirname "$0")/commun.sh" "$@"
 id() { sql "SELECT id FROM membre WHERE email = '$1@example.org'"; }
-cron() { php "$ROOT/app/bin/cli.php" cron | grep rappel; }
+cron() { php "$ROOT/app/bin/cli.php" cron | grep 'rappel(s) envoyé'; }
 mails() { grep -c "^To: $1@" "$MAIL" 2>/dev/null; }
 J() { date -d "+$1 days" +%Y-%m-%d; }
 

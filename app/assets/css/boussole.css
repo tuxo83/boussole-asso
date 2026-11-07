@@ -213,3 +213,17 @@ tr:last-child td { border-bottom: 0; }
 .bandeau-construction svg { width: 1.15rem; height: 1.15rem; flex: none; }
 .acces { max-width: 26rem; margin: 2rem auto; }
 .code-acces { font: 600 1.8rem ui-monospace, monospace !important; letter-spacing: .4em; text-align: center; }
+
+/* Frise des phases d'un événement */
+.frise-bloc { margin: 1.25rem 0; }
+.frise-titre { font-weight: 600; margin: 0 0 .5rem; }
+.frise { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: .5rem; counter-reset: phase; }
+.frise li { position: relative; display: flex; flex-direction: column; gap: .15rem; padding: .7rem .9rem; border: 1px solid var(--bordure); border-radius: var(--rayon-petit); background: var(--fond); font-size: .9rem; color: var(--texte-doux); }
+.frise li strong { color: var(--texte); font-size: .98rem; }
+.frise li .badge { align-self: flex-start; margin-top: .25rem; }
+.frise li.passee { background: var(--fond-doux); opacity: .75; }
+.frise li.passee strong::after { content: " ✓"; color: #1f6a34; }
+.frise li.courante { border: 2px solid var(--couleur-principale); background: var(--principale-doux); color: var(--texte); }
+.statut-a-regler { background: #fff8e6; border-color: #f0dca0; }
+.badge-alerte { background: #fdf0f1; border-color: #f2c3c8; color: #8a1d2c; }
+.evenement .aide-contenu ol { padding-left: 1.2rem; }
