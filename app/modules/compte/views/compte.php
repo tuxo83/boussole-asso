@@ -31,6 +31,8 @@
   <?php endif ?>
   <?php if (is_admin($membre)): ?>
   <?= c_carte('Administration', '<p>Nom, apparence, envoi des e-mails.</p>' . c_bouton('Réglages', '/admin/parametres', 'secondaire')) ?>
+  <?php $nouveaux = (int) db_value('SELECT COUNT(*) FROM message_contact WHERE lu = 0'); ?>
+  <?= c_carte('Messages reçus', '<p>' . ($nouveaux ? '<strong>' . $nouveaux . ' nouveau(x)</strong> message(s) du formulaire de contact.' : 'Messages du formulaire de contact.') . '</p>' . c_bouton('Lire', '/admin/messages', 'secondaire')) ?>
   <?php endif ?>
 </div>
 <?php endif ?>
