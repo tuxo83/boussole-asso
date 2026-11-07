@@ -81,3 +81,14 @@ document.querySelectorAll('[data-copier]').forEach(function (button) {
     if (navigator.clipboard) { navigator.clipboard.writeText(text).then(done); } else { window.prompt('Copiez :', text); }
   });
 });
+
+// Envoi dès le choix (météo, fichier à déposer) ; le bouton de secours n'est utile que sans JavaScript
+document.querySelectorAll('[data-envoi-auto]').forEach(function (champ) {
+  champ.addEventListener('change', function () { if (champ.value) { champ.form.requestSubmit(); } });
+});
+document.querySelectorAll('[data-sans-js]').forEach(function (bouton) { bouton.hidden = true; });
+// Zone de dépôt : on la met en valeur quand un fichier la survole
+document.querySelectorAll('.zone-depot').forEach(function (zone) {
+  ['dragenter', 'dragover'].forEach(function (t) { zone.addEventListener(t, function () { zone.classList.add('survol'); }); });
+  ['dragleave', 'drop'].forEach(function (t) { zone.addEventListener(t, function () { zone.classList.remove('survol'); }); });
+});

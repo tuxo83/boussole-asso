@@ -107,6 +107,11 @@ return [
         ['POST', '/espace/{slug}/supprimer', function (array $p) {
             $member = require_right('admin');
             $espace = espace_ou_404($p['slug']);
+            // On retape le nom de l'espace : impossible de supprimer par un clic malheureux
+            if (mb_strtolower(trim((string) ($_POST['confirmation'] ?? ''))) !== mb_strtolower(trim($espace['titre']))) {
+                flash('erreur', "Nom de l'espace mal recopié : rien n'a été supprimé.");
+                redirect('/espace/' . $espace['slug']);
+            }
             foreach (db_all('SELECT stockage FROM fichier WHERE espace_id = ?', [$espace['id']]) as $f) {
                 @unlink(BOUSSOLE_ROOT . '/stockage/' . $f['stockage']);
             }
