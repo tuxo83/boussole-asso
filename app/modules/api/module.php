@@ -21,6 +21,7 @@ return [
         ['GET', '/api/cotisations/moi', fn() => api_repondre(fn() => api_ma_cotisation())],
         ['GET', '/api/cotisations', fn() => api_repondre(fn() => api_cotisations(isset($_GET['periode']) ? (int) $_GET['periode'] : null))],
         ['POST', '/api/cotisations', fn() => api_repondre(fn() => api_cotisation_marquer((string) (api_corps()['email'] ?? ''), (string) (api_corps()['paye_le'] ?? ''), (string) (api_corps()['moyen'] ?? '')))],
+        ['POST', '/api/images', fn() => api_repondre(fn() => api_image_ajouter((string) (api_corps()['base64'] ?? '')))],
         ['GET', '/api/membres', fn() => api_repondre(fn() => api_membres())],
         ['POST', '/mcp', fn() => mcp_repondre()],
         // Transport HTTP du MCP sans flux serveur : GET n'est pas proposé
@@ -71,9 +72,9 @@ function mcp_outils(): array
         ['name' => 'lister_pages', 'description' => 'Pages du site (toutes si droit « publications », sinon les publiées).', 'inputSchema' => $objet([])],
         ['name' => 'lire_page', 'description' => "Contenu d'une page (blocs).", 'inputSchema' => $objet(['id' => ['type' => 'integer']], ['id'])],
         ['name' => 'creer_page', 'description' => "Créer une page. Contenu : « texte » (paragraphes séparés par une ligne vide) ou « blocs » (format de l'éditeur à blocs).",
-            'inputSchema' => $objet(['titre' => $texte('Titre'), 'texte' => $texte('Texte simple'), 'blocs' => ['type' => 'object'], 'parent_id' => ['type' => 'integer'], 'publiee' => ['type' => 'boolean'], 'reservee_membres' => ['type' => 'boolean', 'description' => 'Visible seulement des membres connectés']], ['titre'])],
+            'inputSchema' => $objet(['titre' => $texte('Titre'), 'texte' => $texte('Texte simple'), 'blocs' => ['type' => 'object'], 'parent_id' => ['type' => 'integer'], 'publiee' => ['type' => 'boolean'], 'reservee_membres' => ['type' => 'boolean', 'description' => 'Visible seulement des membres connectés'], 'dans_menu' => ['type' => 'boolean', 'description' => 'Dans le menu (pages de premier niveau)'], 'ordre' => ['type' => 'integer', 'description' => 'Ordre (plus petit = plus haut)'], 'est_accueil' => ['type' => 'boolean', 'description' => "Contenu de la page d'accueil"]], ['titre'])],
         ['name' => 'modifier_page', 'description' => 'Modifier une page (titre, contenu, parent, publication).',
-            'inputSchema' => $objet(['id' => ['type' => 'integer'], 'titre' => $texte('Titre'), 'texte' => $texte('Texte simple'), 'blocs' => ['type' => 'object'], 'parent_id' => ['type' => 'integer'], 'publiee' => ['type' => 'boolean'], 'reservee_membres' => ['type' => 'boolean', 'description' => 'Visible seulement des membres connectés']], ['id'])],
+            'inputSchema' => $objet(['id' => ['type' => 'integer'], 'titre' => $texte('Titre'), 'texte' => $texte('Texte simple'), 'blocs' => ['type' => 'object'], 'parent_id' => ['type' => 'integer'], 'publiee' => ['type' => 'boolean'], 'reservee_membres' => ['type' => 'boolean', 'description' => 'Visible seulement des membres connectés'], 'dans_menu' => ['type' => 'boolean', 'description' => 'Dans le menu (pages de premier niveau)'], 'ordre' => ['type' => 'integer', 'description' => 'Ordre (plus petit = plus haut)'], 'est_accueil' => ['type' => 'boolean', 'description' => "Contenu de la page d'accueil"]], ['id'])],
         ['name' => 'lister_evenements', 'description' => "Événements à venir visibles, avec date, lieu, places et ma situation (vœu, inscrit, liste d'attente…).", 'inputSchema' => $objet([])],
         ['name' => 'inscription_evenement', 'description' => "M'inscrire à un événement ou me désister (pour moi seulement). Places limitées : on dépose un vœu, attribué à la clôture de façon équitable.",
             'inputSchema' => $objet(['slug' => $texte("Identifiant de l'événement"), 'action' => ['type' => 'string', 'enum' => ['voeu', 'retirer', 'desister', 'confirmer', 'decliner']]], ['slug', 'action'])],
@@ -81,6 +82,8 @@ function mcp_outils(): array
         ['name' => 'lister_cotisations', 'description' => "Qui est à jour pour une période (droit « cotisations »). Période = année de début, par défaut l'actuelle.", 'inputSchema' => $objet(['periode' => ['type' => 'integer']])],
         ['name' => 'marquer_cotisation', 'description' => 'Enregistrer une cotisation payée (droit « cotisations ») : e-mail du membre, date AAAA-MM-JJ, moyen. Aucun montant ni donnée bancaire.',
             'inputSchema' => $objet(['email' => $texte('E-mail du membre'), 'paye_le' => $texte('Date du paiement AAAA-MM-JJ (par défaut aujourd\'hui)'), 'moyen' => ['type' => 'string', 'enum' => array_keys(COTISATION_MOYENS)]], ['email', 'moyen'])],
+        ['name' => 'ajouter_image', 'description' => "Envoyer une image pour une page (JPEG, PNG, WebP, GIF ; 8 Mo maximum ; métadonnées supprimées). Renvoie le bloc image à placer dans les blocs d'une page (ajouter légende et texte alternatif).",
+            'inputSchema' => $objet(['base64' => $texte('Contenu de l\'image en base64')], ['base64'])],
         ['name' => 'lister_membres', 'description' => 'Membres (droit « membres » nécessaire).', 'inputSchema' => $objet([])],
     ];
 }
@@ -102,6 +105,7 @@ function mcp_appeler(string $name, array $a): array
         'ma_cotisation' => api_ma_cotisation(),
         'lister_cotisations' => api_cotisations(isset($a['periode']) ? (int) $a['periode'] : null),
         'marquer_cotisation' => api_cotisation_marquer((string) ($a['email'] ?? ''), (string) ($a['paye_le'] ?? ''), (string) ($a['moyen'] ?? '')),
+        'ajouter_image' => api_image_ajouter((string) ($a['base64'] ?? '')),
         'lister_membres' => api_membres(),
         default => throw new ApiErreur("Outil inconnu : $name", 404),
     };
