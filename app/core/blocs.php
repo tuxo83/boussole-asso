@@ -239,14 +239,26 @@ function bloc_dynamique(string $bloc): string
     switch ($bloc) {
         case 'evenements':
             evenements_cloturer_echus();
-            $evenements = db_all('SELECT s.*, e.debut, e.lieu FROM espace s LEFT JOIN evenement e ON e.espace_id = s.id
-                WHERE s.type = "evenement" AND s.visibilite = "public" AND s.archive = 0 AND (e.debut IS NULL OR e.debut >= CURDATE()) ORDER BY e.debut IS NULL, e.debut');
+            // Agenda : les événements publics en entier ; ceux réservés aux membres en aperçu (titre et date),
+            // pour montrer la vie de l'association ; jamais ceux réservés à une équipe
+            $membre = current_member();
+            $evenements = array_values(array_filter(db_all('SELECT s.*, e.debut, e.lieu FROM espace s LEFT JOIN evenement e ON e.espace_id = s.id
+                WHERE s.type = "evenement" AND s.visibilite IN ("public", "adherents") AND s.archive = 0 AND (e.debut IS NULL OR e.debut >= CURDATE()) ORDER BY e.debut IS NULL, e.debut'),
+                fn($ev) => $ev['visibilite'] === 'public' || $membre === null || espace_peut_voir($membre, $ev)));
             if (!$evenements) {
                 return '';
             }
             $html = '<h2 class="titre-bloc">Prochains événements</h2><div class="grille">';
             foreach ($evenements as $ev) {
-                $html .= c_carte($ev['titre'], '<p><strong>' . e(evenement_date($ev['debut'])) . '</strong>' . ($ev['lieu'] ? ' · ' . e($ev['lieu']) : '') . '</p><p>' . e(mb_strimwidth($ev['description'], 0, 110, '…')) . '</p>', '/espace/' . $ev['slug']);
+                // Visiteur : rien de l'événement réservé (ni titre, ni lieu, ni lien vers sa page), seulement qu'il existe et sa date
+                if ($ev['visibilite'] !== 'public' && $membre === null) {
+                    $html .= c_carte('Événement réservé aux membres', '<p><span class="badge badge-membres">Membres</span></p><p><strong>' . e(evenement_date($ev['debut'])) . '</strong></p>'
+                        . '<p class="petit">Connectez-vous pour le découvrir et vous inscrire.</p>', '/connexion');
+                    continue;
+                }
+                $html .= c_carte($ev['titre'], ($ev['visibilite'] !== 'public' ? '<p><span class="badge badge-membres">Réservé aux membres</span></p>' : '')
+                    . '<p><strong>' . e(evenement_date($ev['debut'])) . '</strong>' . ($ev['lieu'] ? ' · ' . e($ev['lieu']) : '') . '</p>'
+                    . '<p>' . e(mb_strimwidth($ev['description'], 0, 110, '…')) . '</p>', '/espace/' . $ev['slug']);
             }
             return $html . '</div>';
         case 'espaces-publics':
