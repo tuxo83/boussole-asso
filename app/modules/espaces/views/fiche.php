@@ -16,15 +16,12 @@
 <p class="petit">Une date clé est dépassée : la météo est-elle toujours « À jour » ?</p>
 <?php endif ?>
 <?php if ($peut_contribuer): ?>
-<form method="post" action="<?= $action('/meteo') ?>" class="en-ligne">
+<form method="post" action="<?= $action('/meteo') ?>" class="choix-meteo" aria-label="Changer la météo">
   <?= csrf_field() ?>
-  <label for="meteo">Météo</label>
-  <select id="meteo" name="meteo">
-    <?php foreach (['soleil' => '☀️ À jour', 'eclaircie' => '🌤️ En cours', 'pluie' => '🌧️ En retard', 'orage' => '⛈️ Bloqué'] as $cle => $libelle): ?>
-    <option value="<?= $cle ?>"<?= $espace['meteo'] === $cle ? ' selected' : '' ?>><?= $libelle ?></option>
-    <?php endforeach ?>
-  </select>
-  <button type="submit" class="bouton bouton-secondaire">Mettre à jour</button>
+  <span class="discret">Changer la météo :</span>
+  <?php foreach (['soleil', 'eclaircie', 'pluie', 'orage'] as $cle): ?>
+  <button type="submit" name="meteo" value="<?= $cle ?>" aria-pressed="<?= $espace['meteo'] === $cle ? 'true' : 'false' ?>"><?= c_meteo($cle) ?></button>
+  <?php endforeach ?>
 </form>
 <?php endif ?>
 

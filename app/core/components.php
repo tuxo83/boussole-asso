@@ -19,17 +19,38 @@ function c_alerte(string $type, string $message): string
     return '<p class="alerte alerte-' . $type . '" role="' . ($type === 'erreur' ? 'alert' : 'status') . '">' . e($message) . '</p>';
 }
 
+// Icônes dessinées (traits simples, couleur du texte) : pas d'émojis, rendu identique partout
+const ICONES = [
+    'soleil' => '<circle cx="12" cy="12" r="4.5"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/>',
+    'eclaircie' => '<circle cx="9" cy="8.5" r="3.5"/><path d="M9 2.5v1.3M3 8.5h1.3M4.8 4.3l.9.9M13.2 4.3l-.9.9"/><path d="M8.5 20h9a3.5 3.5 0 0 0 .3-7 5 5 0 0 0-9.5 1.2A3 3 0 0 0 8.5 20z" fill="currentColor" fill-opacity=".12"/>',
+    'pluie' => '<path d="M7.5 15h10a3.8 3.8 0 0 0 .3-7.6 5.5 5.5 0 0 0-10.5 1.4A3.2 3.2 0 0 0 7.5 15z" fill="currentColor" fill-opacity=".12"/><path d="M8.5 18l-1 2.5M12.5 18l-1 2.5M16.5 18l-1 2.5"/>',
+    'orage' => '<path d="M7.5 14.5h10a3.8 3.8 0 0 0 .3-7.6 5.5 5.5 0 0 0-10.5 1.4A3.2 3.2 0 0 0 7.5 14.5z" fill="currentColor" fill-opacity=".12"/><path d="M13 13l-2.5 4h3l-2 4" stroke-linejoin="round"/>',
+    'calendrier' => '<rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
+    'lieu' => '<path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/>',
+    'personnes' => '<circle cx="9" cy="8.5" r="3.2"/><path d="M3 19.5a6 6 0 0 1 12 0"/><circle cx="17" cy="9.5" r="2.5"/><path d="M15.5 14.2a5 5 0 0 1 5.5 5.3"/>',
+    'attention' => '<path d="M12 3.5 2.8 19.5h18.4z" stroke-linejoin="round"/><path d="M12 10v4.2"/><circle cx="12" cy="17" r=".6" fill="currentColor"/>',
+    'horloge' => '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+];
+
+function c_icone(string $nom): string
+{
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true" focusable="false">' . (ICONES[$nom] ?? '') . '</svg>';
+}
+
 // Météo d'un sujet : l'icône est toujours accompagnée de son libellé
 function c_meteo(string $etat): string
 {
-    $etats = [
-        'soleil' => ['☀️', 'À jour'],
-        'eclaircie' => ['🌤️', 'En cours'],
-        'pluie' => ['🌧️', 'En retard'],
-        'orage' => ['⛈️', 'Bloqué'],
-    ];
-    [$icone, $libelle] = $etats[$etat] ?? ['❔', 'Inconnu'];
-    return '<span class="meteo meteo-' . e($etat) . '"><span aria-hidden="true">' . $icone . '</span> ' . e($libelle) . '</span>';
+    $libelles = ['soleil' => 'À jour', 'eclaircie' => 'En cours', 'pluie' => 'En retard', 'orage' => 'Bloqué'];
+    if (!isset($libelles[$etat])) {
+        return '<span class="meteo">Inconnu</span>';
+    }
+    return '<span class="meteo meteo-' . $etat . '">' . c_icone($etat) . e($libelles[$etat]) . '</span>';
+}
+
+// Aide repliable : un « ? » qui s'ouvre au clic ou au toucher, lisible sans JavaScript
+function c_aide(string $titre, string $contenu_html): string
+{
+    return '<details class="aide"><summary aria-label="Aide : ' . e($titre) . '"><span aria-hidden="true">?</span></summary><div class="aide-contenu">' . $contenu_html . '</div></details>';
 }
 
 // Champ de formulaire : libellé, aide, erreur, valeur conservée
@@ -71,7 +92,7 @@ function c_champ(string $nom, string $libelle, array $options = []): string
 // Tableau : $colonnes = [clé => en-tête] ; les cellules sont échappées
 function c_tableau(array $colonnes, array $lignes): string
 {
-    $html = '<table><thead><tr>';
+    $html = '<div class="tableau"><table><thead><tr>';
     foreach ($colonnes as $entete) {
         $html .= '<th scope="col">' . e($entete) . '</th>';
     }
@@ -83,7 +104,7 @@ function c_tableau(array $colonnes, array $lignes): string
         }
         $html .= '</tr>';
     }
-    return $html . '</tbody></table>';
+    return $html . '</tbody></table></div>';
 }
 
 function taille_lisible(int $octets): string
