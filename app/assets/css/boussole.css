@@ -163,7 +163,8 @@ tr:last-child td { border-bottom: 0; }
 /* Pages : texte en colonne lisible, cartes et chiffres sur toute la largeur */
 .contenu { max-width: none; }
 .contenu > p, .contenu > ul, .contenu > ol, .contenu > blockquote, .contenu > h1, .contenu > h2, .contenu > h3, .contenu > h4 { max-width: 46rem; }
-/* Pages (hors accueil), avis d'Élise : un seul bord gauche commun aux titres, textes et cartes ;
+/* Pages (hors accueil), avis d'Élise : un seul bord gauche commun aux titres, textes et cartes ; une boîte visible
+   (fond, bordure) va jusqu'au bord droit des cartes ;
    46rem limite seulement la longueur des lignes */
 main > .ariane, main > .sous-pages > h2 { max-width: 46rem; }
 .contenu figure { margin: 1.75rem 0; }
@@ -340,7 +341,7 @@ main.conteneur { padding-top: 2rem; padding-bottom: 4.5rem; }
 .menu .lien-verrou { opacity: .85; }
 .menu .lien-verrou svg { width: 1rem; height: 1rem; margin-right: .3rem; }
 .carte-page-reservee h3 svg { width: 1.05rem; height: 1.05rem; vertical-align: -.12rem; }
-.agenda-visiteur { display: block; margin: 0 0 1.5rem; padding: .7rem 1rem; max-width: 46rem; background: var(--fond-doux); border-radius: var(--rayon-petit); font-size: .93rem; }
+.agenda-visiteur, .contenu > .agenda-visiteur { display: block; margin: 0 0 1.5rem; padding: .7rem 1rem; max-width: none; background: var(--fond-doux); border-radius: var(--rayon-petit); font-size: .93rem; }
 .agenda-visiteur svg { width: 1rem; height: 1rem; }
 .titre-avec-lien { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: .25rem 1rem; }
 .titre-avec-lien a { font-weight: 600; white-space: nowrap; }
