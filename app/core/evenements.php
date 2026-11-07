@@ -22,7 +22,7 @@ const EVENEMENT_GROUPES = [
 function evenement_de(array $espace): array
 {
     return db_one('SELECT * FROM evenement WHERE espace_id = ?', [$espace['id']])
-        ?? ['espace_id' => $espace['id'], 'debut' => null, 'lieu' => '', 'mode' => 'ouvert', 'places' => null, 'cloture' => null, 'etat' => 'ouvert'];
+        ?? ['espace_id' => $espace['id'], 'debut' => null, 'lieu' => '', 'mode' => 'ouvert', 'places' => null, 'cloture' => null, 'etat' => 'ouvert', 'helloasso_formulaire' => null];
 }
 
 function evenement_limite(array $ev): bool

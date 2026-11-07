@@ -24,7 +24,8 @@ final class Router
                 continue;
             }
             // L'API et le MCP s'authentifient par clé (en-tête Authorization), jamais par cookie : pas de CSRF possible
-            if ($routeMethod === 'POST' && !str_starts_with($path, '/api/') && $path !== '/mcp') {
+            // La notification HelloAsso vient d'un serveur et n'est jamais lue : elle déclenche seulement une vérification
+            if ($routeMethod === 'POST' && !str_starts_with($path, '/api/') && $path !== '/mcp' && !str_starts_with($path, '/helloasso/notification/')) {
                 csrf_check();
             }
             $handler(array_filter($matches, 'is_string', ARRAY_FILTER_USE_KEY));
