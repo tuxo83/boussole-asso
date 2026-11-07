@@ -15,6 +15,15 @@ php -S 127.0.0.1:$PORT -t "$ROOT/app" "$ROOT/tests/router-serveur-php.php" > "$W
 SERVER=$!; trap 'kill $SERVER; rm -f "$ROOT/app/config/config.php"' EXIT; sleep 1
 c() { curl -s -b "$J" -c "$J" -o "$B" -w '%{http_code} %{redirect_url}' "$@"; }
 tok() { grep -o 'name="_csrf" value="[^"]*"' "$B" | head -1 | sed 's/.*value="//;s/"//'; }
+# Formulaire « humain » : relit la page du formulaire, attend le délai minimal, calcule la preuve de travail
+# shellcheck disable=SC2016
+proof() { php -r '[$s,$d]=explode(".",$argv[1]); for($n=0;;$n++){$h=hash("sha256",$s.$n,true);$b=0;foreach(str_split($h) as $c){$o=ord($c);if($o===0){$b+=8;continue;}$b+=7-(int)floor(log($o,2));break;} if($b>=$d){echo $n;break;}}' "$1"; }
+hpost() { # hpost <page du formulaire> <action> <données…>
+    local page=$1 action=$2; shift 2
+    c "$page" >/dev/null; local t d; t=$(tok); d=$(grep -o 'name="_h_defi" value="[^"]*"' "$B" | sed 's/.*value="//;s/"//')
+    sleep 2
+    c --data-urlencode "_csrf=$t" --data-urlencode "_h_defi=$d" -d "_h_preuve=$(proof "$d")" "$@" "$action"
+}
 ok=0 ko=0
 # Le 3e argument est un motif (glob) volontairement
 # shellcheck disable=SC2053
@@ -26,9 +35,8 @@ totp() { php -r 'require $argv[1]."/app/core/totp.php"; echo totp_code($argv[2],
 c "$U/installation" >/dev/null; T=$(tok)
 check "installation : mot de passe trop court refusé" "$(c --data-urlencode "_csrf=$T" -d 'nom_association=Asso&email_admin=admin@example.org&mot_de_passe=court&confirmation=court' "$U/installation")" "422 "
 check "installation complète" "$(c --data-urlencode "_csrf=$T" -d 'nom_association=Asso test&email_admin=Admin@example.org&mot_de_passe=motdepasse-tres-long&confirmation=motdepasse-tres-long' "$U/installation")" "303 $U/"
-c "$U/connexion" >/dev/null; T=$(tok)
-check "connexion : mauvais mot de passe" "$(c --data-urlencode "_csrf=$T" -d 'email=admin@example.org&mot_de_passe=faux' "$U/connexion")" "422 "
-check "connexion : bon mot de passe" "$(c --data-urlencode "_csrf=$T" -d 'email=ADMIN@example.org&mot_de_passe=motdepasse-tres-long' "$U/connexion")" "303 $U/compte"
+check "connexion : mauvais mot de passe" "$(hpost "$U/connexion" "$U/connexion" -d 'email=admin@example.org&mot_de_passe=faux')" "422 "
+check "connexion : bon mot de passe" "$(hpost "$U/connexion" "$U/connexion" -d 'email=ADMIN@example.org&mot_de_passe=motdepasse-tres-long')" "303 $U/compte"
 check "admin sans double authentification → activation imposée" "$(c "$U/admin/parametres")" "303 $U/compte/double-authentification"
 c "$U/compte/double-authentification" >/dev/null; T=$(tok); S=$(grep -o '<code class="cle">[^<]*' "$B" | sed 's/.*>//; s/ //g')
 check "activation 2FA : mauvais code" "$(c --data-urlencode "_csrf=$T" -d 'code=000000' "$U/compte/double-authentification")" "422 "
@@ -46,8 +54,7 @@ check "feuille CSS personnalisée servie" "$(c "$U/theme.css")$(cat "$B")" "200 
 c "$U/" >/dev/null; check "couleur appliquée dans la page" "$(grep -c -- '--couleur-principale:#123456' "$B")" "1"
 c "$U/compte" >/dev/null; T=$(tok); c --data-urlencode "_csrf=$T" "$U/deconnexion" >/dev/null
 check "après déconnexion, compte inaccessible" "$(c "$U/compte")" "303 $U/connexion"
-c "$U/connexion" >/dev/null; T=$(tok)
-c --data-urlencode "_csrf=$T" -d 'email=admin@example.org&mot_de_passe=motdepasse-tres-long' "$U/connexion" >/dev/null
+hpost "$U/connexion" "$U/connexion" -d 'email=admin@example.org&mot_de_passe=motdepasse-tres-long' >/dev/null
 check "avec 2FA active : 2e étape demandée" "$(c "$U/compte")" "303 $U/connexion"
 c "$U/connexion/double-authentification" >/dev/null; T=$(tok)
 check "2e étape : mauvais code" "$(c --data-urlencode "_csrf=$T" -d 'code=111111' "$U/connexion/double-authentification")" "422 "
@@ -56,10 +63,9 @@ c "$U/compte" >/dev/null; T=$(tok); c --data-urlencode "_csrf=$T" "$U/deconnexio
 
 # Lien magique pour un membre sans mot de passe
 mysql -u "$DBU" -p"$DBP" "$DB" -e "INSERT INTO membre (email) VALUES ('membre@example.org')" 2>/dev/null
-c "$U/connexion" >/dev/null; T=$(tok)
-check "inconnu : même réponse (pas de révélation)" "$(c --data-urlencode "_csrf=$T" -d 'email=personne@example.org' "$U/connexion")" "303 $U/connexion/code"
+check "inconnu : même réponse (pas de révélation)" "$(hpost "$U/connexion" "$U/connexion" -d 'email=personne@example.org')" "303 $U/connexion/code"
 check "aucun e-mail pour une adresse inconnue" "$(grep -c 'personne@example.org' "$MAIL" 2>/dev/null || echo 0)" "0"
-check "demande de lien" "$(c --data-urlencode "_csrf=$T" -d 'email=membre@example.org' "$U/connexion")" "303 $U/connexion/code"
+check "demande de lien" "$(hpost "$U/connexion" "$U/connexion" -d 'email=membre@example.org')" "303 $U/connexion/code"
 LIEN=$(grep -o 'http://[^ ]*/connexion/lien/[a-f0-9]*' "$MAIL" | tail -1); CODE=$(grep -o 'code sur la page de connexion : [0-9]*' "$MAIL" | tail -1 | grep -o '[0-9]*$')
 check "le lien dans l'e-mail vient de l'adresse figée" "$LIEN" "http://127.0.0.1:8099/connexion/lien/*"
 check "ouvrir le lien ne connecte pas encore (aperçu)" "$(c "$LIEN")" "200 "
@@ -68,13 +74,21 @@ check "confirmer le lien connecte" "$(c --data-urlencode "_csrf=$T" "$LIEN")" "3
 c "$U/compte" >/dev/null; T=$(tok); c --data-urlencode "_csrf=$T" "$U/deconnexion" >/dev/null
 c "$LIEN" >/dev/null; T=$(tok)
 check "lien déjà utilisé refusé" "$(c --data-urlencode "_csrf=$T" "$LIEN")" "303 $U/connexion"
-c "$U/connexion" >/dev/null; T=$(tok); c --data-urlencode "_csrf=$T" -d 'email=membre@example.org' "$U/connexion" >/dev/null
-CODE=$(grep -o 'code sur la page de connexion : [0-9]*' "$MAIL" | tail -1 | grep -o '[0-9]*$'); c "$U/connexion/code" >/dev/null; T=$(tok)
-for _ in 1 2 3 4 5; do c --data-urlencode "_csrf=$T" -d 'code=999999' "$U/connexion/code" >/dev/null; done
-check "code bloqué après 5 erreurs, même le bon" "$(c --data-urlencode "_csrf=$T" -d "code=$CODE" "$U/connexion/code")" "422 "
-c "$U/connexion" >/dev/null; T=$(tok)
-for _ in $(seq 1 9); do c --data-urlencode "_csrf=$T" -d 'email=membre@example.org' "$U/connexion" >/dev/null; done
-check "trop de demandes pour un e-mail : 429" "$(c --data-urlencode "_csrf=$T" -d 'email=membre@example.org' "$U/connexion")" "429 "
+hpost "$U/connexion" "$U/connexion" -d 'email=membre@example.org' >/dev/null
+CODE=$(grep -o 'code sur la page de connexion : [0-9]*' "$MAIL" | tail -1 | grep -o '[0-9]*$')
+for _ in 1 2 3 4 5; do hpost "$U/connexion/code" "$U/connexion/code" -d 'code=999999' >/dev/null; done
+check "code bloqué après 5 erreurs, même le bon" "$(hpost "$U/connexion/code" "$U/connexion/code" -d "code=$CODE")" "422 "
+# Captcha invisible
+c "$U/connexion" >/dev/null; T=$(tok); D=$(grep -o 'name="_h_defi" value="[^"]*"' "$B" | sed 's/.*value="//;s/"//')
+check "captcha : champ piège rempli → refus" "$(c --data-urlencode "_csrf=$T" --data-urlencode "_h_defi=$D" -d "_h_preuve=$(proof "$D")&site_web=spam&email=membre@example.org" "$U/connexion")" "400 "
+check "captcha : envoi instantané → refus" "$(c --data-urlencode "_csrf=$T" --data-urlencode "_h_defi=$D" -d '_h_preuve=1&email=membre@example.org' "$U/connexion")" "400 "
+check "captcha : défi falsifié → refus" "$(c --data-urlencode "_csrf=$T" -d '_h_defi=aaaa.16.1.bbbb&_h_preuve=1&email=membre@example.org' "$U/connexion")" "400 "
+check "captcha : mauvaise preuve → refus" "$(sleep 2; c --data-urlencode "_csrf=$T" --data-urlencode "_h_defi=$D" -d '_h_preuve=1&email=membre@example.org' "$U/connexion")" "400 "
+c "$U/connexion" >/dev/null; T=$(tok); D=$(grep -o 'name="_h_defi" value="[^"]*"' "$B" | sed 's/.*value="//;s/"//'); sleep 2; P=$(proof "$D")
+c --data-urlencode "_csrf=$T" --data-urlencode "_h_defi=$D" -d "_h_preuve=$P&email=membre@example.org" "$U/connexion" >/dev/null
+check "captcha : même défi rejoué → refus" "$(c --data-urlencode "_csrf=$T" --data-urlencode "_h_defi=$D" -d "_h_preuve=$P&email=membre@example.org" "$U/connexion")" "400 "
+for _ in $(seq 1 7); do hpost "$U/connexion" "$U/connexion" -d 'email=membre@example.org' >/dev/null; done
+check "trop de demandes pour un e-mail : 429" "$(hpost "$U/connexion" "$U/connexion" -d 'email=membre@example.org')" "429 "
 check "formulaire sans jeton CSRF refusé" "$(c -d 'email=membre@example.org' "$U/connexion")" "400 "
 grep -i -E 'fatal|warning|notice|deprecated' "$W/serveur.log" | head -5
 echo "Bilan : $ok OK, $ko KO"

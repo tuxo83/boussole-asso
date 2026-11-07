@@ -13,9 +13,12 @@ return [
             render('connexion/connexion', ['titre' => 'Connexion', 'email' => '', 'erreur' => null]);
         }],
         ['POST', '/connexion', function () {
+            if (!humain_verifier()) {
+                humain_refus();
+            }
             $email = mb_strtolower(trim((string) ($_POST['email'] ?? '')));
             $password = (string) ($_POST['mot_de_passe'] ?? '');
-            if (too_many_attempts('ip|' . client_ip(), 30) || too_many_attempts('email|' . $email, 10)) {
+            if (ip_blocked() || too_many_attempts('ip|' . client_ip(), 30) || too_many_attempts('email|' . $email, 10)) {
                 http_response_code(429);
                 render('connexion/connexion', ['titre' => 'Connexion', 'email' => $email, 'erreur' => 'Trop de tentatives, réessayez dans 15 minutes.']);
                 return;
@@ -45,6 +48,9 @@ return [
             render('connexion/code', ['titre' => 'Connexion', 'email' => (string) ($_SESSION['connexion_email'] ?? ''), 'erreur' => null]);
         }],
         ['POST', '/connexion/code', function () {
+            if (!humain_verifier()) {
+                humain_refus();
+            }
             $email = (string) ($_SESSION['connexion_email'] ?? ($_POST['email'] ?? ''));
             $member = too_many_attempts('ip|' . client_ip(), 30) ? null : use_login_code($email, (string) ($_POST['code'] ?? ''));
             if ($member === null) {

@@ -85,6 +85,13 @@ function too_many_attempts(string $key, int $max = 10, int $minutes = 15): bool
     return $count >= $max;
 }
 
+// Adresse IP trop insistante : bloquée 1 h au-delà de 100 envois en 1 h, en plus des limites par 15 min
+function ip_blocked(): bool
+{
+    $hash = hash('sha256', 'ip|' . client_ip());
+    return (int) db_one('SELECT COUNT(*) AS n FROM tentative_connexion WHERE cle = ? AND le > NOW() - INTERVAL 1 HOUR', [$hash])['n'] >= 100;
+}
+
 function client_ip(): string
 {
     return (string) ($_SERVER['REMOTE_ADDR'] ?? '');
