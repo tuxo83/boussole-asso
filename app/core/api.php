@@ -236,6 +236,41 @@ function api_inscription(string $slug, string $action): array
     return ['message' => $message, 'mon_statut' => inscription_de($ev, current_member())['statut'] ?? null];
 }
 
+function api_ma_cotisation(): array
+{
+    $ma = cotisation_a_jour(current_member());
+    $depuis = cotisation_depuis(current_member());
+    return ['periode' => cotisation_periode_libelle(cotisation_periode()), 'a_jour' => $ma !== null, 'paye_le' => $ma['paye_le'] ?? null,
+        'a_jour_depuis' => $depuis !== null ? cotisation_periode_libelle($depuis) : null];
+}
+
+function api_cotisations(?int $periode): array
+{
+    if (!has_right(current_member(), 'cotisations')) {
+        throw new ApiErreur('Droit « cotisations » nécessaire', 403);
+    }
+    $periode ??= cotisation_periode();
+    return ['periode' => cotisation_periode_libelle($periode), 'membres' => array_map(fn($r) => ['email' => $r['email'], 'nom' => membre_nom($r), 'a_jour' => $r['paye_le'] !== null,
+        'paye_le' => $r['paye_le'], 'moyen' => $r['moyen']], db_all('SELECT m.*, c.paye_le, c.moyen FROM membre m LEFT JOIN cotisation c ON c.membre_id = m.id AND c.periode = ? WHERE m.actif = 1 ORDER BY m.nom', [$periode]))];
+}
+
+function api_cotisation_marquer(string $email, string $date, string $moyen): array
+{
+    api_ecriture();
+    if (!has_right(current_member(), 'cotisations')) {
+        throw new ApiErreur('Droit « cotisations » nécessaire', 403);
+    }
+    $member = db_one('SELECT * FROM membre WHERE email = ?', [mb_strtolower(trim($email))]);
+    if ($member === null) {
+        throw new ApiErreur('Aucun membre avec cet e-mail', 404);
+    }
+    $date = $date !== '' ? $date : date('Y-m-d');
+    if (!cotisation_marquer($member, cotisation_periode($date), $date, $moyen, current_member())) {
+        throw new ApiErreur('Date AAAA-MM-JJ (pas dans le futur) et moyen : ' . implode(', ', array_keys(COTISATION_MOYENS)));
+    }
+    return ['email' => $member['email'], 'periode' => cotisation_periode_libelle(cotisation_periode($date)), 'paye_le' => $date, 'moyen' => $moyen];
+}
+
 function api_membres(): array
 {
     if (!has_right(current_member(), 'membres')) {

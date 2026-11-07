@@ -194,3 +194,16 @@ tr:last-child td { border-bottom: 0; }
 .piege { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
 
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+/* Cotisations */
+.jauge { margin: 1.25rem 0 1.5rem; }
+.jauge-barre { height: .75rem; border-radius: 999px; background: var(--fond-doux); border: 1px solid var(--bordure); overflow: hidden; }
+.jauge-barre span { display: block; height: 100%; background: linear-gradient(90deg, #4caf6a, #2e8b4f); border-radius: 999px; }
+.jauge p { margin: .4rem 0 0; }
+.ligne-cotisation .qui { flex-direction: column; align-items: flex-start; gap: 0; }
+.ligne-cotisation select, .ligne-cotisation input[type="date"] { font: inherit; min-height: var(--cible); padding: .4rem .7rem; border: 1px solid var(--bordure-forte); border-radius: var(--rayon-petit); background: #fff; color: var(--texte); }
+.badge-ok { background: #effaf1; border-color: #bfe3c6; color: #1f6a34; }
+.filtre { width: 100%; max-width: 28rem; font: inherit; min-height: var(--cible); padding: .5rem .9rem; border: 1px solid var(--bordure-forte); border-radius: 999px; }
+.bouton-danger { background: #b42335; border-color: #b42335; color: #fff; }
+.bouton-danger:hover { background: #8f1b2a; }
+.bouton[disabled] { opacity: .45; cursor: not-allowed; }

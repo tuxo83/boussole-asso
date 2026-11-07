@@ -100,7 +100,7 @@ as admin; post "$U/espaces/nouveau" "$U/espaces/nouveau" -d 'type=evenement&titr
 post "$U/espace/sortie" "$U/espace/sortie/evenement" -d "mode=auto&places=1&debut=$MOIS&cloture=$DEMAIN" >/dev/null
 agir bruno sortie voeu
 sql "UPDATE evenement SET cloture = NOW() - INTERVAL 1 MINUTE WHERE espace_id = (SELECT id FROM espace WHERE slug = 'sortie')"
-check "cron : clôture et attribution" "$(php "$ROOT/app/bin/cli.php" cron) $(statut sortie bruno)" "cron : 1 événement(s) clôturé(s) retenu"
+check "cron : clôture et attribution" "$(php "$ROOT/app/bin/cli.php" cron | head -1) $(statut sortie bruno)" "cron : 1 événement(s) clôturé(s) retenu"
 agir chloe sortie voeu
 check "après clôture : liste d'attente" "$(statut sortie chloe)" "attente 1"
 check "visiteur : l'agenda public montre l'AG" "$(curl -s "$U/" -o /dev/null; as visiteur; c "$U/espace/assemblee-generale" >/dev/null; grep -c "Se connecter pour s" "$B")" "1"
