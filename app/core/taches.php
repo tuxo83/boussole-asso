@@ -19,6 +19,7 @@ function taches_planifiees(): array
             evenements_regler_tous() . ' événement(s) à règlement vérifié(s)',
             evenements_rappels_echeance() . " rappel(s) d'échéance",
             journal_purger() . ' ligne(s) de journal effacée(s)',
+            messages_contact_purger() . ' message(s) de contact effacé(s)',
         ];
     } finally {
         db_value("SELECT RELEASE_LOCK('boussole_taches')");

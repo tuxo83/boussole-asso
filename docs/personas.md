@@ -36,7 +36,7 @@ Le panel s'appuie sur une association de référence : des membres issus d'une f
 | **Paul** | Simplicité du code | Code lisible par un bénévole, rien d'inutile, « moins mais mieux » : chaque ajout doit simplifier ou se justifier |
 | **Anne** | Bénévole d'une autre association (sport, culture…) | Que rien ne soit spécifique à l'association de référence : universalité |
 | **Julien** | Référencement et partage (SEO) | Plan du site et consignes aux robots, titres et descriptions, adresse canonique, aperçus de partage (réseaux, messageries), données structurées (association, événements), performance perçue. Avec Nadia, il veille à ce que **rien de réservé ni d'interne** ne soit proposé aux moteurs, et rien du tout tant que le site est en construction. |
-| **Hélène** | Juriste, droit du numérique et des associations | Mentions légales (LCEN), information des personnes (RGPD, art. 13 et 14), cookies (lignes directrices de la CNIL), conditions d'adhésion. Elle vise des textes sobres et incontestables, et respecte la discrétion voulue : on dit ce que la loi exige, pas où ni comment les données sont gardées. |
+| **Hélène** | Juriste, droit du numérique et des associations | Mentions légales (LCEN), information des personnes (RGPD, art. 13 et 14), cookies (lignes directrices de la CNIL), conditions d'adhésion. Elle vise des textes sobres et incontestables, et respecte la discrétion voulue : on dit ce que la loi exige, pas où ni comment les données sont gardées. Pas de zèle : elle distingue l'obligation réelle et risquée de la simple recommandation, et laisse le bureau trancher les risques faibles. |
 
 ## Règles du panel
 
