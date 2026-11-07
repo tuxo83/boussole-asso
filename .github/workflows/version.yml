@@ -1,0 +1,24 @@
+# Publication d'une version : pousser une étiquette « vX.Y.Z » fabrique le paquet et l'installateur
+# et les joint à la version GitHub (boussole-vX.Y.Z.zip, son empreinte, installer-boussole.php).
+name: Version
+
+on:
+  push:
+    tags: ["v*.*.*"]
+
+permissions:
+  contents: write
+
+jobs:
+  publier:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Paquet et installateur
+        run: outils/paquet.sh "$GITHUB_REF_NAME" "https://github.com/$GITHUB_REPOSITORY/releases/download/$GITHUB_REF_NAME" dist
+      - name: Version GitHub
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" dist/* --title "Boussole $GITHUB_REF_NAME" \
+            --notes "Installation : déposer installer-boussole.php à la racine du site et l'ouvrir dans le navigateur (voir docs/installation.md)."

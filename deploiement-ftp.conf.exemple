@@ -1,0 +1,13 @@
+# Déploiement par FTP : copier ce fichier en « deploiement-ftp.conf » (jamais commité) et le compléter.
+# Les identifiants se trouvent dans l'espace client de l'hébergeur.
+
+FTP_HOTE="ftp.exemple.org"
+FTP_UTILISATEUR="mon-identifiant"
+# Vide : le mot de passe est demandé à chaque déploiement (recommandé)
+FTP_MOT_DE_PASSE=""
+# Dossier du site chez l'hébergeur (souvent /www, /public_html ou /htdocs)
+FTP_DOSSIER="/www"
+# ftps (chiffré, recommandé) ou ftp (non chiffré, seulement si l'hébergeur n'a pas mieux)
+FTP_SECURITE="ftps"
+# Adresse du site : appelée après l'envoi pour appliquer les mises à jour de la base et vérifier que tout répond
+SITE_ADRESSE="https://www.exemple.org"

@@ -3,3 +3,8 @@
 /app/uploads/*
 !/app/uploads/.htaccess
 !/app/uploads/.gitkeep
+/app/stockage/*
+!/app/stockage/.htaccess
+!/app/stockage/.gitkeep
+/deploiement-ftp.conf
+/dist/
