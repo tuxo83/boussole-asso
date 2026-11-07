@@ -64,7 +64,7 @@ c "$U/compte" >/dev/null; T=$(tok); c --data-urlencode "_csrf=$T" "$U/deconnexio
 # Lien magique pour un membre sans mot de passe
 mysql -u "$DBU" -p"$DBP" "$DB" -e "INSERT INTO membre (email) VALUES ('membre@example.org')" 2>/dev/null
 check "inconnu : même réponse (pas de révélation)" "$(hpost "$U/connexion" "$U/connexion" -d 'email=personne@example.org')" "303 $U/connexion/code"
-check "aucun e-mail pour une adresse inconnue" "$(grep -c 'personne@example.org' "$MAIL" 2>/dev/null || echo 0)" "0"
+check "aucun e-mail pour une adresse inconnue" "$(grep -o 'personne@example.org' "$MAIL" 2>/dev/null | wc -l)" "0"
 check "demande de lien" "$(hpost "$U/connexion" "$U/connexion" -d 'email=membre@example.org')" "303 $U/connexion/code"
 LIEN=$(grep -o 'http://[^ ]*/connexion/lien/[a-f0-9]*' "$MAIL" | tail -1); CODE=$(grep -o 'code sur la page de connexion : [0-9]*' "$MAIL" | tail -1 | grep -o '[0-9]*$')
 check "le lien dans l'e-mail vient de l'adresse figée" "$LIEN" "http://127.0.0.1:8099/connexion/lien/*"

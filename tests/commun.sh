@@ -9,7 +9,7 @@ J="$W/cookies-admin"
 mysql -u "$DBU" -p"$DBP" -e "DROP DATABASE IF EXISTS $DB; CREATE DATABASE $DB CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;" 2>/dev/null
 cat > "$ROOT/app/config/config.php" <<PHP
 <?php
-return ['db' => ['host' => '127.0.0.1', 'port' => 3306, 'name' => '$DB', 'user' => '$DBU', 'password' => '$DBP'], 'secret' => 'test-secret', 'mail_fichier' => '$MAIL'];
+return ['db' => ['host' => '127.0.0.1', 'port' => 3306, 'name' => '$DB', 'user' => '$DBU', 'password' => '$DBP'], 'secret' => 'test-secret', 'mail_fichier' => '$MAIL', 'taches_par_les_visites' => false];
 PHP
 php -S 127.0.0.1:$PORT -t "$ROOT/app" "$ROOT/tests/router-serveur-php.php" > "$W/serveur.log" 2>&1 &
 SERVER=$!; trap 'kill $SERVER; rm -f "$ROOT/app/config/config.php"' EXIT; sleep 1
