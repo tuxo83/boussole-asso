@@ -86,7 +86,27 @@ $actuelle = cotisation_periode();
 </section>
 <?php endif ?>
 
-<details class="separe"><summary>Réglages des cotisations</summary>
+<details class="separe" id="helloasso"><summary>Connexion HelloAsso (facultative)</summary>
+  <?php if (helloasso_actif()): ?>
+  <p><?= setting('helloasso_erreur', '') !== '' ? '<span class="badge">À vérifier</span> ' . e((string) setting('helloasso_erreur')) : '<span class="badge badge-ok">Active</span> ' . (setting('helloasso_reussie', '') !== '' ? 'dernière lecture le ' . e(date('d/m/Y à H:i', strtotime((string) setting('helloasso_reussie')))) : 'pas encore lue') ?></p>
+  <form method="post" action="<?= e(url('/cotisations/helloasso/synchroniser')) ?>"><?= csrf_field() ?><button type="submit" class="bouton bouton-secondaire">Lire HelloAsso maintenant</button></form>
+  <p class="petit">Pour une mise à jour immédiate à chaque paiement, collez cette adresse dans HelloAsso, « Mon compte › Intégrations et API › notifications » :<br><code class="cle"><?= e(absolute_url('/helloasso/notification/' . setting('helloasso_notification_cle', ''))) ?></code></p>
+  <?php else: ?>
+  <p class="petit">Sans connexion, utilisez l'import du fichier CSV. Avec : les paiements HelloAsso cochent « payé » tout seuls, toutes les quelques minutes. Seuls l'e-mail et la date sont lus.</p>
+  <?php endif ?>
+  <form method="post" action="<?= e(url('/cotisations/helloasso')) ?>" class="formulaire">
+    <?= csrf_field() ?>
+    <?= c_champ('helloasso_organisation', "Nom de l'association dans HelloAsso", ['valeur' => (string) setting('helloasso_organisation', ''), 'aide' => 'Ce qui suit /associations/ dans l\'adresse de votre page HelloAsso (vous pouvez coller l\'adresse entière).']) ?>
+    <?= c_champ('helloasso_adhesion', "Formulaire d'adhésion", ['valeur' => (string) setting('helloasso_adhesion', ''), 'aide' => 'Ce qui suit /adhesions/ dans l\'adresse du formulaire (ou l\'adresse entière).']) ?>
+    <?= c_champ('helloasso_client_id', 'Identifiant (client id)', ['valeur' => (string) setting('helloasso_client_id', ''), 'aide' => 'HelloAsso › Mon compte › Intégrations et API.']) ?>
+    <?= c_champ('helloasso_secret', 'Secret (client secret)', ['type' => 'password', 'aide' => setting('helloasso_secret', '') !== '' ? 'Enregistré (chiffré). Laisser vide pour le garder.' : 'Gardé chiffré.']) ?>
+    <?= c_champ('helloasso_intervalle', 'Lire HelloAsso toutes les (minutes)', ['type' => 'number', 'valeur' => (string) setting('helloasso_intervalle', '10')]) ?>
+    <?php if (helloasso_actif()): ?><label class="case"><input type="checkbox" name="desactiver" value="1"> Désactiver la connexion (efface le secret)</label><?php endif ?>
+    <button type="submit" class="bouton bouton-secondaire">Enregistrer</button>
+  </form>
+</details>
+
+<details><summary>Réglages des cotisations</summary>
 <form method="post" action="<?= e(url('/cotisations/reglages')) ?>" class="formulaire">
   <?= csrf_field() ?>
   <?= c_champ('cotisation_mois_debut', 'La période de cotisation commence en', ['type' => 'select', 'valeur' => (string) cotisation_mois_debut(), 'choix' => array_combine(range(1, 12), ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'])]) ?>

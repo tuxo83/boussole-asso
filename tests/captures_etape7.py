@@ -41,6 +41,8 @@ with sync_playwright() as p:
     mobile = browser.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=2, is_mobile=True, locale='fr-FR', storage_state=ctx.storage_state()).new_page()
     mobile.goto(SITE + '/cotisations')
     mobile.screenshot(path=f'{OUT}/02-cotisations-telephone.png', full_page=True)
+    mobile.locator('#helloasso summary').click()
+    mobile.locator('#helloasso').screenshot(path=f'{OUT}/04-helloasso-telephone.png')
     mobile.goto(SITE + '/compte')
     mobile.screenshot(path=f'{OUT}/03-compte-telephone.png', full_page=True)
     browser.close()

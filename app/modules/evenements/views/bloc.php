@@ -84,6 +84,7 @@ $aide = c_aide('comment les places sont attribuées', '<p><strong>Pas de course 
     <?php foreach ($liste as $l): ?>
     <li class="en-ligne candidat case"><span class="qui"><?= $groupe($l['groupe'] !== null ? (int) $l['groupe'] : null) ?> <?= e(membre_nom($l)) ?></span>
       <span class="en-ligne"><span class="badge"><?= e(INSCRIPTION_STATUTS[$l['statut']] . ($l['statut'] === 'attente' ? ' n°' . (int) $l['rang'] : '')) ?></span>
+      <?php if ($l['paye_le'] !== null): ?><span class="badge badge-ok">payé le <?= e(date('d/m', strtotime($l['paye_le']))) ?></span><?php endif ?>
       <?php if ($l['statut'] === 'retenu' && !$commence): ?>
       <form method="post" action="<?= $lien('/annuler') ?>"><?= csrf_field() ?><input type="hidden" name="membre_id" value="<?= (int) $l['membre_id'] ?>"><button type="submit" class="lien-bouton" data-confirmer="Annuler l'inscription de <?= e(membre_nom($l)) ?> ? Sa place ira au suivant de la liste d'attente.">annuler</button></form>
       <?php endif ?></span></li>
@@ -98,6 +99,7 @@ $aide = c_aide('comment les places sont attribuées', '<p><strong>Pas de course 
     <?= c_champ('lieu', 'Lieu', ['valeur' => $ev['lieu'], 'max' => 200]) ?>
     <?= c_champ('mode', 'Inscriptions', ['type' => 'select', 'valeur' => $ev['mode'], 'choix' => EVENEMENT_MODES]) ?>
     <?= c_champ('places', 'Nombre de places (places limitées)', ['type' => 'number', 'valeur' => (string) ($ev['places'] ?? '')]) ?>
+    <?php if (helloasso_actif()): ?><?= c_champ('helloasso_formulaire', 'Billetterie HelloAsso (facultatif)', ['valeur' => (string) ($ev['helloasso_formulaire'] ?? ''), 'aide' => 'Adresse ou nom du formulaire d\'événement : les inscrits qui ont payé sont marqués « payé ».']) ?><?php endif ?>
     <?= c_champ('cloture', 'Clôture des vœux (places limitées)', ['type' => 'datetime-local', 'valeur' => $ev['cloture'] ? date('Y-m-d\TH:i', strtotime($ev['cloture'])) : '']) ?>
     <button type="submit" class="bouton bouton-secondaire">Enregistrer</button>
   </form>

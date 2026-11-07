@@ -23,9 +23,10 @@ return [
                 flash('erreur', implode(' ', $erreurs));
                 redirect('/espace/' . $espace['slug']);
             }
-            db_query('INSERT INTO evenement (espace_id, debut, lieu, mode, places, cloture) VALUES (?, ?, ?, ?, ?, ?)
-                ON DUPLICATE KEY UPDATE debut = VALUES(debut), lieu = VALUES(lieu), mode = VALUES(mode), places = VALUES(places), cloture = VALUES(cloture)',
-                [$espace['id'], $debut, mb_substr(trim((string) ($_POST['lieu'] ?? '')), 0, 200), $mode, $places ?: null, $cloture]);
+            $billetterie = strtolower(trim(preg_replace('#^.*/#', '', trim((string) ($_POST['helloasso_formulaire'] ?? '')))));
+            db_query('INSERT INTO evenement (espace_id, debut, lieu, mode, places, cloture, helloasso_formulaire) VALUES (?, ?, ?, ?, ?, ?, ?)
+                ON DUPLICATE KEY UPDATE debut = VALUES(debut), lieu = VALUES(lieu), mode = VALUES(mode), places = VALUES(places), cloture = VALUES(cloture), helloasso_formulaire = VALUES(helloasso_formulaire)',
+                [$espace['id'], $debut, mb_substr(trim((string) ($_POST['lieu'] ?? '')), 0, 200), $mode, $places ?: null, $cloture, mb_substr($billetterie, 0, 150) ?: ($ev['helloasso_formulaire'] ?? null)]);
             journal($espace['id'], $member, "Réglages de l'événement modifiés");
             // Plus de places après attribution : la liste d'attente en profite
             evenement_promouvoir(evenement_de($espace));

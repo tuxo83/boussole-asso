@@ -93,6 +93,46 @@ return [
             flash('succes', "$n membre(s) effacé(s).");
             redirect('/cotisations');
         }],
+        ['POST', '/cotisations/helloasso', function () {
+            $par = require_right('cotisations');
+            $slug = fn(string $k) => strtolower(trim(preg_replace('#^.*/#', '', trim((string) ($_POST[$k] ?? '')))));
+            foreach (['helloasso_organisation' => $slug('helloasso_organisation'), 'helloasso_adhesion' => $slug('helloasso_adhesion'),
+                'helloasso_client_id' => mb_substr(trim((string) ($_POST['helloasso_client_id'] ?? '')), 0, 100),
+                'helloasso_intervalle' => (string) max(5, min(1440, (int) ($_POST['helloasso_intervalle'] ?? 10)))] as $cle => $valeur) {
+                setting_set($cle, $valeur);
+            }
+            if (trim((string) ($_POST['helloasso_secret'] ?? '')) !== '') {
+                setting_set('helloasso_secret', secret_encrypt(trim((string) $_POST['helloasso_secret'])));
+            }
+            if (($_POST['desactiver'] ?? '') === '1') {
+                setting_set('helloasso_secret', '');
+            }
+            // Nouveaux identifiants : nouveau jeton, et première lecture depuis le début de la période
+            setting_set('helloasso_jeton', '');
+            setting_set('helloasso_premiere', '');
+            if (setting('helloasso_notification_cle', '') === '') {
+                setting_set('helloasso_notification_cle', bin2hex(random_bytes(16)));
+            }
+            journal(null, $par, 'Connexion HelloAsso modifiée');
+            flash('succes', 'Connexion HelloAsso enregistrée.');
+            redirect('/cotisations#helloasso');
+        }],
+        ['POST', '/cotisations/helloasso/synchroniser', function () {
+            require_right('cotisations');
+            $n = helloasso_synchroniser(true);
+            $erreur = (string) setting('helloasso_erreur', '');
+            $erreur !== '' ? flash('erreur', $erreur) : flash('succes', "HelloAsso lu : $n mise(s) à jour.");
+            redirect('/cotisations#helloasso');
+        }],
+        // Adresse à donner à HelloAsso (« Mon compte > Intégrations et API ») : un paiement déclenche une lecture immédiate
+        ['POST', '/helloasso/notification/{cle}', function (array $p) {
+            $cle = (string) setting('helloasso_notification_cle', '');
+            if ($cle !== '' && hash_equals($cle, $p['cle']) && !too_many_attempts('helloasso|notification', 20, 10)) {
+                helloasso_synchroniser(true);
+            }
+            // Toujours 200 : HelloAsso ne réessaie pas inutilement, et l'appelant n'apprend rien
+            http_response_code(200);
+        }],
         ['POST', '/cotisations/reglages', function () {
             $par = require_right('cotisations');
             $mois = (int) ($_POST['cotisation_mois_debut'] ?? 1);
