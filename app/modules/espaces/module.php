@@ -179,7 +179,7 @@ return [
             redirect('/espace/' . $espace['slug']);
         }],
     ],
-    'menu' => fn() => current_member() !== null ? [['libelle' => 'Espaces', 'lien' => '/espaces', 'ordre' => 30]] : [],
+    'menu' => fn() => current_member() !== null ? [['libelle' => 'Espaces', 'lien' => '/espaces', 'ordre' => 90, 'zone' => 'membre']] : [],
 ];
 
 function espace_ou_404(string $slug): array

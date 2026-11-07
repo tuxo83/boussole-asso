@@ -28,10 +28,15 @@ $chemin = request_path();
       <span><?= e($nom) ?></span>
     </a>
     <?php if ($menu): ?>
-    <nav aria-label="Menu principal">
+    <nav aria-label="Menu principal" class="navigation">
       <ul class="menu">
-        <?php foreach ($menu as $item): ?>
+        <?php foreach ($menu as $item): if (isset($item['zone'])) { continue; } ?>
         <li><a href="<?= e(url($item['lien'])) ?>"<?= $item['lien'] === $chemin ? ' aria-current="page"' : '' ?>><?= e($item['libelle']) ?></a></li>
+        <?php endforeach ?>
+      </ul>
+      <ul class="menu menu-membre">
+        <?php foreach ($menu as $item): if (!isset($item['zone'])) { continue; } ?>
+        <li><a href="<?= e(url($item['lien'])) ?>"<?= $item['zone'] === 'compte' ? ' class="lien-compte"' : '' ?><?= $item['lien'] === $chemin ? ' aria-current="page"' : '' ?>><?= e($item['libelle']) ?></a></li>
         <?php endforeach ?>
       </ul>
     </nav>
@@ -44,7 +49,16 @@ $chemin = request_path();
 </main>
 <footer class="pied">
   <div class="conteneur">
-    <p><?= e(setting('pied_de_page', '') ?? '') ?></p>
+    <?php $liens_pied = installation_done() ? db_all('SELECT slug, titre FROM page WHERE publiee = 1 AND reservee_membres = 0 AND dans_menu = 0 AND est_accueil = 0 AND parent_id IS NULL ORDER BY ordre, titre') : []; ?>
+    <div class="pied-grille">
+      <div>
+        <p class="pied-nom"><?= e($nom) ?></p>
+        <?php if (trim((string) setting('pied_de_page', '')) !== ''): ?><p><?= e((string) setting('pied_de_page')) ?></p><?php endif ?>
+      </div>
+      <?php if ($liens_pied): ?>
+      <ul class="pied-liens"><?php foreach ($liens_pied as $lien): ?><li><a href="<?= e(url('/page/' . $lien['slug'])) ?>"><?= e($lien['titre']) ?></a></li><?php endforeach ?></ul>
+      <?php endif ?>
+    </div>
     <p class="discret"><a href="<?= e(BOUSSOLE_DEPOT) ?>" rel="noopener"><?= e(t('pied.propulse')) ?></a>, logiciel libre</p>
   </div>
 </footer>
