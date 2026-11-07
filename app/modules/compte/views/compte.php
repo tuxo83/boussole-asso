@@ -5,6 +5,10 @@
   <?= c_carte('Double authentification', (int) $membre['totp_actif'] === 1
       ? '<p>Active.</p>'
       : '<p>Inactive' . (member_rights($membre['id']) ? ' : obligatoire pour la gestion.' : '.') . '</p>' . c_bouton('Activer', '/compte/double-authentification')) ?>
+  <?= c_carte("Clés d'API (IA, MCP)", '<p>Donner à un outil ou à une IA un accès avec vos droits.</p>' . c_bouton('Mes clés', '/compte/cles', 'secondaire')) ?>
+  <?php if (is_admin($membre)): ?>
+  <?= c_carte("Toutes les clés", '<p>Voir et révoquer les clés de tous les membres.</p>' . c_bouton('Toutes les clés', '/admin/cles', 'secondaire')) ?>
+  <?php endif ?>
   <?php if (has_right($membre, 'publications')): ?>
   <?= c_carte('Pages du site', '<p>Créer et modifier les pages publiques.</p>' . c_bouton('Gérer les pages', '/admin/pages', 'secondaire')) ?>
   <?php endif ?>

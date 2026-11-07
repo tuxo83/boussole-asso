@@ -20,6 +20,7 @@ require __DIR__ . '/humain.php';
 require __DIR__ . '/espaces.php';
 require __DIR__ . '/blocs.php';
 require __DIR__ . '/images.php';
+require __DIR__ . '/api.php';
 
 // Configuration écrite par install.sh ou par l'assistant d'installation ; null tant qu'elle n'existe pas
 function config(): ?array
@@ -55,7 +56,9 @@ function modules(): array
 
 function boussole_run(): void
 {
-    if (session_status() === PHP_SESSION_NONE) {
+    $path = request_path();
+    $api = str_starts_with($path, '/api/') || $path === '/mcp';
+    if (!$api && session_status() === PHP_SESSION_NONE) {
         session_set_cookie_params(['httponly' => true, 'samesite' => 'Lax', 'secure' => is_https()]);
         session_start();
     }
@@ -63,7 +66,6 @@ function boussole_run(): void
     header('Referrer-Policy: same-origin');
     header('X-Frame-Options: SAMEORIGIN');
 
-    $path = request_path();
     $installed = config() !== null && installation_done();
 
     // Tant que l'installation n'est pas finie, seul l'assistant répond

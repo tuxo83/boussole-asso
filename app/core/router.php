@@ -23,7 +23,8 @@ final class Router
             if ($routeMethod !== strtoupper($method)) {
                 continue;
             }
-            if ($routeMethod === 'POST') {
+            // L'API et le MCP s'authentifient par clé (en-tête Authorization), jamais par cookie : pas de CSRF possible
+            if ($routeMethod === 'POST' && !str_starts_with($path, '/api/') && $path !== '/mcp') {
                 csrf_check();
             }
             $handler(array_filter($matches, 'is_string', ARRAY_FILTER_USE_KEY));
