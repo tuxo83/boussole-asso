@@ -8,7 +8,8 @@ return [
     'ordre' => 85,
     'routes' => [
         ['GET', '/compte', function () {
-            render('compte/compte', ['titre' => 'Mon compte', 'membre' => require_member(), 'erreur' => null]);
+            $member = require_member();
+            render('compte/compte', ['titre' => 'Mon compte', 'membre' => $member, 'erreur' => null, 'historique' => historique_compte((int) $member['id'], 15)]);
         }],
         ['POST', '/compte/mot-de-passe', function () {
             $member = require_member();
@@ -20,6 +21,7 @@ return [
             $password = (string) ($_POST['mot_de_passe'] ?? '');
             if ($password === '') {
                 db_query('UPDATE membre SET mot_de_passe = NULL WHERE id = ?', [$member['id']]);
+                journal_compte((int) $member['id'], $member, 'Mot de passe retiré');
                 flash('succes', 'Mot de passe retiré : connexion par lien envoyé par e-mail.');
                 redirect('/compte');
             }
@@ -30,6 +32,7 @@ return [
                 return;
             }
             db_query('UPDATE membre SET mot_de_passe = ?, mot_de_passe_provisoire = 0 WHERE id = ?', [password_hash($password, PASSWORD_DEFAULT), $member['id']]);
+            journal_compte((int) $member['id'], $member, $member['mot_de_passe'] === null ? 'Mot de passe choisi' : 'Mot de passe changé');
             flash('succes', 'Mot de passe enregistré.');
             redirect('/compte');
         }],
@@ -65,7 +68,7 @@ return [
                 return;
             }
             db_query('UPDATE membre SET mot_de_passe = ?, mot_de_passe_provisoire = 0 WHERE id = ?', [password_hash($password, PASSWORD_DEFAULT), $member['id']]);
-            journal(null, $member, 'Mot de passe provisoire remplacé');
+            journal_compte((int) $member['id'], $member, 'Mot de passe provisoire remplacé');
             flash('succes', 'Mot de passe enregistré. Bienvenue !');
             redirect('/compte');
         }],
@@ -91,7 +94,7 @@ return [
                 redirect('/connexion/double-authentification');
             }
             $_SESSION['cle_nouvelle'] = api_creer_cle($member, $libelle, (string) ($_POST['portee'] ?? 'lecture'), $jours);
-            journal(null, $member, "Clé d'API créée : $libelle");
+            journal_compte((int) $member['id'], $member, "Clé d'API créée : $libelle");
             redirect('/compte/cles');
         }],
         ['POST', '/compte/cles/{id}/revoquer', function (array $p) {
@@ -100,7 +103,7 @@ return [
             // Le propriétaire révoque sa clé ; l'administrateur peut révoquer n'importe quelle clé
             if ($cle !== null && ((int) $cle['membre_id'] === (int) $member['id'] || is_admin($member))) {
                 db_query('UPDATE cle_api SET revoquee = 1 WHERE id = ?', [$cle['id']]);
-                journal(null, $member, "Clé d'API révoquée : {$cle['libelle']}");
+                journal_compte((int) $cle['membre_id'], $member, "Clé d'API révoquée : {$cle['libelle']}");
             }
             redirect(is_admin($member) && (int) $cle['membre_id'] !== (int) $member['id'] ? '/admin/cles' : '/compte/cles');
         }],
@@ -126,7 +129,7 @@ return [
             db_query('UPDATE membre SET totp_secret = ?, totp_actif = 1 WHERE id = ?', [secret_encrypt($secret), $member['id']]);
             unset($_SESSION['totp_en_attente']);
             ajouter_facteur('totp');
-            journal(null, $member, 'Application d\'authentification activée');
+            journal_compte((int) $member['id'], $member, 'Application d\'authentification activée');
             mail_send($member['email'], 'Application d\'authentification activée', "Une application d'authentification vient d'être activée sur votre compte. Si ce n'est pas vous, prévenez l'administrateur.\n");
             flash('succes', 'Application d\'authentification activée.');
             redirect('/compte');
@@ -146,7 +149,7 @@ return [
                 return;
             }
             ajouter_facteur('cle');
-            journal(null, $member, 'Clé de sécurité ajoutée');
+            journal_compte((int) $member['id'], $member, 'Clé de sécurité ajoutée');
             mail_send($member['email'], 'Nouvelle clé de sécurité', "Une clé de sécurité vient d'être ajoutée à votre compte. Si ce n'est pas vous, prévenez l'administrateur.\n");
             flash('succes', 'Clé enregistrée : elle vous sera demandée à la connexion.');
             redirect('/compte/double-authentification');
@@ -154,7 +157,7 @@ return [
         ['POST', '/compte/cles-securite/{id}/supprimer', function (array $p) {
             $member = securite_membre();
             if (db_query('DELETE FROM cle_securite WHERE id = ? AND membre_id = ?', [(int) $p['id'], $member['id']])->rowCount() === 1) {
-                journal(null, $member, 'Clé de sécurité retirée');
+                journal_compte((int) $member['id'], $member, 'Clé de sécurité retirée');
             }
             redirect('/compte/double-authentification');
         }],

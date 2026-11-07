@@ -112,4 +112,12 @@ check "déplacer un espace sous un autre, et changer son type" "$(post "$U/espac
 check "déplacement en boucle refusé" "$(post "$U/espace/journee-portes-ouvertes" "$U/espace/journee-portes-ouvertes/modifier" -d 'titre=Journée portes ouvertes&visibilite=public&type=evenement&parent=sous-projet' >/dev/null; sql "SELECT COALESCE(parent_id, 'aucun') FROM espace WHERE slug = 'journee-portes-ouvertes'")" "aucun"
 check "rubriques vides cachées à qui ne peut pas les remplir" "$(as visiteur; c "$U/espace/journee-portes-ouvertes" >/dev/null; grep -c '<h2>Équipe</h2>\|<h2>Dates clés</h2>\|<h2>Fichiers</h2>' "$B") $(as admin; c "$U/espace/journee-portes-ouvertes" >/dev/null; grep -c '<h2>Équipe</h2>\|<h2>Dates clés</h2>\|<h2>Fichiers</h2>' "$B")" "0 3"
 check "journal : lignes plus vieilles que la durée réglée effacées par les tâches" "$(sql "INSERT INTO journal (action, le) VALUES ('ancienne', NOW() - INTERVAL 4 YEAR), ('récente', NOW() - INTERVAL 2 YEAR)"; php "$ROOT/app/bin/cli.php" cron >/dev/null; sql "SELECT COUNT(*) FROM journal WHERE action IN ('ancienne', 'récente')")" "1"
+as intrus
+hpost "$U/connexion" "$U/connexion" -d 'email=carole@example.org&mot_de_passe=mauvais-mot-de-passe-123' >/dev/null
+as admin
+CAROLE=$(sql "SELECT id FROM membre WHERE email = 'carole@example.org'")
+check "historique du compte : mot de passe choisi, connexions, échec de connexion" "$(c "$U/admin/membres/$ALICE/historique" >/dev/null; grep -c 'Mot de passe choisi' "$B") $(grep -c 'Connexion (e-mail)' "$B") $(c "$U/admin/membres/$CAROLE/historique" >/dev/null; grep -c 'Échec de connexion' "$B")" "1 1 1"
+check "historique : action d'un administrateur signée" "$(c "$U/admin/membres/$BOB/historique" >/dev/null; grep -c 'Mot de passe provisoire donné par un administrateur' "$B")" "1"
+check "mon historique dans Mon compte" "$(as bobmdp; c "$U/compte" >/dev/null; grep -c 'Mot de passe provisoire remplacé' "$B")" "1"
+as admin
 bilan
