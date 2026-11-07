@@ -4,7 +4,7 @@
 
 | Élément | Minimum |
 |---|---|
-| PHP | 8.1 ou plus récent, avec les extensions `pdo_mysql`, `openssl`, `mbstring`, `gd` (images), `dom` (mise en forme des pages, facultative) |
+| PHP | 8.1 ou plus récent (8.3 ou plus conseillé : 8.1 ne reçoit plus de correctifs de sécurité, 8.2 jusqu'à fin 2026), avec les extensions `pdo_mysql`, `openssl`, `mbstring`, `gd` (images), `dom` (mise en forme des pages, facultative) |
 | Base de données | MySQL 5.7+ ou MariaDB 10.3+ |
 | Serveur web | Apache (fichiers `.htaccess` fournis) ou nginx (voir plus bas) |
 | Tâches planifiées | un cron toutes les 10 minutes si l'hébergeur le permet ; sinon les visites du site s'en chargent |
