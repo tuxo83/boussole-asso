@@ -12,7 +12,8 @@ return [
             render('membres/liste', [
                 'titre' => 'Membres',
                 'gestionnaire' => $gestionnaire,
-                'membres' => db_all('SELECT m.*, t.libelle AS type_libelle FROM membre m LEFT JOIN type_membre t ON t.id = m.type_membre_id ORDER BY m.actif DESC, m.nom, m.prenom, m.email'),
+                'membres' => db_all('SELECT m.*, t.libelle AS type_libelle FROM membre m LEFT JOIN type_membre t ON t.id = m.type_membre_id WHERE m.en_attente = 0 ORDER BY m.actif DESC, m.nom, m.prenom, m.email'),
+                'en_attente' => db_all('SELECT m.*, c.paye_le, c.periode FROM membre m LEFT JOIN cotisation c ON c.membre_id = m.id WHERE m.en_attente = 1 ORDER BY m.cree_le'),
                 'types' => db_all('SELECT * FROM type_membre ORDER BY ordre, libelle'),
             ]);
         }],
@@ -68,6 +69,26 @@ return [
             }
             journal(null, $gestionnaire, 'Membre modifié : ' . $cible['email']);
             flash('succes', 'Membre enregistré.');
+            redirect('/admin/membres');
+        }],
+        // Adhésion reçue d'un inconnu : valider (accès ouvert, e-mail de bienvenue) ou refuser (compte supprimé)
+        ['POST', '/admin/membres/{id}/validation', function (array $p) {
+            $gestionnaire = require_right('membres');
+            $member = db_one('SELECT * FROM membre WHERE id = ? AND en_attente = 1', [(int) $p['id']]);
+            if ($member === null) {
+                redirect('/admin/membres');
+            }
+            if (($_POST['decision'] ?? '') === 'valider') {
+                db_query('UPDATE membre SET actif = 1, en_attente = 0 WHERE id = ?', [$member['id']]);
+                $site = (string) setting('nom_association', 'Boussole');
+                mail_send($member['email'], "Bienvenue : $site", "Bonjour,\n\nVotre adhésion est validée. Pour accéder à l'espace membres, saisissez votre adresse e-mail sur la page de connexion : vous recevrez un lien.\n\n" . absolute_url('/connexion'));
+                journal(null, $gestionnaire, 'Adhésion validée : ' . membre_nom($member));
+                flash('succes', membre_nom($member) . ' est maintenant membre.');
+            } elseif (($_POST['decision'] ?? '') === 'refuser') {
+                db_query('DELETE FROM membre WHERE id = ?', [$member['id']]);
+                journal(null, $gestionnaire, 'Adhésion refusée (compte supprimé)');
+                flash('info', 'Adhésion refusée : pensez au remboursement éventuel sur HelloAsso.');
+            }
             redirect('/admin/membres');
         }],
         ['POST', '/admin/types-membre', function () {

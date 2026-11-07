@@ -59,6 +59,38 @@ function cotisation_marquer(array $member, int $periode, string $payeLe, string 
     return true;
 }
 
+// Paiement reçu (HelloAsso ou fichier importé) : renouvellement, doublon signalé, ou adhésion d'un inconnu
+// (compte créé « en attente de validation », sans accès au site). Renvoie marque, deja, doublon ou cree.
+function cotisation_paiement_recu(string $email, string $prenom, string $nom, string $date, string $moyen, ?array $par): string
+{
+    $email = mb_strtolower(trim($email));
+    $periode = cotisation_periode($date);
+    $member = db_one('SELECT * FROM membre WHERE email = ?', [$email]);
+    $statut = 'marque';
+    if ($member === null) {
+        db_query('INSERT INTO membre (email, prenom, nom, actif, en_attente) VALUES (?, ?, ?, 0, 1)', [$email, mb_substr(trim($prenom), 0, 100), mb_substr(trim($nom), 0, 100)]);
+        $member = db_one('SELECT * FROM membre WHERE email = ?', [$email]);
+        journal(null, $par, 'Adhésion reçue, compte en attente de validation : ' . membre_nom($member), $par === null ? 'web' : null);
+        foreach (db_all('SELECT DISTINCT m.email FROM membre m JOIN droit_plateforme d ON d.membre_id = m.id WHERE d.droit IN ("admin", "membres") AND m.actif = 1') as $gestionnaire) {
+            mail_send($gestionnaire['email'], 'Adhésion à valider : ' . membre_nom($member), "Une adhésion a été payée par " . membre_nom($member) . " ($email).\nLe compte attend votre validation : Membres › En attente.\n\n" . absolute_url('/admin/membres'));
+        }
+        $statut = 'cree';
+    }
+    $deja = cotisation_a_jour($member, $periode);
+    if ($deja !== null) {
+        // Même paiement relu (même date, même moyen) : rien à faire ; sinon, paiement en double à vérifier
+        if ($deja['paye_le'] === $date && $deja['moyen'] === $moyen) {
+            return 'deja';
+        }
+        if (db_query('INSERT IGNORE INTO cotisation_doublon (membre_id, periode, paye_le, moyen) VALUES (?, ?, ?, ?)', [$member['id'], $periode, $date, $moyen])->rowCount() === 1) {
+            journal(null, $par, 'Paiement en double à vérifier : ' . membre_nom($member) . ' (' . cotisation_periode_libelle($periode) . ')', $par === null ? 'web' : null);
+        }
+        return 'doublon';
+    }
+    cotisation_marquer($member, $periode, $date, $moyen, $par);
+    return $statut;
+}
+
 function cotisation_relancer(array $member, int $periode): void
 {
     mail_send($member['email'], 'Cotisation ' . cotisation_periode_libelle($periode) . ' : ' . setting('nom_association', 'Boussole'),
@@ -147,10 +179,12 @@ function cotisation_import_helloasso(string $chemin, int $periode, array $par): 
     };
     $colMail = $col(['email payeur', 'e-mail payeur', 'email', 'e-mail', 'mail']);
     $colDate = $col(['date du paiement', 'date de paiement', 'date']);
+    $colPrenom = $col(['prénom payeur', 'prénom adhérent', 'prénom', 'prenom']);
+    $colNom = $col(['nom payeur', 'nom adhérent', 'nom']);
     if ($colMail === null || $colDate === null) {
         return ['erreur' => 'Colonnes « e-mail » et « date » introuvables dans le fichier.'];
     }
-    $bilan = ['marques' => 0, 'deja' => 0, 'inconnus' => []];
+    $bilan = ['marques' => 0, 'deja' => 0, 'crees' => 0, 'doublons' => 0, 'inconnus' => []];
     foreach ($lignes as $ligne) {
         $cells = str_getcsv($ligne, $sep, '"', '');
         $email = mb_strtolower(trim($cells[$colMail] ?? ''));
@@ -158,15 +192,12 @@ function cotisation_import_helloasso(string $chemin, int $periode, array $par): 
             continue;
         }
         $date = cotisation_lire_date(trim($cells[$colDate] ?? ''));
-        $member = db_one('SELECT * FROM membre WHERE email = ?', [$email]);
-        if ($member === null || $date === null) {
+        if ($date === null) {
             $bilan['inconnus'][] = $email;
-        } elseif (cotisation_a_jour($member, $periode) !== null) {
-            $bilan['deja']++;
-        } else {
-            cotisation_marquer($member, $periode, $date, 'helloasso', $par);
-            $bilan['marques']++;
+            continue;
         }
+        $statut = cotisation_paiement_recu($email, $colPrenom !== null ? (string) ($cells[$colPrenom] ?? '') : '', $colNom !== null ? (string) ($cells[$colNom] ?? '') : '', $date, 'helloasso', $par);
+        $bilan[['marque' => 'marques', 'deja' => 'deja', 'cree' => 'crees', 'doublon' => 'doublons'][$statut]]++;
     }
     $bilan['inconnus'] = array_values(array_unique($bilan['inconnus']));
     return $bilan;

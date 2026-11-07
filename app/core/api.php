@@ -150,7 +150,7 @@ function api_date_cle_ajouter(string $slug, string $date, string $libelle): arra
 function api_pages(): array
 {
     $voit_tout = has_right(current_member(), 'publications');
-    return db_all('SELECT id, slug, titre, parent_id, publiee, dans_menu, est_accueil FROM page' . ($voit_tout ? '' : ' WHERE publiee = 1') . ' ORDER BY ordre, titre');
+    return db_all('SELECT id, slug, titre, parent_id, publiee, reservee_membres, dans_menu, est_accueil FROM page' . ($voit_tout ? '' : ' WHERE publiee = 1') . ' ORDER BY ordre, titre');
 }
 
 function api_page(int $id): array
@@ -159,7 +159,7 @@ function api_page(int $id): array
     if ($page === null || (!$page['publiee'] && !has_right(current_member(), 'publications'))) {
         throw new ApiErreur('Page introuvable', 404);
     }
-    return ['id' => (int) $page['id'], 'slug' => $page['slug'], 'titre' => $page['titre'], 'parent_id' => $page['parent_id'], 'publiee' => (bool) $page['publiee'],
+    return ['id' => (int) $page['id'], 'slug' => $page['slug'], 'titre' => $page['titre'], 'parent_id' => $page['parent_id'], 'publiee' => (bool) $page['publiee'], 'reservee_membres' => (bool) $page['reservee_membres'],
         'dans_menu' => (bool) $page['dans_menu'], 'est_accueil' => (bool) $page['est_accueil'], 'blocs' => json_decode($page['blocs'] ?? '{"blocks":[]}', true)];
 }
 
@@ -191,13 +191,14 @@ function api_page_ecrire(?int $id, array $args): array
         throw new ApiErreur('Contenu en blocs invalide');
     }
     $publiee = isset($args['publiee']) ? (int) (bool) $args['publiee'] : (int) ($page['publiee'] ?? 0);
+    $reservee = isset($args['reservee_membres']) ? (int) (bool) $args['reservee_membres'] : (int) ($page['reservee_membres'] ?? 0);
     $parent = array_key_exists('parent_id', $args) ? page_parent_valide($args['parent_id'], $id) : ($page['parent_id'] ?? null);
     if ($page === null) {
-        db_query('INSERT INTO page (slug, titre, contenu, blocs, parent_id, publiee) VALUES (?, ?, "", ?, ?, ?)', [page_slug_unique($titre), $titre, $blocs, $parent, $publiee]);
+        db_query('INSERT INTO page (slug, titre, contenu, blocs, parent_id, publiee, reservee_membres) VALUES (?, ?, "", ?, ?, ?, ?)', [page_slug_unique($titre), $titre, $blocs, $parent, $publiee, $reservee]);
         $id = (int) db()->lastInsertId();
         journal(null, $member, "Page créée : $titre");
     } else {
-        db_query('UPDATE page SET titre = ?, blocs = ?, parent_id = ?, publiee = ? WHERE id = ?', [$titre, $blocs, $parent, $publiee, $id]);
+        db_query('UPDATE page SET titre = ?, blocs = ?, parent_id = ?, publiee = ?, reservee_membres = ? WHERE id = ?', [$titre, $blocs, $parent, $publiee, $reservee, $id]);
         journal(null, $member, "Page modifiée : $titre");
     }
     return api_page($id);
