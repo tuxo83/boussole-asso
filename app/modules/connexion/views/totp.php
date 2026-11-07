@@ -52,8 +52,8 @@
   </details>
   <?php endif ?>
 
-  <?php if (!$cle): ?>
-  <p class="petit">Pas encore de clé de sécurité (YubiKey, empreinte, téléphone) ? Vous pourrez en ajouter une dans <strong>Mon compte › Sécurité du compte</strong>, juste après cette vérification. Elle vous sera ensuite proposée ici.</p>
+  <?php if (!$cle && !$totp && $deja_connecte): ?>
+  <p class="petit">Pas encore de clé de sécurité (YubiKey, empreinte, téléphone) ni d'application ? <a href="<?= e(url('/compte/double-authentification')) ?>">Ajoutez-en une maintenant</a> : la première se règle sans code e-mail, et vaut seconde preuve.</p>
   <?php endif ?>
   <?php if (!$cle && !$totp && !$email && !$mdp): ?>
   <p>Aucun second moyen disponible : définissez un mot de passe ou ajoutez une clé de sécurité depuis votre compte.</p>

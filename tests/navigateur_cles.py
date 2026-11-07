@@ -36,12 +36,11 @@ with sync_playwright() as p:
     page.click('button[type=submit]')
     page.wait_for_load_state('networkidle')
     connexion_mdp(page)
-    page.goto(SITE + '/compte/double-authentification')
-    check('compte qui gère : seconde vérification avant de toucher à la sécurité', '/connexion/double-authentification' in page.url)
-    with page.expect_navigation():
-        page.click('button:has-text("M\'envoyer un code")')
-    page.fill('#champ-code-email', dernier_code()); page.click('form[action$="/code"] button[type=submit]')
-    check('code par e-mail accepté, retour à la page de sécurité', page.url.endswith('/compte/double-authentification'))
+    page.goto(SITE + '/admin/parametres')
+    check('gestion avec une seule preuve : seconde vérification demandée', '/connexion/double-authentification' in page.url)
+    check('la page propose d\'ajouter une première clé sans code e-mail', page.locator('text=Ajoutez-en une maintenant').count() == 1)
+    page.click('text=Ajoutez-en une maintenant')
+    check('première clé : page de sécurité accessible sans code e-mail (e-mails pas encore réglés)', page.url.endswith('/compte/double-authentification'))
 
     # QR code de l'application : présent, lisible, et il contient exactement la clé affichée
     page.click('summary:has-text("Application d\'authentification")')
