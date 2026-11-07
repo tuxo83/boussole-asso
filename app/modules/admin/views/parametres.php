@@ -23,6 +23,10 @@
     <?= c_champ('construction_code', "Code d'accès (6 chiffres)", ['valeur' => $v['construction_code'] ?? '', 'aide' => 'À transmettre aux personnes invitées à voir le site. Vide : un code est tiré au hasard. Les membres connectés n\'en ont pas besoin. Changer le code ferme l\'accès à ceux qui avaient l\'ancien.', 'erreur' => $erreurs['construction_code'] ?? null]) ?>
   </fieldset>
   <fieldset>
+    <legend>Conservation</legend>
+    <?= c_champ('journal_conservation_ans', 'Garder le journal des actions pendant (années)', ['type' => 'number', 'valeur' => $v['journal_conservation_ans'] ?? '3', 'aide' => 'De 1 à 10 ans. Les lignes plus anciennes sont effacées automatiquement. À indiquer dans la page de confidentialité.']) ?>
+  </fieldset>
+  <fieldset>
     <legend>Après la connexion</legend>
     <p class="petit">Page où arrive un membre qui se connecte depuis « Connexion » (s'il voulait voir une page précise, il y retourne).</p>
     <?php $arrivees = connexion_arrivees_possibles(); ?>
