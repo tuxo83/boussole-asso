@@ -9,7 +9,11 @@ $chemin = request_path();
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title><?= e(isset($titre) ? $titre . ' · ' . $nom : $nom) ?></title>
+<?php $slogan = installation_done() ? trim((string) setting('slogan', '')) : '';
+// Accueil : nom et accroche, si l'ensemble reste lisible dans un résultat de recherche (65 caractères)
+$titre_complet = isset($titre) ? $titre . ' · ' . $nom : ($slogan !== '' && mb_strlen($nom . ' – ' . $slogan) <= 65 ? $nom . ' – ' . $slogan : $nom); ?>
+<title><?= e($titre_complet) ?></title>
+<?= installation_done() ? seo_balises($titre_complet, $seo ?? []) : '' ?>
 <link rel="stylesheet" href="<?= e(asset('/assets/css/boussole.css')) ?>">
 <style>:root{--couleur-principale:<?= color_setting('couleur_principale', '#1f4e79') ?>;--couleur-accent:<?= color_setting('couleur_accent', '#c8102e') ?>;--acces-membres:<?= color_setting('couleur_membres', '#5a2d91') ?>}</style>
 <?php if (installation_done() && trim((string) setting('css_personnalise', '')) !== ''): ?>

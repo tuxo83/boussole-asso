@@ -318,7 +318,7 @@ function api_page(int $id): array
     if ($page === null || (!$page['publiee'] && !has_right(current_member(), 'publications'))) {
         throw new ApiErreur('Page introuvable', 404);
     }
-    return ['id' => (int) $page['id'], 'slug' => $page['slug'], 'titre' => $page['titre'], 'parent_id' => $page['parent_id'], 'publiee' => (bool) $page['publiee'], 'reservee_membres' => (bool) $page['reservee_membres'],
+    return ['id' => (int) $page['id'], 'slug' => $page['slug'], 'titre' => $page['titre'], 'description' => $page['description'], 'parent_id' => $page['parent_id'], 'publiee' => (bool) $page['publiee'], 'reservee_membres' => (bool) $page['reservee_membres'],
         'dans_menu' => (bool) $page['dans_menu'], 'est_accueil' => (bool) $page['est_accueil'], 'ordre' => (int) $page['ordre'], 'blocs' => json_decode($page['blocs'] ?? '{"blocks":[]}', true)];
 }
 
@@ -355,18 +355,19 @@ function api_page_ecrire(?int $id, array $args): array
     $menu = isset($args['dans_menu']) ? (int) (bool) $args['dans_menu'] : (int) ($page['dans_menu'] ?? 0);
     $ordre = isset($args['ordre']) ? max(0, min(9999, (int) $args['ordre'])) : (int) ($page['ordre'] ?? 50);
     $accueil = isset($args['est_accueil']) ? (int) (bool) $args['est_accueil'] : (int) ($page['est_accueil'] ?? 0);
+    $description = array_key_exists('description', $args) ? (mb_substr(trim(strip_tags((string) $args['description'])), 0, 300) ?: null) : ($page['description'] ?? null);
     if ($accueil) {
         $reservee = 0;
         db_query('UPDATE page SET est_accueil = 0 WHERE id <> ?', [$id ?? 0]);
     }
     if ($page === null) {
-        db_query('INSERT INTO page (slug, titre, contenu, blocs, parent_id, publiee, reservee_membres, dans_menu, ordre, est_accueil) VALUES (?, ?, "", ?, ?, ?, ?, ?, ?, ?)',
-            [page_slug_unique($titre), $titre, $blocs, $parent, $publiee, $reservee, $menu, $ordre, $accueil]);
+        db_query('INSERT INTO page (slug, titre, description, contenu, blocs, parent_id, publiee, reservee_membres, dans_menu, ordre, est_accueil) VALUES (?, ?, ?, "", ?, ?, ?, ?, ?, ?, ?)',
+            [page_slug_unique($titre), $titre, $description, $blocs, $parent, $publiee, $reservee, $menu, $ordre, $accueil]);
         $id = (int) db()->lastInsertId();
         journal(null, $member, "Page créée : $titre");
     } else {
-        db_query('UPDATE page SET titre = ?, blocs = ?, parent_id = ?, publiee = ?, reservee_membres = ?, dans_menu = ?, ordre = ?, est_accueil = ? WHERE id = ?',
-            [$titre, $blocs, $parent, $publiee, $reservee, $menu, $ordre, $accueil, $id]);
+        db_query('UPDATE page SET titre = ?, description = ?, blocs = ?, parent_id = ?, publiee = ?, reservee_membres = ?, dans_menu = ?, ordre = ?, est_accueil = ? WHERE id = ?',
+            [$titre, $description, $blocs, $parent, $publiee, $reservee, $menu, $ordre, $accueil, $id]);
         journal(null, $member, "Page modifiée : $titre");
     }
     return api_page($id);

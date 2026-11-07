@@ -6,10 +6,25 @@ return [
     'ordre' => 10,
     'routes' => [
         ['GET', '/', function () {
+            $page = db_one('SELECT * FROM page WHERE est_accueil = 1 AND publiee = 1 LIMIT 1');
             render('accueil/accueil', [
                 'presentation' => (string) setting('presentation', ''),
-                'page' => db_one('SELECT * FROM page WHERE est_accueil = 1 AND publiee = 1 LIMIT 1'),
+                'page' => $page,
+                'seo' => ['description' => ($page['description'] ?? '') ?: seo_description_auto($page['blocs'] ?? null), 'jsonld' => seo_jsonld_association()],
             ]);
+        }],
+        // Référencement : consignes aux robots et plan du site (pages publiques seulement)
+        ['GET', '/robots.txt', function () {
+            header('Content-Type: text/plain; charset=utf-8');
+            echo seo_robots();
+        }],
+        ['GET', '/sitemap.xml', function () {
+            if (construction_active()) {
+                http_response_code(404);
+                return;
+            }
+            header('Content-Type: application/xml; charset=utf-8');
+            echo seo_sitemap();
         }],
         // CSS personnalisé de l'installation, servi comme une feuille de style (jamais dans le HTML)
         // Site en construction : saisie du code d'accès

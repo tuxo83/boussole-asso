@@ -20,6 +20,8 @@ as visiteur
 check "visiteur : renvoyé vers le code d'accès" "$(c "$U/page/statuts")" "303 $U/acces?suite=%2Fpage%2Fstatuts"
 check "page d'accès : bandeau et champ du code" "$(c "$U/acces" >/dev/null; grep -c 'bandeau-construction' "$B") $(grep -c 'name="code"' "$B")" "1 1"
 check "pas d'indexation par les moteurs" "$(curl -s -D - -o /dev/null "$U/acces" | grep -ci 'x-robots-tag: noindex')" "1"
+check "en construction : robots.txt ferme tout, sans code" "$(c "$U/robots.txt" | cut -c1-3) $(grep -c '^Disallow: /$' "$B")" "200 1"
+check "en construction : pas de plan du site" "$(c "$U/sitemap.xml" | cut -c1-3)" "404"
 check "connexion des membres accessible sans code" "$(c "$U/connexion" | cut -c1-3)" "200"
 check "mauvais code : refusé" "$(post "$U/acces" "$U/acces" -d 'code=000000&suite=/' | cut -c1-3)" "422"
 check "bon code : retour à la page demandée" "$(post "$U/acces" "$U/acces" -d "code=$CODE&suite=/espaces")" "303 $U/espaces"
