@@ -39,6 +39,7 @@
   <form method="post" action="<?= e(url('/admin/membres/' . (int) $m['id'])) ?>" class="formulaire">
     <?= csrf_field() ?>
     <p class="discret"><?= e($m['email']) ?> · dernière connexion : <?= e($m['derniere_connexion'] ? date('d/m/Y', strtotime($m['derniere_connexion'])) : 'jamais') ?><?= $m['invite_le'] ? ' · invité le ' . e(date('d/m/Y', strtotime($m['invite_le']))) : '' ?></p>
+    <?= c_champ('email', 'E-mail (sert à se connecter)', ['type' => 'email', 'valeur' => $m['email'], 'requis' => true]) ?>
     <?= c_champ('prenom', 'Prénom', ['valeur' => $m['prenom'], 'max' => 100]) ?>
     <?= c_champ('nom', 'Nom', ['valeur' => $m['nom'], 'max' => 100]) ?>
     <?= c_champ('type_membre_id', 'Type de membre', ['type' => 'select', 'valeur' => (string) $m['type_membre_id'], 'choix' => ['' => '—'] + array_column($types, 'libelle', 'id')]) ?>
@@ -57,6 +58,8 @@
     <button type="submit" class="lien-bouton"><?= $m['invite_le'] ? "Renvoyer l'invitation de bienvenue" : "Envoyer l'invitation de bienvenue" ?></button></form>
   <?php endif ?>
   <?php if (is_admin($gestionnaire) && (int) $m['id'] !== (int) $gestionnaire['id']): ?>
+  <form method="post" action="<?= e(url('/admin/membres/' . (int) $m['id'] . '/mot-de-passe-provisoire')) ?>"><?= csrf_field() ?>
+    <button type="submit" class="lien-bouton" data-confirmer="Donner un mot de passe provisoire à <?= e(membre_nom($m)) ?> ? Son mot de passe actuel ne marchera plus ; il devra en choisir un à sa prochaine connexion.">Mot de passe provisoire<?= $m['mot_de_passe_provisoire'] ? ' (déjà donné, pas encore changé)' : '' ?></button></form>
   <form method="post" action="<?= e(url('/admin/membres/' . (int) $m['id'] . '/effacer')) ?>"><?= csrf_field() ?>
     <button type="submit" class="lien-bouton lien-danger" data-confirmer="Effacer définitivement <?= e(membre_nom($m)) ?> ? Son compte, ses cotisations, ses inscriptions et ses clés disparaissent, et son nom est retiré du journal. Pour suspendre seulement l'accès, décochez « Compte actif ».">Effacer définitivement ce membre</button></form>
   <?php endif ?>

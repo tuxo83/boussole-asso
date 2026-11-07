@@ -37,10 +37,11 @@
     <?= c_champ('smtp_securite', 'Sécurité de la connexion', ['type' => 'select', 'valeur' => $v['smtp_securite'] ?? 'starttls', 'choix' => ['starttls' => 'STARTTLS (port 587, le plus courant)', 'ssl' => 'SSL / TLS (port 465)', 'aucune' => 'Aucune (déconseillé)'], 'erreur' => $erreurs['smtp_securite'] ?? null]) ?>
     <?= c_champ('smtp_utilisateur', 'Utilisateur', ['valeur' => $v['smtp_utilisateur'] ?? '']) ?>
     <?= c_champ('smtp_mot_de_passe', 'Mot de passe', ['type' => 'password', 'aide' => 'Laisser vide pour garder le mot de passe enregistré.']) ?>
+    <div class="test-envoi" id="test-envoi">
+      <?php if (!empty($test_mail)): ?><div class="alerte alerte-<?= e($test_mail[0]) ?>" role="status"><?= e($test_mail[1]) ?></div><?php endif ?>
+      <?= c_champ('test_destinataire', 'Envoyer un e-mail de test à', ['type' => 'email', 'valeur' => $test_destinataire ?? current_member()['email'], 'aide' => "Teste les réglages ci-dessus tels qu'ils sont saisis, sans les enregistrer."]) ?>
+      <button type="submit" class="bouton bouton-secondaire" formaction="<?= e(url('/admin/mail-test')) ?>#test-envoi" formnovalidate>Tester l'envoi</button>
+    </div>
   </fieldset>
   <button type="submit" class="bouton bouton-principal">Enregistrer</button>
-</form>
-<form method="post" action="<?= e(url('/admin/mail-test')) ?>" class="separe">
-  <?= csrf_field() ?>
-  <button type="submit" class="bouton bouton-secondaire">Envoyer un e-mail de test</button>
 </form>

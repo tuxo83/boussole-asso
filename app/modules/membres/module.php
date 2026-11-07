@@ -45,6 +45,20 @@ return [
             if ($cible === null) {
                 redirect('/admin/membres');
             }
+            // Changer l'e-mail (identifiant de connexion) : adresse valide et pas déjà prise
+            $email = mb_strtolower(trim((string) ($_POST['email'] ?? $cible['email'])));
+            if ($email !== $cible['email']) {
+                if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                    flash('erreur', 'Adresse e-mail invalide : rien n\'a été enregistré.');
+                    redirect('/admin/membres');
+                }
+                if (db_one('SELECT id FROM membre WHERE email = ? AND id <> ?', [$email, $cible['id']]) !== null) {
+                    flash('erreur', "L'adresse $email est déjà celle d'un autre membre : rien n'a été enregistré.");
+                    redirect('/admin/membres');
+                }
+                db_query('UPDATE membre SET email = ? WHERE id = ?', [$email, $cible['id']]);
+                journal(null, $gestionnaire, 'E-mail changé : ' . $cible['email'] . ' → ' . $email);
+            }
             db_query('UPDATE membre SET prenom = ?, nom = ?, type_membre_id = ?, actif = ? WHERE id = ?', [
                 mb_substr(trim((string) ($_POST['prenom'] ?? '')), 0, 100),
                 mb_substr(trim((string) ($_POST['nom'] ?? '')), 0, 100),
@@ -130,6 +144,21 @@ return [
             flash('succes', "Membre « $nom » effacé.");
             redirect('/admin/membres');
         }],
+        // Mot de passe provisoire (administrateur) : tiré au hasard, affiché une seule fois, à changer à la connexion suivante
+        ['POST', '/admin/membres/{id}/mot-de-passe-provisoire', function (array $p) {
+            $gestionnaire = require_right('admin');
+            $cible = db_one('SELECT * FROM membre WHERE id = ?', [(int) $p['id']]);
+            if ($cible === null || (int) $cible['id'] === (int) $gestionnaire['id']) {
+                flash('erreur', 'Pour votre propre compte, utilisez « Mon compte ».');
+                redirect('/admin/membres');
+            }
+            $provisoire = mot_de_passe_provisoire();
+            db_query('UPDATE membre SET mot_de_passe = ?, mot_de_passe_provisoire = 1 WHERE id = ?', [password_hash($provisoire, PASSWORD_DEFAULT), $cible['id']]);
+            journal(null, $gestionnaire, 'Mot de passe provisoire donné à ' . $cible['email']);
+            flash('info', 'Mot de passe provisoire de ' . membre_nom($cible) . ' (' . $cible['email'] . ') : ' . $provisoire
+                . ' — notez-le maintenant, il ne sera plus affiché. Il devra en choisir un autre à sa prochaine connexion.');
+            redirect('/admin/membres');
+        }],
         // Retirer un type : les membres qui l'avaient restent, sans type
         ['POST', '/admin/types-membre/{id}/supprimer', function (array $p) {
             $gestionnaire = require_right('admin');
@@ -148,4 +177,19 @@ function membre_type_valide(mixed $id): ?int
 {
     $id = (int) $id;
     return $id > 0 && db_one('SELECT id FROM type_membre WHERE id = ?', [$id]) !== null ? $id : null;
+}
+
+// 3 groupes de 4 caractères sans ambiguïté (pas de 0/O, 1/l/I) : facile à dicter, 59 bits environ
+function mot_de_passe_provisoire(): string
+{
+    $alphabet = 'abcdefghjkmnpqrstuvwxyzACDEFGHJKLMNPQRTUVWXY2345679';
+    $groupes = [];
+    for ($g = 0; $g < 3; $g++) {
+        $groupe = '';
+        for ($i = 0; $i < 4; $i++) {
+            $groupe .= $alphabet[random_int(0, strlen($alphabet) - 1)];
+        }
+        $groupes[] = $groupe;
+    }
+    return implode('-', $groupes);
 }

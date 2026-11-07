@@ -29,8 +29,37 @@ return [
                     'erreur' => 'Le mot de passe doit faire au moins ' . MOT_DE_PASSE_MIN . ' caractères, et la confirmation être identique.']);
                 return;
             }
-            db_query('UPDATE membre SET mot_de_passe = ? WHERE id = ?', [password_hash($password, PASSWORD_DEFAULT), $member['id']]);
+            db_query('UPDATE membre SET mot_de_passe = ?, mot_de_passe_provisoire = 0 WHERE id = ?', [password_hash($password, PASSWORD_DEFAULT), $member['id']]);
             flash('succes', 'Mot de passe enregistré.');
+            redirect('/compte');
+        }],
+        // Après un mot de passe provisoire donné par l'administrateur : en choisir un à soi, différent
+        ['GET', '/compte/nouveau-mot-de-passe', function () {
+            $member = require_member();
+            if (empty($member['mot_de_passe_provisoire'])) {
+                redirect('/compte');
+            }
+            render('compte/nouveau-mot-de-passe', ['titre' => 'Choisissez votre mot de passe', 'erreur' => null]);
+        }],
+        ['POST', '/compte/nouveau-mot-de-passe', function () {
+            $member = require_member();
+            if (empty($member['mot_de_passe_provisoire'])) {
+                redirect('/compte');
+            }
+            $password = (string) ($_POST['mot_de_passe'] ?? '');
+            $erreur = match (true) {
+                mb_strlen($password) < MOT_DE_PASSE_MIN || $password !== (string) ($_POST['confirmation'] ?? '') => 'Au moins ' . MOT_DE_PASSE_MIN . ' caractères, et la confirmation identique.',
+                $member['mot_de_passe'] !== null && password_verify($password, $member['mot_de_passe']) => 'Choisissez un mot de passe différent du mot de passe provisoire.',
+                default => null,
+            };
+            if ($erreur !== null) {
+                http_response_code(422);
+                render('compte/nouveau-mot-de-passe', ['titre' => 'Choisissez votre mot de passe', 'erreur' => $erreur]);
+                return;
+            }
+            db_query('UPDATE membre SET mot_de_passe = ?, mot_de_passe_provisoire = 0 WHERE id = ?', [password_hash($password, PASSWORD_DEFAULT), $member['id']]);
+            journal(null, $member, 'Mot de passe provisoire remplacé');
+            flash('succes', 'Mot de passe enregistré. Bienvenue !');
             redirect('/compte');
         }],
         // Clés d'API personnelles (IA, MCP) : lecture seule ou écriture, durée limitée, révocables

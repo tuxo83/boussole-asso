@@ -94,6 +94,17 @@ check "admin supprime le comité" "$(post "$U/espace/comite-de-direction" "$U/es
 check "espace, équipe, dates et fichiers effacés" "$(sql "SELECT (SELECT COUNT(*) FROM espace WHERE slug = 'comite-de-direction') + (SELECT COUNT(*) FROM fichier WHERE nom = 'odj.txt') + (SELECT COUNT(*) FROM jalon j JOIN espace e ON e.id = j.espace_id WHERE e.slug = 'comite-de-direction')")" "0"
 check "fichier effacé du disque" "$(find "$ROOT/app/stockage" -name "$STOCK" | wc -l)" "0"
 check "le sous-espace remonte d'un niveau" "$(sql "SELECT COALESCE(parent_id, 'aucun') FROM espace WHERE slug = 'sous-projet'")" "aucun"
+check "admin change l'e-mail d'un membre" "$(post "$U/admin/membres" "$U/admin/membres/$ALICE" -d 'email=alice.nouvelle@example.org&prenom=Alice&actif=1&droits[]=membres' >/dev/null; sql "SELECT email FROM membre WHERE id = $ALICE")" "alice.nouvelle@example.org"
+check "e-mail déjà pris : refusé" "$(post "$U/admin/membres" "$U/admin/membres/$ALICE" -d 'email=bob@example.org&prenom=Alice&actif=1&droits[]=membres' >/dev/null; sql "SELECT email FROM membre WHERE id = $ALICE")" "alice.nouvelle@example.org"
+BOB=$(sql "SELECT id FROM membre WHERE email = 'bob@example.org'")
+post "$U/admin/membres" "$U/admin/membres/$BOB/mot-de-passe-provisoire" >/dev/null; c "$U/admin/membres" >/dev/null
+PROV=$(grep -o 'bob@example.org) : [A-Za-z0-9]\{4\}-[A-Za-z0-9]\{4\}-[A-Za-z0-9]\{4\}' "$B" | sed 's/.* : //')
+check "mot de passe provisoire affiché une fois à l'administrateur" "$([ -n "$PROV" ] && echo oui) $(c "$U/admin/membres" >/dev/null; grep -c "$PROV" "$B")" "oui 0"
+as bobmdp
+check "bob se connecte avec le provisoire → doit en choisir un" "$(hpost "$U/connexion" "$U/connexion" -d "email=bob@example.org&mot_de_passe=$PROV" >/dev/null; c "$U/espaces")" "303 $U/compte/nouveau-mot-de-passe"
+check "provisoire : réutiliser le même est refusé" "$(post "$U/compte/nouveau-mot-de-passe" "$U/compte/nouveau-mot-de-passe" -d "mot_de_passe=$PROV&confirmation=$PROV" >/dev/null; grep -c 'différent du mot de passe provisoire' "$B")" "1"
+check "provisoire : nouveau mot de passe choisi, accès rétabli" "$(post "$U/compte/nouveau-mot-de-passe" "$U/compte/nouveau-mot-de-passe" -d 'mot_de_passe=bob-nouveau-mot-de-passe&confirmation=bob-nouveau-mot-de-passe' >/dev/null; c "$U/espaces" | cut -c1-3) $(sql "SELECT mot_de_passe_provisoire FROM membre WHERE id = $BOB")" "200 0"
+as admin
 check "admin ne peut pas s'effacer lui-même" "$(post "$U/admin/membres" "$U/admin/membres/$ADMIN/effacer" >/dev/null; sql "SELECT COUNT(*) FROM membre WHERE id = $ADMIN")" "1"
 check "admin efface dan définitivement" "$(post "$U/admin/membres" "$U/admin/membres/$DAN/effacer" >/dev/null; sql "SELECT COUNT(*) FROM membre WHERE email = 'dan@example.org'")" "0"
 check "déplacer un espace sous un autre, et changer son type" "$(post "$U/espace/sous-projet" "$U/espace/sous-projet/modifier" -d 'titre=Sous projet&visibilite=equipe&type=commission&parent=journee-portes-ouvertes' >/dev/null; sql "SELECT CONCAT(e.type, ' ', p.slug) FROM espace e JOIN espace p ON p.id = e.parent_id WHERE e.slug = 'sous-projet'")" "commission journee-portes-ouvertes"
