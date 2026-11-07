@@ -77,7 +77,7 @@ return [
         // code par e-mail (si le 1er facteur n'était pas l'e-mail), ou mot de passe (si le 1er était l'e-mail)
         ['GET', '/connexion/double-authentification', function () {
             $member = second_facteur_membre();
-            render('connexion/totp', ['titre' => 'Double authentification'] + second_facteur_choix($member) + ['erreur' => null, 'code_envoye' => !empty($_SESSION['code_2fa'])]);
+            render('connexion/totp', ['titre' => 'Double authentification'] + second_facteur_choix($member) + ['erreur' => null, 'code_envoye' => !empty($_SESSION['code_2fa']), 'deja_connecte' => !empty($_SESSION['connecte'])]);
         }],
         ['POST', '/connexion/double-authentification', function () {
             $member = second_facteur_membre();
@@ -149,7 +149,14 @@ return [
 function second_facteur_membre(): array
 {
     $member = empty($_SESSION['membre_id']) ? null : db_one('SELECT * FROM membre WHERE id = ? AND actif = 1', [$_SESSION['membre_id']]);
-    if ($member === null || !facteurs()) {
+    if ($member === null) {
+        redirect('/connexion');
+    }
+    // Session ouverte avant cette version (facteurs non notés) : elle compte pour une seule preuve
+    if (!facteurs() && !empty($_SESSION['connecte'])) {
+        $_SESSION['facteurs'] = ['session'];
+    }
+    if (!facteurs()) {
         redirect('/connexion');
     }
     return $member;
@@ -169,7 +176,7 @@ function second_facteur_choix(array $member): array
 function second_facteur_refus(array $member, string $erreur): never
 {
     http_response_code(422);
-    render('connexion/totp', ['titre' => 'Double authentification'] + second_facteur_choix($member) + ['erreur' => $erreur, 'code_envoye' => !empty($_SESSION['code_2fa'])]);
+    render('connexion/totp', ['titre' => 'Double authentification'] + second_facteur_choix($member) + ['erreur' => $erreur, 'code_envoye' => !empty($_SESSION['code_2fa']), 'deja_connecte' => !empty($_SESSION['connecte'])]);
     exit;
 }
 

@@ -53,5 +53,17 @@ check "clé expirée : 401" "$(api "$BOB_READ" "$U/api/moi")" "401"
 sql "UPDATE membre SET actif = 0 WHERE email = 'bob@example.org'"; sql "UPDATE cle_api SET expire_le = CURDATE() + INTERVAL 5 DAY WHERE libelle = 'Lecture'"
 check "membre désactivé : sa clé ne marche plus" "$(api "$BOB_READ" "$U/api/moi")" "401"
 as admin
+# Clé d'écriture avec une seule preuve : la seconde vérification est demandée, et expliquée
+sql "UPDATE membre SET totp_actif = 0 WHERE email = 'admin@example.org'"
+c "$U/compte" >/dev/null; T=$(tok); c --data-urlencode "_csrf=$T" "$U/deconnexion" >/dev/null
+hpost "$U/connexion" "$U/connexion" -d 'email=admin@example.org&mot_de_passe=motdepasse-tres-long' >/dev/null
+check "clé d'écriture, une seule preuve : seconde vérification demandée" "$(post "$U/compte/cles" "$U/compte/cles" -d 'libelle=IA&portee=ecriture&duree=7')" "303 $U/connexion/double-authentification"
+check "la page explique pourquoi" "$(c "$U/connexion/double-authentification" | cut -c1-3) $(grep -c 'Vous êtes bien connecté' "$B")" "200 1"
+# Session ouverte avant la mise à jour (sans facteurs notés) : la seconde vérification fonctionne quand même
+SID=$(awk '$6 == "BOUSSOLE" || $6 == "PHPSESSID" {print $7}' "$J" | tail -1)
+sed -i 's/facteurs|a:[0-9]*:{[^}]*}//' "/var/lib/php/sessions/sess_$SID"
+check "ancienne session : la seconde vérification s'affiche (pas de renvoi vers le compte)" "$(c "$U/connexion/double-authentification" | cut -c1-3) $(grep -c 'Vous êtes bien connecté' "$B")" "200 1"
+stepup_email >/dev/null
+check "après le code e-mail : clé d'écriture possible" "$(post "$U/compte/cles" "$U/compte/cles" -d 'libelle=IA2&portee=ecriture&duree=7')" "303 $U/compte/cles"
 check "admin : voit toutes les clés" "$(c "$U/admin/cles" >/dev/null; grep -c 'Bob' "$B")" "[1-9]*"
 bilan
