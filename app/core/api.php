@@ -203,6 +203,39 @@ function api_page_ecrire(?int $id, array $args): array
     return api_page($id);
 }
 
+function api_evenements(): array
+{
+    evenements_cloturer_echus();
+    $member = current_member();
+    $list = [];
+    foreach (db_all('SELECT s.* FROM espace s LEFT JOIN evenement e ON e.espace_id = s.id WHERE s.type = "evenement" AND s.archive = 0 AND (e.debut IS NULL OR e.debut >= CURDATE()) ORDER BY e.debut') as $espace) {
+        if (!espace_peut_voir($member, $espace)) {
+            continue;
+        }
+        $ev = evenement_de($espace);
+        $mine = inscription_de($ev, $member);
+        $list[] = ['slug' => $espace['slug'], 'titre' => $espace['titre'], 'debut' => $ev['debut'], 'lieu' => $ev['lieu'], 'mode' => $ev['mode'],
+            'places' => $ev['places'], 'cloture' => $ev['cloture'], 'mon_statut' => $mine['statut'] ?? null, 'mon_rang_attente' => ($mine['statut'] ?? null) === 'attente' ? (int) $mine['rang'] : null];
+    }
+    return $list;
+}
+
+// S'inscrire ou se désister : toujours pour soi-même, jamais pour un autre membre
+function api_inscription(string $slug, string $action): array
+{
+    api_ecriture();
+    $espace = espace_par_slug($slug);
+    if ($espace === null || $espace['type'] !== 'evenement' || !espace_peut_voir(current_member(), $espace)) {
+        throw new ApiErreur('Événement introuvable', 404);
+    }
+    $ev = evenement_de($espace);
+    $message = inscription_agir($ev, current_member(), $action);
+    if (api_member() !== null) {
+        journal($espace['id'], current_member(), "Inscription ($action) : $message");
+    }
+    return ['message' => $message, 'mon_statut' => inscription_de($ev, current_member())['statut'] ?? null];
+}
+
 function api_membres(): array
 {
     if (!has_right(current_member(), 'membres')) {

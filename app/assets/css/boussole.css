@@ -108,3 +108,7 @@ details summary { cursor: pointer; color: var(--couleur-principale); margin: .5r
 .bloc-image img { max-width: 100%; max-height: 20rem; object-fit: contain; }
 .bloc-image input[type="text"], .bloc-image input:not([type]) { font: inherit; padding: .4rem; border: 1px solid var(--bordure); border-radius: var(--rayon); }
 .bloc-dynamique { background: var(--fond-doux); padding: .75rem; border-radius: var(--rayon); }
+
+/* Événements */
+.evenement .infos { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: .25rem 1.5rem; }
+.alerte-texte { color: #9b1c1c; font-weight: 600; }

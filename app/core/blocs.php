@@ -171,9 +171,19 @@ function bloc_dynamique(string $bloc): string
 {
     switch ($bloc) {
         case 'evenements':
+            evenements_cloturer_echus();
+            $evenements = db_all('SELECT s.*, e.debut, e.lieu FROM espace s LEFT JOIN evenement e ON e.espace_id = s.id
+                WHERE s.type = "evenement" AND s.visibilite = "public" AND s.archive = 0 AND (e.debut IS NULL OR e.debut >= CURDATE()) ORDER BY e.debut IS NULL, e.debut');
+            if (!$evenements) {
+                return '<p class="discret">Aucun événement à venir pour l\'instant.</p>';
+            }
+            $html = '<div class="grille">';
+            foreach ($evenements as $ev) {
+                $html .= c_carte($ev['titre'], '<p><strong>' . e(evenement_date($ev['debut'])) . '</strong>' . ($ev['lieu'] ? ' · ' . e($ev['lieu']) : '') . '</p><p>' . e(mb_strimwidth($ev['description'], 0, 160, '…')) . '</p>', '/espace/' . $ev['slug']);
+            }
+            return $html . '</div>';
         case 'espaces-publics':
-            $sql = 'SELECT * FROM espace WHERE visibilite = "public" AND archive = 0' . ($bloc === 'evenements' ? ' AND type = "evenement"' : '') . ' ORDER BY titre';
-            $espaces = db_all($sql);
+            $espaces = db_all('SELECT * FROM espace WHERE visibilite = "public" AND archive = 0 AND type <> "evenement" ORDER BY titre');
             if (!$espaces) {
                 return '<p class="discret">Rien à afficher pour l\'instant.</p>';
             }
