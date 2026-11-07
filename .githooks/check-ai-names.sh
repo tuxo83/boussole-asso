@@ -22,6 +22,8 @@ set -u
 
 # This file has to name the names, so it exempts itself by path, and nothing else.
 SELF=".githooks/check-ai-names.sh"
+# Third-party code embedded as is (licences and author names must not be altered)
+VENDOR="app/assets/vendor/"
 
 # Whole words, case-insensitive. Add freely.
 NAMES='claude|anthropic|openai|chatgpt|copilot|gemini|codex|codeium|llama|bard|grok|deepseek|qwen|kimi|windsurf|aider|tabnine|opus|sonnet|haiku|fable|mistral|gpt-?[0-9]+(\.[0-9]+)?[a-z]?'
@@ -71,8 +73,8 @@ case "$mode" in
         { git config user.name; git config user.email; } | findings "git identity" || bad=1
         # Added lines only: a commit that REMOVES a name must not be refused,
         # or the guard would forbid its own cleanup.
-        git diff --cached --unified=0 | awk -v self="$SELF" '
-            /^\+\+\+ / { f = $2; sub(/^b\//, "", f); in_self = (f == self); next }
+        git diff --cached --unified=0 | awk -v self="$SELF" -v vendor="$VENDOR" '
+            /^\+\+\+ / { f = $2; sub(/^b\//, "", f); in_self = (f == self || index(f, vendor) == 1); next }
             /^\+/ && !in_self { print }' | findings "a line this commit adds" || bad=1
         [ "${bad:-0}" = 1 ] && refuse
         echo "staged changes and git identity: no assistant named"

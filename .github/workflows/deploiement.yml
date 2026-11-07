@@ -1,0 +1,50 @@
+# Déploiement automatique par FTPS, pour une association qui a copié ce dépôt (fork).
+# Dans sa copie : Settings > Secrets and variables > Actions, créer les secrets
+#   FTP_HOTE, FTP_UTILISATEUR, FTP_MOT_DE_PASSE, FTP_DOSSIER, et SITE_ADRESSE (facultatif).
+# Ils restent dans sa copie : personne d'autre ne les voit. Sans ces secrets, rien ne se passe.
+name: Déploiement
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploiement
+  cancel-in-progress: false
+
+jobs:
+  ftp:
+    runs-on: ubuntu-latest
+    env:
+      FTP_HOTE: ${{ secrets.FTP_HOTE }}
+    if: ${{ github.repository != 'tuxo83/boussole-asso' }}
+    steps:
+      - name: Secrets présents ?
+        id: secrets
+        run: echo "pret=$([ -n "$FTP_HOTE" ] && echo oui || echo non)" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v4
+        if: steps.secrets.outputs.pret == 'oui'
+      - name: Envoi par FTPS
+        if: steps.secrets.outputs.pret == 'oui'
+        env:
+          FTP_UTILISATEUR: ${{ secrets.FTP_UTILISATEUR }}
+          FTP_MOT_DE_PASSE: ${{ secrets.FTP_MOT_DE_PASSE }}
+          FTP_DOSSIER: ${{ secrets.FTP_DOSSIER }}
+          SITE_ADRESSE: ${{ secrets.SITE_ADRESSE }}
+        run: |
+          sudo apt-get install -y -q lftp > /dev/null
+          umask 077
+          {
+            printf 'FTP_HOTE=%q\n' "$FTP_HOTE"
+            printf 'FTP_UTILISATEUR=%q\n' "$FTP_UTILISATEUR"
+            printf 'FTP_MOT_DE_PASSE=%q\n' "$FTP_MOT_DE_PASSE"
+            printf 'FTP_DOSSIER=%q\n' "$FTP_DOSSIER"
+            printf 'FTP_SECURITE=ftps\n'
+            printf 'SITE_ADRESSE=%q\n' "$SITE_ADRESSE"
+          } > "$RUNNER_TEMP/deploiement-ftp.conf"
+          ./deploiement-ftp.sh "$RUNNER_TEMP/deploiement-ftp.conf"
+          rm -f "$RUNNER_TEMP/deploiement-ftp.conf"

@@ -12,9 +12,10 @@ Site et outil de gestion pour les associations : une partie publique, un espace 
 
 ## Installation
 
-1. Copier le contenu du dossier `app/` sur l'hébergement (racine du site).
-2. Ouvrir le site : l'assistant d'installation demande la base de données, le nom de l'association et l'e-mail du premier administrateur.
+1. Envoyer le contenu du dossier `app/` chez l'hébergeur : `./deploiement-ftp.sh` (FTPS) ou un logiciel FTP.
+2. Ouvrir le site : l'assistant d'installation demande la base de données, le nom de l'association et le premier administrateur.
 
+Détails, mises à jour, tâches planifiées et nginx : [docs/installation.md](docs/installation.md).
 Sur un serveur « simple-web-server », `install.sh` déploie et configure le site automatiquement.
 
 ## Contribuer

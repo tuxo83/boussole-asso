@@ -8,3 +8,39 @@
 
 ## Rappels
 - Délais **réglables** : quelques semaines avant pour les tâches internes, jusqu'à plusieurs mois avant pour les événements. Valeurs par défaut à définir.
+
+## Données personnelles
+- Supprimer au plus tôt : une personne dont la dernière cotisation date de **plus de 2 ans** est effacée.
+- L'effacement n'est pas silencieux : il devient une **tâche récurrente** pour la personne responsable, avec une alerte et une météo, qui valide l'effacement.
+- Avant cela, l'export de la liste (ex. qui a cotisé) reste possible.
+
+## Rôles
+- **Dans l'association**, des types de membres réglables par chaque installation (ex. adhérent, membre associé, membre d'honneur) : un libellé libre, et des droits qui en découlent (voter, s'inscrire aux événements réservés…).
+- **Dans un espace** (comité, commission, projet, événement), des niveaux de droits fixes, avec un libellé libre :
+  - n°1 (responsable) et n°2 (suppléant) : mêmes droits, gèrent l'espace ;
+  - membre : contribue (fichiers, dates, météo) ;
+  - associé / conseiller (« sage ») : rattaché à l'espace sans y être nommé, éventuellement extérieur à l'association ; voit l'espace et peut commenter, sans le gérer.
+- Les libellés sont libres (président, secrétaire, sage…), les niveaux de droits ne le sont pas : simple à comprendre, sûr, universel.
+
+## Droits de plateforme
+- Trois axes indépendants : **type de membre** (statut dans l'association), **rôle dans un espace** (gérer cet espace), **droits de plateforme** (gérer une partie du site).
+- Droits de plateforme : **administrateur** (tout), et trois délégations : **cotisations**, **membres**, **publications** (accueil, pages, actualités).
+- Aucun droit ne découle d'une fonction (président, secrétaire…) : on attribue explicitement. Tout droit de plateforme impose la double authentification.
+
+## Pages du site : éditeur à blocs
+- Éditeur à blocs open source (Editor.js, licence Apache 2.0), embarqué dans le dépôt : aucun CDN, aucun service externe.
+- Le contenu est enregistré en blocs (JSON) et affiché avec nos propres composants : jamais de HTML libre.
+- Événements payants ou à confirmer : phases nommées (Vœux, Paiement ou Confirmation, Dernières places, Événement) ; N jours par personne retenue, sinon la place passe au suivant ; à J-X, premier qui paie ou confirme ; rappel la veille de chaque échéance ; frise et temps restant affichés.
+- Site en construction : bandeau sur chaque page et code d'accès à 6 chiffres pour les visiteurs (essais limités, retenu 30 jours, changer le code ferme les anciens accès) ; connexion des membres, API, MCP et HelloAsso restent accessibles.
+- Déploiement : FTPS par `deploiement-ftp.sh` (configuration, images et fichiers du site jamais touchés ; mises à jour de la base à la première visite) ; tâches planifiées par le cron, ou à défaut par les visites (au plus toutes les 10 minutes).
+- HelloAsso (facultatif) : lecture des paiements par l'API officielle toutes les 10 minutes (réglable) et à chaque notification ; la notification ne fait que déclencher une lecture, son contenu n'est jamais cru ; seuls l'e-mail et la date sont gardés ; secret chiffré ; le CSV reste disponible.
+- Rappels : par e-mail, délais réglables en jours avant l'échéance (dates clés : 14 et 3 jours ; organisation d'un événement : 60, 14 et 3 ; participants : 7 et 1), au binôme ou à toute l'équipe ; jamais deux fois le même, et un seul si le cron a manqué des passages.
+- Cotisations : seulement payé / période / date / moyen, saisi par la personne qui a reçu le paiement ; import HelloAsso par fichier CSV (aucune connexion à un service extérieur) ; une relance automatique par période (délai réglable), relance manuelle ; effacement réel après la durée de conservation (2 ans par défaut), validé par le responsable avec météo, export possible avant.
+- Inscriptions : vœux sans course au clic ; groupes 0 (invités) à 3 calculés sur la moyenne des participations sur 12 mois ; tirage reproductible ; liste d'attente avec promotion seulement si une place est réellement libre. Inscrit = participation (pas de pointage des présences pour l'instant).
+- Blocs dynamiques en nombre limité (liste d'événements, actualités, adhésion, contact, espaces publics), sans plugins.
+- Images : ré-encodées à l'envoi (suppression des métadonnées EXIF, GPS…), formats image uniquement. Une image d'une page publique est publique ; une image ou un fichier d'un espace ou d'un événement n'est servi qu'aux personnes qui ont le droit de voir cet espace.
+
+## Authentification externe (plus tard)
+- Par défaut, la connexion intégrée (fonctionne chez tout hébergeur).
+- À garder possible : un mode facultatif où le serveur (ex. Apache OIDC devant le site) a déjà authentifié la personne ; Boussole lit alors l'e-mail transmis par le serveur (variable du serveur, jamais un en-tête du navigateur) et retrouve le membre. Les droits restent gérés dans Boussole.
+- La connexion est concentrée dans `core/auth.php` (première étape réussie → `login_first_step`) : c'est le seul endroit à brancher.
