@@ -227,3 +227,5 @@ tr:last-child td { border-bottom: 0; }
 .statut-a-regler { background: #fff8e6; border-color: #f0dca0; }
 .badge-alerte { background: #fdf0f1; border-color: #f2c3c8; color: #8a1d2c; }
 .evenement .aide-contenu ol { padding-left: 1.2rem; }
+.qrcode { width: 12rem; max-width: 100%; margin: .75rem 0; background: #fff; border: 1px solid var(--bordure); border-radius: var(--rayon-petit); padding: .25rem; }
+.qrcode svg { display: block; width: 100%; height: auto; }

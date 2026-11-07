@@ -43,6 +43,13 @@ with sync_playwright() as p:
     page.fill('#champ-code-email', dernier_code()); page.click('form[action$="/code"] button[type=submit]')
     check('code par e-mail accepté, retour à la page de sécurité', page.url.endswith('/compte/double-authentification'))
 
+    # QR code de l'application : présent, lisible, et il contient exactement la clé affichée
+    page.click('summary:has-text("Application d\'authentification")')
+    page.locator('.qrcode svg').screenshot(path=OUT + '/04-qrcode.png')
+    import cv2
+    texte, _, _ = cv2.QRCodeDetector().detectAndDecode(cv2.imread(OUT + '/04-qrcode.png'))
+    cle = page.inner_text('code.cle').replace(' ', '')
+    check('QR code lisible, avec la bonne clé', texte.startswith('otpauth://totp/') and ('secret=' + cle) in texte)
     cdp, auth_id = authentificateur(page)
     page.fill('#champ-libelle', 'Clé de test')
     with page.expect_navigation():
