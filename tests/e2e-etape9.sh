@@ -28,7 +28,7 @@ check "secret chiffré en base" "$(sql "SELECT COUNT(*) FROM parametre WHERE cle
 post "$U/cotisations" "$U/cotisations/helloasso/synchroniser" >/dev/null
 check "paiement autorisé : alice payée par HelloAsso, avec sa date" "$(sql "SELECT CONCAT(moyen, ' ', paye_le) FROM cotisation WHERE membre_id = $(id alice)")" "helloasso $P-02-03"
 check "paiement refusé : bob pas à jour" "$(sql "SELECT COUNT(*) FROM cotisation WHERE membre_id = $(id bob)")" "0"
-check "payeur inconnu : aucun compte créé" "$(sql "SELECT COUNT(*) FROM membre WHERE email = 'inconnu@example.org'")" "0"
+check "payeur inconnu : compte en attente de validation, sans accès" "$(sql "SELECT CONCAT(actif, ' ', en_attente) FROM membre WHERE email = 'inconnu@example.org'")" "0 1"
 check "aucun montant gardé" "$(sql "SELECT COUNT(*) FROM parametre WHERE valeur LIKE '%3000%'")" "0"
 check "cron juste après : rien (intervalle de 10 minutes)" "$(php "$ROOT/app/bin/cli.php" cron | grep HelloAsso) $(appels paiements)" "cron : 0 mise(s) à jour HelloAsso 1"
 post "$U/cotisations" "$U/cotisations/helloasso/synchroniser" >/dev/null

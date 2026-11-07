@@ -1,4 +1,19 @@
 <h1>Membres</h1>
+<?php if ($en_attente): ?>
+<section class="statut-inscription statut-a-regler" aria-labelledby="titre-attente">
+  <h2 id="titre-attente">En attente de validation (<?= count($en_attente) ?>)</h2>
+  <p class="petit">Adhésions payées par des personnes sans compte. Elles n'ont pas accès au site tant que vous n'avez pas validé.</p>
+  <ul class="liste">
+    <?php foreach ($en_attente as $m): ?>
+    <li class="candidat"><span class="qui"><strong><?= e(membre_nom($m)) ?></strong><span class="discret"><?= e($m['email']) ?><?= $m['paye_le'] ? ' · cotisation payée le ' . e(date('d/m/Y', strtotime($m['paye_le']))) : '' ?></span></span>
+      <span class="en-ligne">
+        <form method="post" action="<?= e(url('/admin/membres/' . (int) $m['id'] . '/validation')) ?>"><?= csrf_field() ?><input type="hidden" name="decision" value="valider"><button type="submit" class="bouton bouton-principal">Valider</button></form>
+        <form method="post" action="<?= e(url('/admin/membres/' . (int) $m['id'] . '/validation')) ?>"><?= csrf_field() ?><input type="hidden" name="decision" value="refuser"><button type="submit" class="bouton bouton-secondaire" data-confirmer="Refuser l'adhésion de <?= e(membre_nom($m)) ?> ? Le compte sera supprimé.">Refuser</button></form>
+      </span></li>
+    <?php endforeach ?>
+  </ul>
+</section>
+<?php endif ?>
 <details open><summary>Ajouter un membre</summary>
 <form method="post" action="<?= e(url('/admin/membres')) ?>" class="formulaire">
   <?= csrf_field() ?>

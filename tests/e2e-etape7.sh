@@ -32,12 +32,21 @@ c "$U/cotisations" >/dev/null; T=$(tok)
 c -F "_csrf=$T" -F "periode=$P" -F "fichier=@$W/helloasso.csv;type=text/csv" "$U/cotisations/import" >/dev/null
 check "import : bruno payé par HelloAsso le 05/10" "$(sql "SELECT CONCAT(moyen, ' ', paye_le) FROM cotisation WHERE membre_id = $(id bruno)")" "helloasso $P-10-05"
 check "import : alice déjà à jour, chèque conservé" "$(sql "SELECT moyen FROM cotisation WHERE membre_id = $(id alice)")" "cheque"
-check "import : bilan et adresse inconnue signalée" "$(c "$U/cotisations" >/dev/null; grep -o '1 cotisation(s) enregistrée(s), 1 déjà à jour' "$B") $(grep -c 'inconnu@example.org' "$B")" "1 cotisation(s) enregistrée(s), 1 déjà à jour 1"
-check "import : aucun compte créé" "$(sql "SELECT COUNT(*) FROM membre WHERE email = 'inconnu@example.org'")" "0"
+check "import : bilan (1 enregistrée, 1 nouvelle adhésion, 1 doublon)" "$(c "$U/cotisations" >/dev/null; grep -o '1 cotisation(s) enregistrée(s), 0 déjà à jour, 1 nouvelle(s) adhésion(s) en attente de validation, 1 paiement(s) en double à vérifier' "$B" | head -1)" "1 cotisation(s) enregistrée(s), 0 déjà à jour, 1 nouvelle(s) adhésion(s) en attente de validation, 1 paiement(s) en double à vérifier"
+check "import : inconnu → compte en attente, sans accès, cotisation notée" "$(sql "SELECT CONCAT(actif, ' ', en_attente) FROM membre WHERE email = 'inconnu@example.org'") $(sql "SELECT COUNT(*) FROM cotisation c JOIN membre m ON m.id = c.membre_id WHERE m.email = 'inconnu@example.org'")" "0 1 1"
+check "doublon alice signalé, rien d'écrasé" "$(grep -c 'Paiements en double à vérifier' "$B") $(sql "SELECT moyen FROM cotisation WHERE membre_id = $(id alice)")" "1 cheque"
+post "$U/cotisations" "$U/cotisations/doublon" -d "membre_id=$(id alice)&periode=$P&paye_le=$P-10-07" >/dev/null
+check "doublon marqué traité" "$(c "$U/cotisations" >/dev/null; grep -c 'Paiements en double à vérifier' "$B")" "0"
+check "gestionnaires prévenus de l'adhésion à valider" "$(grep -c 'Subject: Adhésion à valider' "$MAIL")" "1"
+check "compte en attente : connexion refusée, message clair" "$(as inconnu; hpost "$U/connexion" "$U/connexion" -d 'email=inconnu@example.org' >/dev/null; grep -c 'connexion/lien' "$MAIL")" "0"
+as admin
+check "membres : section « en attente »" "$(c "$U/admin/membres" >/dev/null; grep -c 'En attente de validation (1)' "$B")" "1"
+post "$U/admin/membres" "$U/admin/membres/$(id inconnu)/validation" -d 'decision=valider' >/dev/null
+check "validé : actif, e-mail de bienvenue" "$(sql "SELECT CONCAT(actif, ' ', en_attente) FROM membre WHERE email = 'inconnu@example.org'") $(grep -c 'Subject: Bienvenue' "$MAIL")" "1 0 1"
 
 post "$U/cotisations" "$U/cotisations/marquer" -d "periode=$P&membre_id=$(id chloe)&moyen=especes&paye_le=$AUJ" >/dev/null
 c "$U/cotisations/export?periode=$P" >/dev/null
-check "export CSV : 3 lignes + en-tête" "$(grep -c . "$B")" "4"
+check "export CSV : 4 lignes (dont la nouvelle adhésion) + en-tête" "$(grep -c . "$B")" "5"
 check "export CSV : formule neutralisée" "$(grep -c "'=HYPERLINK" "$B") $(grep -c '^"\?=' "$B")" "1 0"
 post "$U/cotisations" "$U/cotisations/annuler" -d "periode=$P&membre_id=$(id chloe)" >/dev/null
 check "annulation d'une erreur de saisie" "$(sql "SELECT COUNT(*) FROM cotisation WHERE membre_id = $(id chloe)")" "0"

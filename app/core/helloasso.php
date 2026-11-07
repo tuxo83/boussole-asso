@@ -60,7 +60,7 @@ function helloasso_paiements(string $jeton, string $type, string $formulaire, st
             $email = mb_strtolower(trim((string) ($p['payer']['email'] ?? '')));
             $date = cotisation_lire_date(substr((string) ($p['date'] ?? ''), 0, 10));
             if (filter_var($email, FILTER_VALIDATE_EMAIL) && $date !== null && ($p['state'] ?? 'Authorized') === 'Authorized') {
-                $paiements[] = [$email, $date];
+                $paiements[] = [$email, $date, (string) ($p['payer']['firstName'] ?? ''), (string) ($p['payer']['lastName'] ?? '')];
             }
         }
         $suite = $data['pagination']['continuationToken'] ?? null;
@@ -97,12 +97,8 @@ function helloasso_synchroniser(bool $force = false): int
             return $n;
         }
         setting_set('helloasso_premiere', '1');
-        foreach ($paiements as [$email, $date]) {
-            $member = db_one('SELECT * FROM membre WHERE email = ?', [$email]);
-            if ($member !== null && cotisation_a_jour($member, cotisation_periode($date)) === null) {
-                cotisation_marquer($member, cotisation_periode($date), $date, 'helloasso', null);
-                $n++;
-            }
+        foreach ($paiements as [$email, $date, $prenom, $nom]) {
+            $n += cotisation_paiement_recu($email, $prenom, $nom, $date, 'helloasso', null) === 'deja' ? 0 : 1;
         }
     }
     foreach (db_all('SELECT e.* FROM evenement e JOIN espace s ON s.id = e.espace_id WHERE e.helloasso_formulaire IS NOT NULL AND e.helloasso_formulaire <> "" AND s.archive = 0 AND (e.debut IS NULL OR e.debut >= CURDATE() - INTERVAL 7 DAY)') as $ev) {

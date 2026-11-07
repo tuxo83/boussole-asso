@@ -17,8 +17,8 @@ $actuelle = cotisation_periode();
 
 <?php if ($import): ?>
 <div class="alerte alerte-succes" role="status">
-  <p><strong>Import HelloAsso :</strong> <?= (int) $import['marques'] ?> cotisation(s) enregistrée(s), <?= (int) $import['deja'] ?> déjà à jour.</p>
-  <?php if ($import['inconnus']): ?><p>Adresses sans compte (à ajouter dans Membres si besoin) : <?= e(implode(', ', $import['inconnus'])) ?></p><?php endif ?>
+  <p><strong>Import HelloAsso :</strong> <?= (int) $import['marques'] ?> cotisation(s) enregistrée(s), <?= (int) $import['deja'] ?> déjà à jour<?= !empty($import['crees']) ? ', ' . (int) $import['crees'] . ' nouvelle(s) adhésion(s) en attente de validation' : '' ?><?= !empty($import['doublons']) ? ', ' . (int) $import['doublons'] . ' paiement(s) en double à vérifier' : '' ?>.</p>
+  <?php if ($import['inconnus']): ?><p>Lignes illisibles (date manquante) : <?= e(implode(', ', $import['inconnus'])) ?></p><?php endif ?>
 </div>
 <?php endif ?>
 
@@ -46,6 +46,20 @@ $actuelle = cotisation_periode();
     <?php if ($effacer): ?><p><a class="bouton bouton-secondaire" href="#effacement">Voir et valider</a></p><?php endif ?>
   </article>
 </div>
+
+<?php if ($nb_attente): ?><p class="alerte alerte-info"><?= $nb_attente ?> adhésion(s) payée(s) en attente de validation : <a href="<?= e(url('/admin/membres')) ?>">Membres › En attente</a>.</p><?php endif ?>
+<?php if ($doublons): ?>
+<section class="statut-inscription statut-a-regler">
+  <h2>Paiements en double à vérifier (<?= count($doublons) ?>)</h2>
+  <p class="petit">Ces personnes étaient déjà à jour quand un nouveau paiement est arrivé. Rien n'a été écrasé : vérifiez, remboursez si besoin sur HelloAsso, puis marquez « traité ».</p>
+  <ul class="liste">
+    <?php foreach ($doublons as $d): ?>
+    <li class="candidat"><span class="qui"><strong><?= e(membre_nom($d)) ?></strong><span class="discret"><?= e(cotisation_periode_libelle((int) $d['periode'])) ?> : déjà payé le <?= e($d['premier_le'] ? date('d/m/Y', strtotime($d['premier_le'])) : '?') ?> (<?= e(COTISATION_MOYENS[$d['premier_moyen']] ?? '?') ?>), puis le <?= e(date('d/m/Y', strtotime($d['paye_le']))) ?> (<?= e(COTISATION_MOYENS[$d['moyen']]) ?>)</span></span>
+      <form method="post" action="<?= e(url('/cotisations/doublon')) ?>"><?= csrf_field() ?><input type="hidden" name="membre_id" value="<?= (int) $d['membre_id'] ?>"><input type="hidden" name="periode" value="<?= (int) $d['periode'] ?>"><input type="hidden" name="paye_le" value="<?= e($d['paye_le']) ?>"><button type="submit" class="bouton bouton-secondaire">Traité</button></form></li>
+    <?php endforeach ?>
+  </ul>
+</section>
+<?php endif ?>
 
 <h2>Membres</h2>
 <p><input type="search" class="filtre" data-filtre="#liste-cotisations" placeholder="Rechercher un nom ou un e-mail" aria-label="Rechercher un membre"></p>
@@ -111,6 +125,7 @@ $actuelle = cotisation_periode();
   <?= csrf_field() ?>
   <?= c_champ('cotisation_mois_debut', 'La période de cotisation commence en', ['type' => 'select', 'valeur' => (string) cotisation_mois_debut(), 'choix' => array_combine(range(1, 12), ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'])]) ?>
   <?= c_champ('cotisation_relance_jours', 'Relance automatique, en jours après le début de la période (0 = jamais)', ['type' => 'number', 'valeur' => (string) setting('cotisation_relance_jours', '30')]) ?>
+  <?= c_champ('lien_adhesion', "Lien d'adhésion HelloAsso (formulaire public)", ['type' => 'url', 'valeur' => (string) setting('lien_adhesion', ''), 'aide' => 'Affiché par le bloc « Adhérer » des pages et dans Mon compte. Les paiements lus créent un compte en attente pour les nouveaux.']) ?>
   <?= c_champ('cotisation_conservation_ans', 'Effacer les données après combien d\'années sans cotisation', ['type' => 'number', 'valeur' => (string) setting('cotisation_conservation_ans', '2')]) ?>
   <button type="submit" class="bouton bouton-secondaire">Enregistrer</button>
 </form>

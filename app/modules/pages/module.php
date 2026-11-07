@@ -12,11 +12,15 @@ return [
                 render('erreur', ['titre' => 'Page introuvable']);
                 return;
             }
+            // Page réservée : connexion demandée, puis retour à la page
+            if ($page['reservee_membres']) {
+                require_member();
+            }
             render('pages/page', [
                 'titre' => $page['titre'],
                 'page' => $page,
                 'chemin' => page_ancetres($page),
-                'enfants' => db_all('SELECT slug, titre FROM page WHERE parent_id = ? AND publiee = 1 ORDER BY ordre, titre', [$page['id']]),
+                'enfants' => db_all('SELECT slug, titre, reservee_membres FROM page WHERE parent_id = ? AND publiee = 1' . (current_member() === null ? ' AND reservee_membres = 0' : '') . ' ORDER BY ordre, titre', [$page['id']]),
             ]);
         }],
         ['GET', '/admin/pages', function () {
@@ -59,9 +63,10 @@ return [
             if ($accueil) {
                 db_query('UPDATE page SET est_accueil = 0');
             }
-            db_query('UPDATE page SET titre = ?, blocs = ?, parent_id = ?, publiee = ?, dans_menu = ?, ordre = ?, est_accueil = ? WHERE id = ?', [
+            db_query('UPDATE page SET titre = ?, blocs = ?, parent_id = ?, publiee = ?, dans_menu = ?, ordre = ?, est_accueil = ?, reservee_membres = ? WHERE id = ?', [
                 $titre, $blocs, page_parent_valide($_POST['parent_id'] ?? null, (int) $page['id']),
-                empty($_POST['publiee']) ? 0 : 1, empty($_POST['dans_menu']) ? 0 : 1, (int) ($_POST['ordre'] ?? 50), $accueil, $page['id'],
+                empty($_POST['publiee']) ? 0 : 1, empty($_POST['dans_menu']) ? 0 : 1, (int) ($_POST['ordre'] ?? 50), $accueil,
+                empty($_POST['reservee_membres']) || $accueil ? 0 : 1, $page['id'],
             ]);
             journal(null, $member, "Page modifiée : $titre");
             flash('succes', 'Page enregistrée.');
@@ -87,7 +92,7 @@ return [
     // Menu : pages publiées de premier niveau cochées « dans le menu »
     'menu' => fn() => array_map(
         fn($page) => ['libelle' => $page['titre'], 'lien' => '/page/' . $page['slug'], 'ordre' => 60 + (int) $page['ordre'] / 1000],
-        db_all('SELECT slug, titre, ordre FROM page WHERE publiee = 1 AND dans_menu = 1 AND parent_id IS NULL AND est_accueil = 0 ORDER BY ordre, titre')
+        db_all('SELECT slug, titre, ordre FROM page WHERE publiee = 1 AND dans_menu = 1 AND parent_id IS NULL AND est_accueil = 0' . (current_member() === null ? ' AND reservee_membres = 0' : '') . ' ORDER BY ordre, titre')
     ),
 ];
 
