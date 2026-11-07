@@ -207,3 +207,9 @@ tr:last-child td { border-bottom: 0; }
 .bouton-danger { background: #b42335; border-color: #b42335; color: #fff; }
 .bouton-danger:hover { background: #8f1b2a; }
 .bouton[disabled] { opacity: .45; cursor: not-allowed; }
+
+/* Site en construction */
+.bandeau-construction { display: flex; align-items: center; justify-content: center; gap: .5rem; padding: .55rem 1rem; background: #fff3cd; color: #5c4400; border-bottom: 1px solid #f0dca0; font-size: .93rem; text-align: center; }
+.bandeau-construction svg { width: 1.15rem; height: 1.15rem; flex: none; }
+.acces { max-width: 26rem; margin: 2rem auto; }
+.code-acces { font: 600 1.8rem ui-monospace, monospace !important; letter-spacing: .4em; text-align: center; }

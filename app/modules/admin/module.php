@@ -61,7 +61,13 @@ function admin_settings_validate(array $input): array
         'rappel_jalons' => $text('rappel_jalons', 50),
         'rappel_jalons_evenements' => $text('rappel_jalons_evenements', 50),
         'rappel_participants' => $text('rappel_participants', 50),
+        'construction_active' => ($input['construction_active'] ?? '') === '1' ? '1' : '',
+        'construction_code' => preg_replace('/\D/', '', $text('construction_code', 20)),
     ];
+    // Code d'accès choisi au hasard si on active le mode sans en donner un
+    if ($v['construction_active'] === '1' && $v['construction_code'] === '') {
+        $v['construction_code'] = sprintf('%06d', random_int(0, 999999));
+    }
     $erreurs = [];
     if ($v['nom_association'] === '') {
         $erreurs['nom_association'] = 'Obligatoire.';
@@ -82,6 +88,9 @@ function admin_settings_validate(array $input): array
     }
     if (!in_array($v['smtp_securite'], ['starttls', 'ssl', 'aucune'], true)) {
         $erreurs['smtp_securite'] = 'Valeur invalide.';
+    }
+    if ($v['construction_code'] !== '' && !preg_match('/^\d{6}$/', $v['construction_code'])) {
+        $erreurs['construction_code'] = 'Six chiffres.';
     }
     foreach (['rappel_jalons', 'rappel_jalons_evenements', 'rappel_participants'] as $key) {
         if (!preg_match('/^(\s*\d{1,3}\s*(,\s*\d{1,3}\s*)*)?$/', $v[$key])) {
