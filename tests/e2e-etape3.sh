@@ -90,7 +90,8 @@ check "suppression d'une date clé" "$(as bob; c "$U/espace/comite-de-direction"
 as admin
 TID=$(sql "SELECT id FROM type_membre WHERE libelle = 'Membre associé'")
 check "retrait d'un type de membre" "$(post "$U/admin/membres" "$U/admin/types-membre/$TID/supprimer" >/dev/null; sql "SELECT COUNT(*) FROM type_membre WHERE id = $TID")" "0"
-check "admin supprime le comité" "$(post "$U/espace/comite-de-direction" "$U/espace/comite-de-direction/supprimer")" "303 $U/espaces"
+check "suppression refusée si le nom n'est pas recopié" "$(post "$U/espace/comite-de-direction" "$U/espace/comite-de-direction/supprimer" -d 'confirmation=autre chose' >/dev/null; sql "SELECT COUNT(*) FROM espace WHERE slug = 'comite-de-direction'")" "1"
+check "admin supprime le comité (nom recopié)" "$(post "$U/espace/comite-de-direction" "$U/espace/comite-de-direction/supprimer" -d 'confirmation=comité de direction')" "303 $U/espaces"
 check "espace, équipe, dates et fichiers effacés" "$(sql "SELECT (SELECT COUNT(*) FROM espace WHERE slug = 'comite-de-direction') + (SELECT COUNT(*) FROM fichier WHERE nom = 'odj.txt') + (SELECT COUNT(*) FROM jalon j JOIN espace e ON e.id = j.espace_id WHERE e.slug = 'comite-de-direction')")" "0"
 check "fichier effacé du disque" "$(find "$ROOT/app/stockage" -name "$STOCK" | wc -l)" "0"
 check "le sous-espace remonte d'un niveau" "$(sql "SELECT COALESCE(parent_id, 'aucun') FROM espace WHERE slug = 'sous-projet'")" "aucun"
