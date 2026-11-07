@@ -30,6 +30,7 @@ require __DIR__ . '/rappels.php';
 require __DIR__ . '/helloasso.php';
 require __DIR__ . '/taches.php';
 require __DIR__ . '/construction.php';
+require __DIR__ . '/referencement.php';
 require __DIR__ . '/api.php';
 
 // Configuration écrite par install.sh ou par l'assistant d'installation ; null tant qu'elle n'existe pas

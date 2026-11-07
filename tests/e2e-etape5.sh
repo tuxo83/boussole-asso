@@ -123,4 +123,12 @@ check "configuration MCP : adresse et clé dans le JSON" "$(tr -d '\n' < "$B" | 
 check "clé sans limite : pas de date d'expiration, et elle fonctionne" "$(sql "SELECT expire_le IS NULL FROM cle_api WHERE libelle = 'Sans limite'") $(api "$SL" "$U/api/moi")" "1 200"
 check "liste : « sans limite de durée »" "$(c "$U/compte/cles" >/dev/null; grep -c 'sans limite de durée' "$B")" "1"
 check "admin : voit toutes les clés" "$(c "$U/admin/cles" >/dev/null; grep -c 'Bob' "$B")" "[1-9]*"
+# Référencement (site ouvert) : robots, plan du site, description, aperçu, données structurées
+mcpcall "$ADM" creer_page '{"titre":"Note interne","texte":"Réservé","publiee":true,"reservee_membres":true}' >/dev/null
+mcpcall "$ADM" modifier_page "{\"id\":$(sql "SELECT id FROM page WHERE titre = 'Agenda'"),\"description\":\"Les rendez-vous de l'association <b>2027</b>\"}" >/dev/null
+check "robots.txt : interne exclu, plan du site annoncé" "$(c "$U/robots.txt" >/dev/null; grep -c '^Disallow: /admin$\|^Disallow: /compte$\|^Sitemap: .*/sitemap.xml$' "$B")" "3"
+check "sitemap : pages publiques, rien de réservé" "$(c "$U/sitemap.xml" >/dev/null; grep -c '/page/agenda<' "$B") $(grep -c 'note-interne' "$B")" "1 0"
+check "page : description choisie (texte seul), canonique, aperçu" "$(c "$U/page/agenda" >/dev/null; grep -c '<meta name=\"description\" content=\"Les rendez-vous de l&#039;association 2027\">' "$B") $(grep -c 'rel=\"canonical\" href=\"[^\"]*/page/agenda\"' "$B") $(grep -c 'property=\"og:title\"' "$B")" "1 1 1"
+check "accueil : association en données structurées, image de l'aperçu" "$(c "$U/" >/dev/null; grep -c '\"@type\":\"NGO\"' "$B") $(grep -c 'property=\"og:image\"' "$B")" "1 1"
+check "page réservée et pages internes : noindex" "$(as admin; c "$U/page/note-interne" >/dev/null; grep -c 'noindex' "$B") $(c "$U/compte" >/dev/null; grep -c 'noindex' "$B")" "1 1"
 bilan
