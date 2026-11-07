@@ -14,7 +14,7 @@ check() { if [[ "$2" == $3 ]]; then echo "OK  $1 ($2)"; ok=$((ok+1)); else echo 
 mysql -u "$DBU" -p"$DBP" -e "DROP DATABASE IF EXISTS $DB; CREATE DATABASE $DB CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;" 2>/dev/null
 cat > "$W/www/config/config.php" <<PHP
 <?php
-return ['db' => ['host' => '127.0.0.1', 'port' => 3306, 'name' => '$DB', 'user' => '$DBU', 'password' => '$DBP'], 'secret' => 'secret-du-site', 'mail_fichier' => '$W/mails.txt'];
+return ['db' => ['host' => '${MYSQL_HOST:-127.0.0.1}', 'port' => ${MYSQL_TCP_PORT:-3306}, 'name' => '$DB', 'user' => '$DBU', 'password' => '$DBP'], 'secret' => 'secret-du-site', 'mail_fichier' => '$W/mails.txt'];
 PHP
 echo image > "$W/www/uploads/img-0123456789abcdef01234567.webp"
 echo document > "$W/www/stockage/0123456789abcdef"
