@@ -246,7 +246,7 @@ function bloc_dynamique(string $bloc): string
             }
             $html = '<h2 class="titre-bloc">Prochains événements</h2><div class="grille">';
             foreach ($evenements as $ev) {
-                $html .= c_carte($ev['titre'], '<p><strong>' . e(evenement_date($ev['debut'])) . '</strong>' . ($ev['lieu'] ? ' · ' . e($ev['lieu']) : '') . '</p><p>' . e(mb_strimwidth($ev['description'], 0, 160, '…')) . '</p>', '/espace/' . $ev['slug']);
+                $html .= c_carte($ev['titre'], '<p><strong>' . e(evenement_date($ev['debut'])) . '</strong>' . ($ev['lieu'] ? ' · ' . e($ev['lieu']) : '') . '</p><p>' . e(mb_strimwidth($ev['description'], 0, 110, '…')) . '</p>', '/espace/' . $ev['slug']);
             }
             return $html . '</div>';
         case 'espaces-publics':

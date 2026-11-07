@@ -141,8 +141,8 @@ return [
         }],
     ],
     'menu' => fn() => current_member() !== null
-        ? [['libelle' => 'Mon compte', 'lien' => '/compte', 'ordre' => 95]]
-        : [['libelle' => 'Connexion', 'lien' => '/connexion', 'ordre' => 95]],
+        ? [['libelle' => 'Mon compte', 'lien' => '/compte', 'ordre' => 95, 'zone' => 'compte']]
+        : [['libelle' => 'Connexion', 'lien' => '/connexion', 'ordre' => 95, 'zone' => 'compte']],
 ];
 
 // Membre en cours de second facteur : connexion commencée, ou déjà connecté qui confirme (gestion)
