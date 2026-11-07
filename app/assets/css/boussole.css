@@ -284,3 +284,10 @@ main h1 { margin-top: 1rem; }
 /* La classe .conteneur (marges latérales) ne doit pas annuler l'espace vertical de la page */
 main.conteneur { padding-top: 2rem; padding-bottom: 4.5rem; }
 .badge-membres { background: #f3ecfb; border-color: #dccbf2; color: #5a2d91; }
+
+/* Cartes : une dernière ligne incomplète (ou une ou deux cartes seules) est centrée */
+.cartes { display: flex; flex-wrap: wrap; justify-content: center; }
+.cartes > .carte { flex: 1 1 18rem; max-width: 24rem; }
+.sous-pages .cartes > .carte { max-width: 24rem; }
+/* Pages (hors accueil) : les boutons se centrent comme la colonne de lecture */
+.contenu:not(.contenu-accueil) > .bloc-bouton { display: block; text-align: center; margin: 1.5rem auto; }
