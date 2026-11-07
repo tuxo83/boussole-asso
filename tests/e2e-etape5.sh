@@ -39,7 +39,7 @@ check "bob : liste des membres refusée" "$(api "$BOB_WRITE" "$U/api/membres")" 
 check "MCP initialize" "$(mcp "$BOB_WRITE" '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"test","version":"1"}}}')$(grep -o '"protocolVersion":"[^"]*"' "$B")" '200"protocolVersion":"2025-06-18"'
 check "MCP notification : 202 sans corps" "$(mcp "$BOB_WRITE" '{"jsonrpc":"2.0","method":"notifications/initialized"}')$(wc -c < "$B")" "2020"
 # shellcheck disable=SC2016
-check "MCP tools/list : 16 outils" "$(mcp "$BOB_WRITE" '{"jsonrpc":"2.0","id":2,"method":"tools/list"}'; php -r 'echo count(json_decode(file_get_contents($argv[1]),true)["result"]["tools"]);' "$B")" "20016"
+check "MCP tools/list : 19 outils" "$(mcp "$BOB_WRITE" '{"jsonrpc":"2.0","id":2,"method":"tools/list"}'; php -r 'echo count(json_decode(file_get_contents($argv[1]),true)["result"]["tools"]);' "$B")" "20019"
 check "MCP ajouter_date_cle" "$(mcp "$BOB_WRITE" '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"ajouter_date_cle","arguments":{"slug":"projet-bob","date":"2027-03-01","libelle":"Rendu"}}}'; grep -o '"isError":[a-z]*' "$B")" '200"isError":false'
 check "MCP : outil refusé → isError" "$(mcp "$BOB_WRITE" '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"lire_espace","arguments":{"slug":"comite-secret"}}}'; grep -o '"isError":[a-z]*' "$B")" '200"isError":true'
 check "MCP : méthode inconnue → -32601" "$(mcp "$BOB_WRITE" '{"jsonrpc":"2.0","id":5,"method":"resources/list"}'; grep -o '"code":-32601' "$B")" '200"code":-32601'
@@ -77,6 +77,18 @@ curl -s -o /dev/null -H "Authorization: Bearer $ADMIN_KEY" -H 'Content-Type: app
 curl -s -o /dev/null -H "Authorization: Bearer $ADMIN_KEY" -H 'Content-Type: application/json' -d '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"creer_page","arguments":{"titre":"Agenda","publiee":true,"dans_menu":true,"ordre":20}}}' "$U/mcp"
 check "MCP : page d'accueil et menu réglés" "$(sql "SELECT CONCAT(est_accueil, dans_menu) FROM page WHERE titre = 'Bienvenue'") $(sql "SELECT CONCAT(est_accueil, dans_menu, ' ', ordre) FROM page WHERE titre = 'Agenda'")" "10 01 20"
 check "accueil : l'image envoyée par le MCP s'affiche" "$(curl -s "$U/" | grep -c "$CHEMIN")" "1"
+
+# Espaces et événements par le MCP
+mcpcall() { curl -s -H "Authorization: Bearer $1" -H 'Content-Type: application/json' -d "{\"jsonrpc\":\"2.0\",\"id\":9,\"method\":\"tools/call\",\"params\":{\"name\":\"$2\",\"arguments\":$3}}" "$U/mcp"; }
+check "MCP creer_espace : commission créée" "$(mcpcall "$ADMIN_KEY" creer_espace '{"type":"commission","titre":"Trinôme académique","visibilite":"adherents","meteo":"soleil","description":"Armées, Éducation nationale, association"}' | grep -o '"isError":[a-z]*') $(sql "SELECT CONCAT(type, ' ', visibilite, ' ', meteo) FROM espace WHERE slug = 'trinome-academique'")" '"isError":false commission adherents soleil'
+check "MCP creer_espace : sous-espace événement" "$(mcpcall "$ADMIN_KEY" creer_espace '{"type":"evenement","titre":"Concert du trinôme","visibilite":"public","parent":"trinome-academique"}' | grep -o '"isError":[a-z]*') $(sql "SELECT p.slug FROM espace e JOIN espace p ON p.id = e.parent_id WHERE e.slug = 'concert-du-trinome'")" '"isError":false trinome-academique'
+check "MCP regler_evenement" "$(mcpcall "$ADMIN_KEY" regler_evenement '{"slug":"concert-du-trinome","debut":"2027-03-12 18:30","lieu":"Palais Neptune, Toulon","mode":"ouvert"}' | grep -o '"isError":[a-z]*') $(sql "SELECT CONCAT(debut, ' ', lieu) FROM evenement e JOIN espace s ON s.id = e.espace_id WHERE s.slug = 'concert-du-trinome'")" '"isError":false 2027-03-12 18:30:00 Palais Neptune, Toulon'
+check "MCP regler_evenement : erreur claire" "$(mcpcall "$ADMIN_KEY" regler_evenement '{"slug":"concert-du-trinome","mode":"auto"}' | grep -c 'nombre de places')" "1"
+sql "UPDATE membre SET actif = 1 WHERE email = 'bob@example.org'"
+BOB2="bsl_0000aaaa_$(printf 'b%.0s' {1..40})"
+sql "INSERT INTO cle_api (membre_id, libelle, prefixe, empreinte, portee, expire_le) SELECT id, 'Bob 2', '0000aaaa', SHA2('$BOB2', 256), 'ecriture', NULL FROM membre WHERE email = 'bob@example.org'"
+check "MCP ajouter_equipe" "$(mcpcall "$ADMIN_KEY" ajouter_equipe '{"slug":"trinome-academique","email":"bob@example.org","niveau":"n1","libelle":"Responsable"}' | grep -o '"isError":[a-z]*')" '"isError":false'
+check "MCP creer_espace : un simple membre ne crée pas d'espace au premier niveau" "$(mcpcall "$BOB2" creer_espace '{"type":"projet","titre":"X"}' | grep -o '"isError":[a-z]*')" '"isError":true'
 
 # Clé sans limite de durée et configuration MCP prête à copier
 post "$U/compte/cles" "$U/compte/cles" -d 'libelle=Sans limite&portee=lecture&duree=0' >/dev/null; c "$U/compte/cles" >/dev/null
