@@ -57,7 +57,7 @@ return [
                     redirect('/admin/membres');
                 }
                 db_query('UPDATE membre SET email = ? WHERE id = ?', [$email, $cible['id']]);
-                journal(null, $gestionnaire, 'E-mail changé : ' . $cible['email'] . ' → ' . $email);
+                journal_compte((int) $cible['id'], $gestionnaire, 'E-mail changé : ' . $cible['email'] . ' → ' . $email);
             }
             db_query('UPDATE membre SET prenom = ?, nom = ?, type_membre_id = ?, actif = ? WHERE id = ?', [
                 mb_substr(trim((string) ($_POST['prenom'] ?? '')), 0, 100),
@@ -82,7 +82,7 @@ return [
             if (empty($_POST['actif']) && (int) $cible['id'] !== (int) $gestionnaire['id']) {
                 db_query('DELETE FROM droit_plateforme WHERE membre_id = ?', [$cible['id']]);
             }
-            journal(null, $gestionnaire, 'Membre modifié : ' . $cible['email']);
+            journal_compte((int) $cible['id'], $gestionnaire, 'Fiche modifiée (nom, type, droits, activation)');
             flash('succes', 'Membre enregistré.');
             redirect('/admin/membres');
         }],
@@ -154,10 +154,19 @@ return [
             }
             $provisoire = mot_de_passe_provisoire();
             db_query('UPDATE membre SET mot_de_passe = ?, mot_de_passe_provisoire = 1 WHERE id = ?', [password_hash($provisoire, PASSWORD_DEFAULT), $cible['id']]);
-            journal(null, $gestionnaire, 'Mot de passe provisoire donné à ' . $cible['email']);
+            journal_compte((int) $cible['id'], $gestionnaire, 'Mot de passe provisoire donné par un administrateur');
             flash('info', 'Mot de passe provisoire de ' . membre_nom($cible) . ' (' . $cible['email'] . ') : ' . $provisoire
                 . ' — notez-le maintenant, il ne sera plus affiché. Il devra en choisir un autre à sa prochaine connexion.');
             redirect('/admin/membres');
+        }],
+        // Historique d'un compte (administrateur) : connexions, mot de passe, clés, modifications
+        ['GET', '/admin/membres/{id}/historique', function (array $p) {
+            require_right('admin');
+            $cible = db_one('SELECT * FROM membre WHERE id = ?', [(int) $p['id']]);
+            if ($cible === null) {
+                redirect('/admin/membres');
+            }
+            render('membres/historique', ['titre' => 'Historique : ' . membre_nom($cible), 'cible' => $cible, 'historique' => historique_compte((int) $cible['id'], 200)]);
         }],
         // Retirer un type : les membres qui l'avaient restent, sans type
         ['POST', '/admin/types-membre/{id}/supprimer', function (array $p) {

@@ -420,3 +420,4 @@ main.conteneur { padding-top: 2rem; padding-bottom: 4.5rem; }
 .zone-sensible h3 { color: #a3192b; }
 .visuellement-cache { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 [hidden] { display: none !important; }
+.historique li.echec { color: #a3192b; }
