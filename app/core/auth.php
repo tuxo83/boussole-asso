@@ -8,6 +8,10 @@ const CODE_ESSAIS_MAX = 5;
 function current_member(): ?array
 {
     static $member = false;
+    // Requête authentifiée par clé d'API : le membre est celui de la clé, jamais la session
+    if (api_member() !== null) {
+        return api_member();
+    }
     if ($member === false) {
         $member = null;
         if (!empty($_SESSION['membre_id']) && !empty($_SESSION['connecte'])) {

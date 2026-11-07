@@ -67,8 +67,9 @@ function espace_alertes(array $espace): array
 }
 
 // Journal de l'espace (qui, quand, quoi) ; toute action le met aussi « à jour »
-function journal(int|string|null $espaceId, ?array $member, string $action, string $via = 'web'): void
+function journal(int|string|null $espaceId, ?array $member, string $action, ?string $via = null): void
 {
+    $via ??= api_member() !== null ? 'ia' : 'web';
     db_query('INSERT INTO journal (espace_id, membre_id, action, via) VALUES (?, ?, ?, ?)', [$espaceId, $member['id'] ?? null, mb_substr($action, 0, 255), $via]);
     if ($espaceId !== null) {
         db_query('UPDATE espace SET modifie_le = NOW() WHERE id = ?', [$espaceId]);

@@ -7,3 +7,8 @@ Options -Indexes
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteRule ^ index.php [QSA,L]
 </IfModule>
+
+# Clés d'API : transmettre l'en-tête Authorization à PHP (certains hébergeurs le retirent)
+<IfModule mod_setenvif.c>
+    SetEnvIf Authorization "(.+)" HTTP_AUTHORIZATION=$1
+</IfModule>
