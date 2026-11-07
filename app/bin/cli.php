@@ -44,6 +44,7 @@ switch ($command) {
         // Tâches planifiées : clôture des inscriptions (les rappels viendront ensuite)
         echo 'cron : ' . evenements_cloturer_echus() . " événement(s) clôturé(s)\n";
         echo 'cron : ' . cotisations_relances_auto() . " relance(s) de cotisation\n";
+        echo 'cron : ' . rappels_envoyer() . " rappel(s) envoyé(s)\n";
         break;
     default:
         fwrite(STDERR, "Usage : php bin/cli.php migrate|config-sql|cron\n");

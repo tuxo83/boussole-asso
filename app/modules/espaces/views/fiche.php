@@ -71,6 +71,7 @@
     <?= csrf_field() ?>
     <?= c_champ('date_jalon', 'Date', ['type' => 'date', 'requis' => true]) ?>
     <?= c_champ('libelle', 'Libellé', ['requis' => true, 'max' => 200]) ?>
+    <?= c_champ('destinataires', 'Rappel par e-mail à', ['type' => 'select', 'valeur' => 'binome', 'choix' => ['binome' => 'n°1 et n°2', 'equipe' => "toute l'équipe"], 'aide' => 'Délais réglés par l\'administrateur (ex. 14 et 3 jours avant).']) ?>
     <button type="submit" class="bouton bouton-secondaire">Ajouter</button>
   </form>
   </details>

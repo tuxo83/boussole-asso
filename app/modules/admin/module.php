@@ -58,6 +58,9 @@ function admin_settings_validate(array $input): array
         'smtp_port' => $text('smtp_port', 5),
         'smtp_securite' => $text('smtp_securite', 10),
         'smtp_utilisateur' => $text('smtp_utilisateur', 190),
+        'rappel_jalons' => $text('rappel_jalons', 50),
+        'rappel_jalons_evenements' => $text('rappel_jalons_evenements', 50),
+        'rappel_participants' => $text('rappel_participants', 50),
     ];
     $erreurs = [];
     if ($v['nom_association'] === '') {
@@ -79,6 +82,11 @@ function admin_settings_validate(array $input): array
     }
     if (!in_array($v['smtp_securite'], ['starttls', 'ssl', 'aucune'], true)) {
         $erreurs['smtp_securite'] = 'Valeur invalide.';
+    }
+    foreach (['rappel_jalons', 'rappel_jalons_evenements', 'rappel_participants'] as $key) {
+        if (!preg_match('/^(\s*\d{1,3}\s*(,\s*\d{1,3}\s*)*)?$/', $v[$key])) {
+            $erreurs[$key] = 'Des nombres de jours séparés par des virgules, ex. « 14, 3 ».';
+        }
     }
     // La feuille de style est servie à part (text/css) ; on refuse seulement ce qui pourrait sortir du CSS
     if (stripos($v['css_personnalise'], '</style') !== false || stripos($v['css_personnalise'], '<script') !== false) {
