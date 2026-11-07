@@ -76,6 +76,8 @@ function admin_settings_validate(array $input): array
         'rappel_participants' => $text('rappel_participants', 50),
         'construction_active' => ($input['construction_active'] ?? '') === '1' ? '1' : '',
         'construction_code' => preg_replace('/\D/', '', $text('construction_code', 20)),
+        'arrivee_cotisant' => connexion_arrivee_valide($text('arrivee_cotisant', 120)) ? $text('arrivee_cotisant', 120) : '',
+        'arrivee_non_cotisant' => connexion_arrivee_valide($text('arrivee_non_cotisant', 120)) ? $text('arrivee_non_cotisant', 120) : '',
     ];
     // Code d'accès choisi au hasard si on active le mode sans en donner un
     if ($v['construction_active'] === '1' && $v['construction_code'] === '') {

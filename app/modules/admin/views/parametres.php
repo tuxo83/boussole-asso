@@ -23,6 +23,13 @@
     <?= c_champ('construction_code', "Code d'accès (6 chiffres)", ['valeur' => $v['construction_code'] ?? '', 'aide' => 'À transmettre aux personnes invitées à voir le site. Vide : un code est tiré au hasard. Les membres connectés n\'en ont pas besoin. Changer le code ferme l\'accès à ceux qui avaient l\'ancien.', 'erreur' => $erreurs['construction_code'] ?? null]) ?>
   </fieldset>
   <fieldset>
+    <legend>Après la connexion</legend>
+    <p class="petit">Page où arrive un membre qui se connecte depuis « Connexion » (s'il voulait voir une page précise, il y retourne).</p>
+    <?php $arrivees = connexion_arrivees_possibles(); ?>
+    <?= c_champ('arrivee_cotisant', 'Membre à jour de cotisation', ['type' => 'select', 'valeur' => $v['arrivee_cotisant'] ?? '', 'choix' => $arrivees]) ?>
+    <?= c_champ('arrivee_non_cotisant', 'Membre pas encore à jour', ['type' => 'select', 'valeur' => $v['arrivee_non_cotisant'] ?? '', 'choix' => $arrivees]) ?>
+  </fieldset>
+  <fieldset>
     <legend>Rappels par e-mail</legend>
     <p class="petit">Nombres de jours avant l'échéance, séparés par des virgules. Vide : aucun rappel.</p>
     <?= c_champ('rappel_jalons', 'Dates clés des comités, commissions et projets', ['valeur' => $v['rappel_jalons'] ?? RAPPEL_DELAIS_DEFAUT['rappel_jalons'], 'erreur' => $erreurs['rappel_jalons'] ?? null]) ?>
