@@ -101,3 +101,23 @@ document.querySelectorAll('.en-edition .bloc-editable').forEach(function (bloc) 
     window.location.href = bloc.querySelector('.bloc-crayon').href;
   });
 });
+
+// Modifier sur place : un clic (ou Entrée) sur le texte ouvre son champ ; Échap ou « Annuler » referme.
+// Sans JavaScript, les formulaires restent simplement visibles.
+document.querySelectorAll('[data-en-place]').forEach(function (zone) {
+  const vue = zone.querySelector('.en-place-vue');
+  const form = zone.querySelector('.en-place-form');
+  form.hidden = true;
+  const ouvrir = function (event) {
+    if (event.target.closest('a')) { return; }
+    vue.hidden = true; form.hidden = false;
+    const champ = form.querySelector('input:not([type=hidden]), textarea, select');
+    champ.focus();
+    if (champ.tagName === 'INPUT') { champ.select(); } else if (champ.tagName === 'TEXTAREA') { champ.setSelectionRange(champ.value.length, champ.value.length); }
+  };
+  const fermer = function () { form.hidden = true; vue.hidden = false; vue.focus(); };
+  vue.addEventListener('click', ouvrir);
+  vue.addEventListener('keydown', function (event) { if (event.key === 'Enter') { event.preventDefault(); ouvrir(event); } });
+  form.querySelector('[data-en-place-annuler]').addEventListener('click', fermer);
+  form.addEventListener('keydown', function (event) { if (event.key === 'Escape') { fermer(); } });
+});

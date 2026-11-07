@@ -442,3 +442,18 @@ main.conteneur { padding-top: 2rem; padding-bottom: 4.5rem; }
 .en-edition .bloc-editable:hover > .bloc-crayon, .bloc-crayon:focus { display: inline-flex; }
 .contenu .bloc-editable > :is(p, ul, ol, blockquote, h1, h2, h3, h4) { max-width: 46rem; }
 .editeur .bloc-cible { background: color-mix(in srgb, var(--couleur-accent) 10%, transparent); border-radius: var(--rayon-petit); transition: background .6s; }
+
+/* Modifier sur place (espaces) : le texte lui-même est la zone à cliquer */
+.en-place-vue { cursor: pointer; border-radius: var(--rayon-petit); outline: 2px dashed transparent; outline-offset: 4px; transition: outline-color .12s, background .12s; }
+.en-place-vue:hover, .en-place-vue:focus-visible { outline-color: var(--couleur-principale); background: color-mix(in srgb, var(--couleur-principale) 4%, transparent); }
+.en-place-crayon { display: inline-flex; margin-left: .45rem; color: var(--couleur-principale); opacity: 0; transition: opacity .12s; vertical-align: middle; }
+.en-place-crayon svg { width: 1rem; height: 1rem; }
+h1.en-place-vue .en-place-crayon svg { width: 1.4rem; height: 1.4rem; }
+.en-place-vue:hover .en-place-crayon, .en-place-vue:focus-visible .en-place-crayon { opacity: 1; }
+@media (hover: none) { .en-place-crayon { opacity: .6; } }
+.en-place-form { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin: .25rem 0 1rem; max-width: 46rem; }
+.en-place-form input:not([type=hidden]), .en-place-form textarea, .en-place-form select { font: inherit; padding: .4rem .6rem; border: 2px solid var(--couleur-principale); border-radius: var(--rayon-petit); background: #fff; flex: 1 1 18rem; }
+.en-place-titre { font-size: 2rem !important; font-weight: 800; }
+.en-place-texte .en-place-form textarea { width: 100%; flex-basis: 100%; }
+.en-place-ligne { display: inline-flex; }
+.en-place-ligne .en-place-form { margin: 0; }
