@@ -67,6 +67,7 @@ return [
                     : [],
                 'alertes' => espace_alertes($espace),
                 'peut_gerer' => espace_peut_gerer($member, $espace),
+                'membres_actifs' => espace_peut_gerer($member, $espace) ? db_all('SELECT email, prenom, nom FROM membre WHERE actif = 1 AND en_attente = 0 ORDER BY nom, prenom, email') : [],
                 'parents_possibles' => is_admin($member)
                     ? array_column(array_filter(db_all('SELECT slug, titre, id FROM espace WHERE archive = 0 ORDER BY titre'), fn($e) => !in_array((int) $e['id'], espace_descendants((int) $espace['id']), true)), 'titre', 'slug')
                     : [],

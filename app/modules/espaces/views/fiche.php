@@ -21,16 +21,15 @@ $cible_alerte = fn(string $a) => match (true) {
 
 <div class="espace-etat">
   <?php if ($peut_contribuer): ?>
-  <form method="post" action="<?= $action('/meteo') ?>" class="meteo-choix">
-    <?= csrf_field() ?>
-    <label for="choix-meteo" class="visuellement-cache">Météo de l'espace</label>
-    <select id="choix-meteo" name="meteo" data-envoi-auto>
-      <?php foreach (['soleil' => 'À jour', 'eclaircie' => 'En cours', 'pluie' => 'En retard', 'orage' => 'Bloqué'] as $cle => $libelle): ?>
-      <option value="<?= $cle ?>"<?= $espace['meteo'] === $cle ? ' selected' : '' ?>><?= e($libelle) ?></option>
+  <details class="meteo-menu">
+    <summary aria-label="Changer la météo"><?= c_meteo($espace['meteo']) ?><span class="meteo-fleche" aria-hidden="true">▾</span></summary>
+    <form method="post" action="<?= $action('/meteo') ?>" class="meteo-options">
+      <?= csrf_field() ?>
+      <?php foreach (['soleil', 'eclaircie', 'pluie', 'orage'] as $cle): ?>
+      <button type="submit" name="meteo" value="<?= $cle ?>" aria-pressed="<?= $espace['meteo'] === $cle ? 'true' : 'false' ?>"><?= c_meteo($cle) ?></button>
       <?php endforeach ?>
-    </select>
-    <button type="submit" class="lien-bouton" data-sans-js>changer</button>
-  </form>
+    </form>
+  </details>
   <?php else: ?>
   <?= c_meteo($espace['meteo']) ?>
   <?php endif ?>
@@ -63,7 +62,10 @@ $cible_alerte = fn(string $a) => match (true) {
   <details id="ajout-equipe"><summary>+ Ajouter ou modifier</summary>
   <form method="post" action="<?= $action('/equipe') ?>" class="formulaire">
     <?= csrf_field() ?>
-    <?= c_champ('email', 'E-mail du membre', ['type' => 'email', 'requis' => true]) ?>
+    <div class="champ"><label for="champ-email">Membre</label>
+      <input type="email" id="champ-email" name="email" list="liste-membres" required autocomplete="off" placeholder="Tapez un nom ou une adresse">
+      <small>La liste se filtre pendant la saisie.</small></div>
+    <datalist id="liste-membres"><?php foreach ($membres_actifs as $m): ?><option value="<?= e($m['email']) ?>"><?= e(trim($m['prenom'] . ' ' . $m['nom']) ?: $m['email']) ?></option><?php endforeach ?></datalist>
     <?= c_champ('niveau', 'Niveau', ['type' => 'select', 'valeur' => 'membre', 'choix' => ESPACE_NIVEAUX]) ?>
     <?= c_champ('libelle', 'Libellé affiché (facultatif)', ['aide' => 'Ex. président, secrétaire, sage.', 'max' => 100]) ?>
     <button type="submit" class="bouton bouton-secondaire">Enregistrer</button>
