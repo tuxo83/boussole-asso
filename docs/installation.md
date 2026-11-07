@@ -21,7 +21,21 @@ La plupart des offres mutualisées conviennent (OVH, o2switch, Infomaniak, IONOS
 
 Le code d'installation empêche une autre personne de terminer l'installation à votre place entre le dépôt du fichier et votre première visite.
 
-## Première installation
+## Sur un serveur simple-web-server
+
+Le serveur clone lui-même le dépôt dans `/var/www/<domaine>/git` (hors du site), puis lance `install.sh` en tant qu'utilisateur du site. `install.sh` copie `app/` dans `../html`, lit la base dans `../sql` (db, login, pwd), applique les migrations et installe la tâche planifiée de l'utilisateur. Le serveur vérifie ensuite régulièrement la branche et relance `install.sh` à chaque changement.
+
+1. Clé de déploiement (le clonage se fait en SSH, même pour un dépôt public) : `ssh-keygen -t ed25519 -N '' -f cle-boussole`, puis sur GitHub, dans le dépôt : *Settings › Deploy keys › Add deploy key*, coller `cle-boussole.pub`, **sans** cocher l'écriture.
+2. Création du site :
+   ```bash
+   <prefixe>-app-internal-simple-web-server-new -d www.mon-asso.org \
+       --git-repo-url git@github.com:tuxo83/boussole-asso.git --git-branch main --git-priv-key cle-boussole
+   ```
+3. Le journal affiche un **code d'installation** : ouvrir le site, l'assistant le demande avec le nom de l'association et le premier administrateur.
+
+Seule la branche `main` est déployée : ce qui y arrive a été validé.
+
+## Première installation (hébergeur ordinaire)
 
 1. Créer une base de données dans l'espace client de l'hébergeur et noter : serveur, nom de la base, utilisateur, mot de passe.
 2. Envoyer le contenu du dossier `app/` à la racine du site (souvent `/www` ou `/public_html`) :

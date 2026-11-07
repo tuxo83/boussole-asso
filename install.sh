@@ -7,7 +7,7 @@
 
 ######################### Configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-HTML_DIR="$SCRIPT_DIR/../html"
+HTML_DIR="$(cd "$SCRIPT_DIR/../html" && pwd)" || { echo "ERREUR : dossier ../html introuvable"; exit 1; }
 SQL_DIR="$SCRIPT_DIR/../sql"
 
 ######################### Vérifications
