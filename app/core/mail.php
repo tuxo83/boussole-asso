@@ -29,7 +29,7 @@ function mail_reglages(array $autres = []): array
 }
 
 // $reglages fourni : test réel, même en développement (pas de fichier à la place de l'envoi)
-function mail_send(string $to, string $subject, string $body, ?array $reglages = null): bool
+function mail_send(string $to, string $subject, string $body, ?array $reglages = null, ?string $repondre_a = null): bool
 {
     $test = $reglages !== null;
     $reglages ??= mail_reglages();
@@ -45,6 +45,9 @@ function mail_send(string $to, string $subject, string $body, ?array $reglages =
         'Content-Type' => 'text/plain; charset=utf-8',
         'Content-Transfer-Encoding' => 'base64',
     ];
+    if ($repondre_a !== null && filter_var($repondre_a, FILTER_VALIDATE_EMAIL)) {
+        $headers['Reply-To'] = $repondre_a;
+    }
     $body64 = chunk_split(base64_encode($body));
 
     // Développement : les e-mails sont écrits dans un fichier au lieu d'être envoyés

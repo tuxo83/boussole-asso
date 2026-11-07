@@ -131,4 +131,19 @@ check "sitemap : pages publiques, rien de réservé" "$(c "$U/sitemap.xml" >/dev
 check "page : description choisie (texte seul), canonique, aperçu" "$(c "$U/page/agenda" >/dev/null; grep -c '<meta name=\"description\" content=\"Les rendez-vous de l&#039;association 2027\">' "$B") $(grep -c 'rel=\"canonical\" href=\"[^\"]*/page/agenda\"' "$B") $(grep -c 'property=\"og:title\"' "$B")" "1 1 1"
 check "accueil : association en données structurées, image de l'aperçu" "$(c "$U/" >/dev/null; grep -c '\"@type\":\"NGO\"' "$B") $(grep -c 'property=\"og:image\"' "$B")" "1 1"
 check "page réservée et pages internes : noindex" "$(as admin; c "$U/page/note-interne" >/dev/null; grep -c 'noindex' "$B") $(c "$U/compte" >/dev/null; grep -c 'noindex' "$B")" "1 1"
+# Formulaire de contact : message gardé dans le site, transmis par e-mail avec « répondre à » l'expéditeur
+mcpcall "$ADM" creer_page '{"titre":"Nous écrire","publiee":true,"blocs":{"blocks":[{"type":"boussole","data":{"bloc":"contact"}}]}}' >/dev/null
+as visiteur
+check "contact : formulaire affiché, aucune adresse en clair" "$(c "$U/page/nous-ecrire" >/dev/null; grep -c 'action=\"[^\"]*/contact\"' "$B") $(grep -c 'mailto:' "$B")" "1 0"
+check "contact : message envoyé, retour à la page" "$(hpost "$U/page/nous-ecrire" "$U/contact" -d 'retour=/page/nous-ecrire&nom=Jean Dupont&email=jean@example.org&objet=Conférence&message=Bonjour, une question.')" "303 $U/page/nous-ecrire"
+check "contact : message gardé, transmis par e-mail avec répondre-à" "$(sql "SELECT CONCAT(nom, ' ', transmis) FROM message_contact WHERE email = 'jean@example.org'") $(grep -c 'De : Jean Dupont <jean@example.org>' "$MAIL")" "Jean Dupont 1 1"
+check "contact : sans le défi anti-robot, refusé" "$(post "$U/page/nous-ecrire" "$U/contact" -d 'retour=/&nom=Robot&email=r@example.org&message=spam' | cut -c1-3) $(sql "SELECT COUNT(*) FROM message_contact WHERE email = 'r@example.org'")" "400 0"
+check "contact : e-mail invalide refusé" "$(hpost "$U/page/nous-ecrire" "$U/contact" -d 'retour=/page/nous-ecrire&nom=X&email=pas-une-adresse&message=x' >/dev/null; sql "SELECT COUNT(*) FROM message_contact WHERE nom = 'X'")" "0"
+as admin
+check "admin : messages reçus lisibles, puis marqués lus" "$(c "$U/admin/messages" >/dev/null; grep -c 'Bonjour, une question.' "$B") $(sql "SELECT lu FROM message_contact WHERE email = 'jean@example.org'")" "1 1"
+MID=$(sql "SELECT id FROM message_contact WHERE email = 'jean@example.org'")
+check "admin : suppression d'un message" "$(post "$U/admin/messages" "$U/admin/messages/$MID/supprimer" >/dev/null; sql "SELECT COUNT(*) FROM message_contact")" "0"
+check "contact : messages plus vieux que la durée réglée effacés par les tâches" "$(sql "INSERT INTO message_contact (nom, email, objet, message, recu_le) VALUES ('Ancien', 'a@example.org', 'o', 'm', NOW() - INTERVAL 13 MONTH), ('Récent', 'b@example.org', 'o', 'm', NOW() - INTERVAL 2 MONTH)"; php "$ROOT/app/bin/cli.php" cron >/dev/null; sql "SELECT GROUP_CONCAT(nom) FROM message_contact")" "Récent"
+as visiteur
+check "contact : messages réservés à l'administrateur" "$(c "$U/admin/messages" | cut -c1-3)" "303"
 bilan
