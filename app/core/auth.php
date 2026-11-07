@@ -110,7 +110,8 @@ function login_complete(array $member): never
     $_SESSION['connecte'] = true;
     unset($_SESSION['rappel_cotisation_masque']); // le rappel de cotisation masqué revient à chaque connexion
     db_query('UPDATE membre SET derniere_connexion = NOW() WHERE id = ?', [$member['id']]);
-    $next = $_SESSION['apres_connexion'] ?? '/compte';
+    // Page demandée avant la connexion, sinon l'arrivée réglée selon la cotisation (par défaut « Mon compte »)
+    $next = $_SESSION['apres_connexion'] ?? connexion_arrivee($member);
     unset($_SESSION['apres_connexion']);
     redirect(str_starts_with($next, '/') && !str_starts_with($next, '//') ? $next : '/compte');
 }
@@ -200,3 +201,27 @@ function membre_inviter(array $member, ?array $par): void
     db_query('UPDATE membre SET invite_le = NOW() WHERE id = ?', [$member['id']]);
     journal(null, $par, 'Invitation envoyée : ' . membre_nom($member), $par === null ? 'web' : null);
 }
+
+// Où arrive un membre qui se connecte sans page demandée : réglable pour les membres à jour et les autres
+function connexion_arrivee(array $member): string
+{
+    $cle = cotisation_a_jour($member) !== null || is_admin($member) ? 'arrivee_cotisant' : 'arrivee_non_cotisant';
+    $chemin = (string) setting($cle, '');
+    return connexion_arrivee_valide($chemin) ? $chemin : '/compte';
+}
+
+function connexion_arrivee_valide(string $chemin): bool
+{
+    return $chemin !== '' && (bool) preg_match('#^/(compte|espaces|page/[a-z0-9-]+)?$#', $chemin);
+}
+
+// Choix proposés dans les réglages : Mon compte, les espaces, et les pages publiées
+function connexion_arrivees_possibles(): array
+{
+    $choix = ['' => 'Mon compte', '/espaces' => 'Espaces', '/' => 'Accueil'];
+    foreach (db_all('SELECT slug, titre FROM page WHERE publiee = 1 AND est_accueil = 0 ORDER BY ordre, titre') as $p) {
+        $choix['/page/' . $p['slug']] = 'Page « ' . $p['titre'] . ' »';
+    }
+    return $choix;
+}
+
