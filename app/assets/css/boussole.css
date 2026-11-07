@@ -229,3 +229,5 @@ tr:last-child td { border-bottom: 0; }
 .evenement .aide-contenu ol { padding-left: 1.2rem; }
 .qrcode { width: 12rem; max-width: 100%; margin: .75rem 0; background: #fff; border: 1px solid var(--bordure); border-radius: var(--rayon-petit); padding: .25rem; }
 .qrcode svg { display: block; width: 100%; height: auto; }
+.config { background: #0f1720; color: #e6edf3; padding: 1rem; border-radius: var(--rayon-petit); overflow-x: auto; font-size: .85rem; line-height: 1.45; white-space: pre; }
+.alerte h3 { margin-top: 1.25rem; }

@@ -65,5 +65,11 @@ sed -i 's/facteurs|a:[0-9]*:{[^}]*}//' "/var/lib/php/sessions/sess_$SID"
 check "ancienne session : la seconde vérification s'affiche (pas de renvoi vers le compte)" "$(c "$U/connexion/double-authentification" | cut -c1-3) $(grep -c 'Vous êtes bien connecté' "$B")" "200 1"
 stepup_email >/dev/null
 check "après le code e-mail : clé d'écriture possible" "$(post "$U/compte/cles" "$U/compte/cles" -d 'libelle=IA2&portee=ecriture&duree=7')" "303 $U/compte/cles"
+# Clé sans limite de durée et configuration MCP prête à copier
+post "$U/compte/cles" "$U/compte/cles" -d 'libelle=Sans limite&portee=lecture&duree=0' >/dev/null; c "$U/compte/cles" >/dev/null
+SL=$(grep -o 'bsl_[a-f0-9]\{8\}_[a-f0-9]\{40\}' "$B" | head -1)
+check "configuration MCP : adresse et clé dans le JSON" "$(tr -d '\n' < "$B" | grep -o '<pre class="config"[^<]*' | grep -c "/mcp.*Bearer $SL")" "1"
+check "clé sans limite : pas de date d'expiration, et elle fonctionne" "$(sql "SELECT expire_le IS NULL FROM cle_api WHERE libelle = 'Sans limite'") $(api "$SL" "$U/api/moi")" "1 200"
+check "liste : « sans limite de durée »" "$(c "$U/compte/cles" >/dev/null; grep -c 'sans limite de durée' "$B")" "1"
 check "admin : voit toutes les clés" "$(c "$U/admin/cles" >/dev/null; grep -c 'Bob' "$B")" "[1-9]*"
 bilan
