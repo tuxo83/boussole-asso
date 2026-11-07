@@ -62,6 +62,26 @@ return [
             }
             redirect('/espace/' . $espace['slug']);
         }],
+        // Pointage facultatif : présent, absent, ou rien (sans effet sur les priorités)
+        ['POST', '/espace/{slug}/presence', function (array $p) {
+            [$espace] = evenement_action($p['slug'], 'gerer');
+            $present = match ($_POST['present'] ?? '') { '1' => 1, '0' => 0, default => null };
+            db_query('UPDATE inscription SET present = ? WHERE evenement_id = ? AND membre_id = ? AND statut = "retenu"', [$present, $espace['id'], (int) ($_POST['membre_id'] ?? 0)]);
+            redirect('/espace/' . $espace['slug'] . '#pointage');
+        }],
+        // L'organisateur annule une inscription : la place revient au suivant de la liste d'attente
+        ['POST', '/espace/{slug}/annuler', function (array $p) {
+            [$espace, $member] = evenement_action($p['slug'], 'gerer');
+            $ev = evenement_de($espace);
+            $inscrit = db_one('SELECT m.* FROM inscription i JOIN membre m ON m.id = i.membre_id WHERE i.evenement_id = ? AND i.membre_id = ? AND i.statut = "retenu"', [$espace['id'], (int) ($_POST['membre_id'] ?? 0)]);
+            if ($inscrit !== null) {
+                db_query('UPDATE inscription SET statut = "desiste" WHERE evenement_id = ? AND membre_id = ?', [$espace['id'], $inscrit['id']]);
+                mail_send($inscrit['email'], 'Inscription annulée : ' . $espace['titre'], "L'organisateur a annulé votre inscription. Pour toute question, répondez-lui directement.\n\n" . absolute_url('/espace/' . $espace['slug']));
+                journal($espace['id'], $member, 'Inscription annulée par l\'organisateur : ' . membre_nom($inscrit));
+                evenement_promouvoir($ev);
+            }
+            redirect('/espace/' . $espace['slug']);
+        }],
         ['POST', '/espace/{slug}/valider', function (array $p) {
             [$espace, $member] = evenement_action($p['slug'], 'gerer');
             $ev = evenement_de($espace);

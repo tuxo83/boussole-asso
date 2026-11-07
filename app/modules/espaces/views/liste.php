@@ -9,9 +9,9 @@
   <?= c_carte($espace['titre'],
       '<p class="discret">' . e(ESPACE_TYPES[$espace['type']]) . '</p>'
       . '<p>' . c_meteo($espace['meteo']) . '</p>'
-      . '<p class="petit">' . ($n1 ? 'N°1 : ' . e(membre_nom($n1)) : 'Pas de n°1') . '</p>'
+      . ($n1 ? '<p class="petit">N°1 : ' . e(membre_nom($n1)) . '</p>' : '')
       . ($prochaine ? '<p class="petit">Prochaine date : ' . e(date('d/m/Y', strtotime($prochaine['date_jalon']))) . ' · ' . e($prochaine['libelle']) . '</p>' : '')
-      . ($alertes ? '<p class="alertes-mini">⚠ ' . e(count($alertes) === 1 ? $alertes[0] : count($alertes) . ' points à traiter') . '</p>' : ''),
+      . ($alertes ? '<p class="alertes-mini">' . c_icone('attention') . e(count($alertes) === 1 ? $alertes[0] : count($alertes) . ' points à traiter') . '</p>' : ''),
       '/espace/' . $espace['slug']) ?>
   <?php endforeach ?>
 </div>

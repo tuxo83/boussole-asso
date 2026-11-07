@@ -28,6 +28,7 @@ Le panel s'appuie sur une association de référence : des membres issus d'une f
 | Personnage | Spécialité | Ce qu'il vérifie |
 |---|---|---|
 | **Inès** | Designeuse UX/UI | Propreté, hiérarchie visuelle, cohérence des composants, rendu mobile, attrait |
+| **Élise** | Directrice artistique | Le beau sans le superflu : typographie, rythme, couleurs, icônes dessinées (pas d'émojis), finitions, plaisir d'usage au doigt (cibles de 44 px, gestes simples). Elle refuse tout écran « fonctionnel mais triste ». |
 | **Marc** | Accessibilité (RGAA) | Navigation au clavier, lecteurs d'écran, contrastes, libellés |
 | **Thomas** | Sécurité offensive (tests d'intrusion) | Connexion, sessions, injections, envoi de fichiers, limites d'essais, robots |
 | **Sophie** | Protection des données (RGPD) | Données minimales, durée de conservation, consentements, exports, effacement |

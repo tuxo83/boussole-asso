@@ -42,11 +42,12 @@ function inscription_de(array $ev, array $member): ?array
     return db_one('SELECT * FROM inscription WHERE evenement_id = ? AND membre_id = ?', [$ev['espace_id'], $member['id']]);
 }
 
-// Participations sur 12 mois : inscrit à un événement déjà passé
+// Participations sur 12 mois : une place obtenue à un événement passé à places limitées.
+// Les événements ouverts à tous (assemblée générale…) ne comptent pas : personne n'y a pris la place d'un autre.
 function participations(): array
 {
     $rows = db_all('SELECT i.membre_id, COUNT(*) AS n FROM inscription i JOIN evenement e ON e.espace_id = i.evenement_id
-        WHERE i.statut = "retenu" AND e.debut < NOW() AND e.debut >= NOW() - INTERVAL 12 MONTH GROUP BY i.membre_id');
+        WHERE i.statut = "retenu" AND e.mode <> "ouvert" AND e.debut < NOW() AND e.debut >= NOW() - INTERVAL 12 MONTH GROUP BY i.membre_id');
     return array_column($rows, 'n', 'membre_id');
 }
 

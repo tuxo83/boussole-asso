@@ -95,10 +95,10 @@ with sync_playwright() as p:
     page.fill('input[name=titre]', 'Accueil')
     page.click('form.en-ligne button[type=submit]')
     page.wait_for_url(SITE + '/admin/pages/2')
-    page.evaluate('''(blocs) => { const f = document.getElementById('formulaire-page');
+    with page.expect_navigation():
+        page.evaluate('''(blocs) => { const f = document.getElementById('formulaire-page');
         document.getElementById('champ-blocs').value = blocs; f.querySelector('input[name=publiee]').checked = true;
         f.querySelector('input[name=est_accueil]').checked = true; HTMLFormElement.prototype.submit.call(f); }''', json.dumps(blocs))
-    page.wait_for_url(SITE + '/admin/pages/2')
     page.goto(SITE + '/admin/pages')
     page.fill('input[name=titre]', 'Nos statuts')
     page.select_option('select[name=parent_id]', '1')

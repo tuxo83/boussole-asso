@@ -15,13 +15,17 @@ for p in alice bruno chloe david emma farid; do post "$U/admin/membres" "$U/admi
 # Historique sur 12 mois : alice 3 participations, bruno 1, emma 1, chloé et david 0 (moyenne 5/7 ≈ 0,7)
 for n in 1 2 3; do
   sql "INSERT INTO espace (type, titre, slug, description) VALUES ('evenement', 'Passé $n', 'passe-$n', '')"
-  sql "INSERT INTO evenement (espace_id, debut, mode, etat) SELECT id, NOW() - INTERVAL $n MONTH, 'ouvert', 'attribuee' FROM espace WHERE slug = 'passe-$n'"
+  sql "INSERT INTO evenement (espace_id, debut, mode, etat) SELECT id, NOW() - INTERVAL $n MONTH, 'auto', 'attribuee' FROM espace WHERE slug = 'passe-$n'"
   sql "INSERT INTO inscription (evenement_id, membre_id, statut) SELECT s.id, $(id alice), 'retenu' FROM espace s WHERE slug = 'passe-$n'"
 done
 sql "INSERT INTO inscription (evenement_id, membre_id, statut) SELECT s.id, m.id, 'retenu' FROM espace s, membre m WHERE s.slug = 'passe-1' AND m.email IN ('bruno@example.org', 'emma@example.org')"
+# Un événement ouvert à tous (AG) ne compte pas : david y était, il reste « jamais venu »
+sql "INSERT INTO espace (type, titre, slug, description) VALUES ('evenement', 'AG passée', 'ag-passee', '')"
+sql "INSERT INTO evenement (espace_id, debut, mode, etat) SELECT id, NOW() - INTERVAL 1 MONTH, 'ouvert', 'ouvert' FROM espace WHERE slug = 'ag-passee'"
+sql "INSERT INTO inscription (evenement_id, membre_id, statut) SELECT s.id, $(id david), 'retenu' FROM espace s WHERE slug = 'ag-passee'"
 # Une participation de plus de 12 mois ne compte pas
 sql "INSERT INTO espace (type, titre, slug, description) VALUES ('evenement', 'Ancien', 'ancien', '')"
-sql "INSERT INTO evenement (espace_id, debut, etat) SELECT id, NOW() - INTERVAL 14 MONTH, 'attribuee' FROM espace WHERE slug = 'ancien'"
+sql "INSERT INTO evenement (espace_id, debut, mode, etat) SELECT id, NOW() - INTERVAL 14 MONTH, 'auto', 'attribuee' FROM espace WHERE slug = 'ancien'"
 sql "INSERT INTO inscription (evenement_id, membre_id, statut) SELECT s.id, $(id chloe), 'retenu' FROM espace s WHERE slug = 'ancien'"
 
 as admin
@@ -39,7 +43,7 @@ check "vœu : l'heure ne compte pas, message clair" "$(c "$U/espace/visite-du-po
 agir farid visite-du-port confirmer
 check "l'invité confirme" "$(statut visite-du-port farid)" "voeu"
 agir david visite-du-port voeu
-check "double vœu impossible" "$(sql "SELECT COUNT(*) FROM inscription WHERE membre_id = $(id david)")" "1"
+check "double vœu impossible" "$(sql "SELECT COUNT(*) FROM inscription WHERE membre_id = $(id david) AND evenement_id = (SELECT id FROM espace WHERE slug = 'visite-du-port')")" "1"
 as bruno; c "$U/espace/visite-du-port" >/dev/null
 check "un membre ne voit pas la liste des candidats" "$(grep -c 'Inscrits et candidats' "$B")" "0"
 
@@ -49,7 +53,7 @@ as alice; c "$U/espace/visite-du-port" >/dev/null
 check "attribution faite à la clôture" "$(sql "SELECT etat FROM evenement e JOIN espace s ON s.id = e.espace_id WHERE s.slug = 'visite-du-port'")" "attribuee"
 check "groupe 0 : l'invité est inscrit" "$(statut visite-du-port farid)" "retenu"
 check "groupe 1 : chloé (rien sur 12 mois) inscrite" "$(statut visite-du-port chloe)" "retenu"
-check "groupe 1 : david (jamais venu) inscrit" "$(statut visite-du-port david)" "retenu"
+check "groupe 1 : david (seulement l'AG, qui ne compte pas) inscrit" "$(statut visite-du-port david)" "retenu"
 check "groupe 3 : alice, la plus assidue, dernière de la liste d'attente" "$(statut visite-du-port alice)" "attente 3"
 check "bruno et emma (groupe 2) : attente 1 et 2" "$(sql "SELECT GROUP_CONCAT(rang ORDER BY rang) FROM inscription WHERE statut = 'attente' AND membre_id IN ($(id bruno), $(id emma))")" "1,2"
 check "e-mails : 3 confirmations, 3 listes d'attente" "$(grep -c 'Subject: Inscription confirmée' "$MAIL") $(grep -c "Subject: Liste d'attente" "$MAIL")" "3 3"
@@ -102,6 +106,17 @@ check "après clôture : liste d'attente" "$(statut sortie chloe)" "attente 1"
 check "visiteur : l'agenda public montre l'AG" "$(curl -s "$U/" -o /dev/null; as visiteur; c "$U/espace/assemblee-generale" >/dev/null; grep -c "Se connecter pour s" "$B")" "1"
 as farid; c "$U/compte" >/dev/null
 check "mes inscriptions sur mon compte" "$(grep -c 'Visite du port' "$B")" "1"
+
+# L'organisateur annule une inscription ; pointage facultatif le jour J
+as admin; post "$U/espace/visite-du-port" "$U/espace/visite-du-port/annuler" -d "membre_id=$(id farid)" >/dev/null
+check "annulation par l'organisateur, e-mail envoyé" "$(statut visite-du-port farid) $(grep -c 'Subject: Inscription annulée' "$MAIL")" "desiste 1"
+sql "UPDATE evenement SET debut = NOW() - INTERVAL 1 HOUR WHERE espace_id = (SELECT id FROM espace WHERE slug = 'sortie')"
+as admin; c "$U/espace/sortie" >/dev/null
+check "le jour J, la liste de pointage s'affiche" "$(grep -c 'id="pointage"' "$B")" "1"
+post "$U/espace/sortie" "$U/espace/sortie/presence" -d "membre_id=$(id bruno)&present=0" >/dev/null
+check "pointage : absent enregistré" "$(sql "SELECT present FROM inscription WHERE membre_id = $(id bruno) AND evenement_id = (SELECT id FROM espace WHERE slug = 'sortie')")" "0"
+as bruno; post "$U/espace/sortie" "$U/espace/sortie/presence" -d "membre_id=$(id bruno)&present=1" >/dev/null
+check "un membre ne peut pas se pointer lui-même" "$(sql "SELECT present FROM inscription WHERE membre_id = $(id bruno) AND evenement_id = (SELECT id FROM espace WHERE slug = 'sortie')")" "0"
 
 # MCP : s'inscrire pour soi-même
 as emma; post "$U/compte/cles" "$U/compte/cles" -d 'libelle=IA&portee=ecriture&duree=7' >/dev/null; c "$U/compte/cles" >/dev/null; KEY=$(grep -o 'bsl_[a-f0-9]\{8\}_[a-f0-9]\{40\}' "$B" | head -1)
