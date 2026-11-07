@@ -21,3 +21,8 @@
   - membre : contribue (fichiers, dates, météo) ;
   - associé / conseiller (« sage ») : rattaché à l'espace sans y être nommé, éventuellement extérieur à l'association ; voit l'espace et peut commenter, sans le gérer.
 - Les libellés sont libres (président, secrétaire, sage…), les niveaux de droits ne le sont pas : simple à comprendre, sûr, universel.
+
+## Droits de plateforme
+- Trois axes indépendants : **type de membre** (statut dans l'association), **rôle dans un espace** (gérer cet espace), **droits de plateforme** (gérer une partie du site).
+- Droits de plateforme : **administrateur** (tout), et trois délégations : **cotisations**, **membres**, **publications** (accueil, pages, actualités).
+- Aucun droit ne découle d'une fonction (président, secrétaire…) : on attribue explicitement. Tout droit de plateforme impose la double authentification.
