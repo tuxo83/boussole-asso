@@ -329,8 +329,11 @@ main.conteneur { padding-top: 2rem; padding-bottom: 4.5rem; }
 .carte-reservee.carte-evenement .date-tuile { opacity: .75; }
 
 /* Membre connecté pas à jour de cotisation : rappel discret sous l'en-tête */
-.bandeau-cotisation { background: color-mix(in srgb, var(--couleur-accent) 10%, #fff); border-bottom: 1px solid color-mix(in srgb, var(--couleur-accent) 30%, #fff); color: var(--texte); font-size: .92rem; padding: .5rem 0; }
-.bandeau-cotisation a { font-weight: 600; margin-left: .5rem; }
+.bandeau-cotisation { background: color-mix(in srgb, var(--couleur-accent) 10%, #fff); border-bottom: 1px solid color-mix(in srgb, var(--couleur-accent) 30%, #fff); color: #1f2937; font-size: .94rem; font-weight: 500; padding: .45rem 0; }
+.bandeau-cotisation .conteneur { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.bandeau-cotisation a { font-weight: 600; margin-left: .5rem; color: #1e4a7a; text-decoration: underline; }
+.bandeau-fermer { background: none; border: 0; min-width: var(--cible); min-height: var(--cible); font-size: 1.4rem; line-height: 1; color: #1f2937; cursor: pointer; border-radius: var(--rayon-petit); }
+.bandeau-fermer:hover, .bandeau-fermer:focus-visible { background: color-mix(in srgb, var(--couleur-accent) 18%, #fff); }
 /* Agenda : bandeau toujours présent (cartes alignées), événements passés atténués */
 .carte-evenement .ruban { min-height: 1.95rem; }
 .cartes-passees .carte-evenement { opacity: .78; }

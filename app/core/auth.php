@@ -108,6 +108,7 @@ function login_first_step(array $member, string $facteur): void
 function login_complete(array $member): never
 {
     $_SESSION['connecte'] = true;
+    unset($_SESSION['rappel_cotisation_masque']); // le rappel de cotisation masqué revient à chaque connexion
     db_query('UPDATE membre SET derniere_connexion = NOW() WHERE id = ?', [$member['id']]);
     $next = $_SESSION['apres_connexion'] ?? '/compte';
     unset($_SESSION['apres_connexion']);

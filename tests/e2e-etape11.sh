@@ -66,6 +66,10 @@ login_link lea lea@example.org
 check "membre pas à jour : l'événement est visible" "$(c "$U/page/agenda" >/dev/null; grep -c 'Menu et lieu' "$B") $(c "$U/espace/diner-cotisants" | cut -c1-3)" "1 200"
 check "membre pas à jour : invitation à cotiser au lieu de l'inscription" "$(grep -c 'Réglez votre cotisation pour vous inscrire' "$B")" "1"
 check "membre pas à jour : inscription refusée" "$(post "$U/espace/diner-cotisants" "$U/espace/diner-cotisants/inscription" -d 'action=voeu' >/dev/null; sql "SELECT COUNT(*) FROM inscription i JOIN membre m ON m.id = i.membre_id WHERE m.email = 'lea@example.org'")" "0"
+check "rappel de cotisation affiché, avec « Masquer »" "$(c "$U/page/agenda" >/dev/null; grep -c 'pas encore enregistrée' "$B") $(grep -c 'bandeau-fermer' "$B")" "1 1"
+check "rappel masqué jusqu'à la prochaine connexion" "$(post "$U/page/agenda" "$U/compte/rappel-cotisation/masquer" -d 'retour=/page/agenda') $(c "$U/page/agenda" >/dev/null; grep -c 'pas encore enregistrée' "$B")" "303 $U/page/agenda 0"
+check "rappel toujours visible sur « Mon compte », sans croix" "$(c "$U/compte" >/dev/null; grep -c 'pas encore enregistrée' "$B") $(grep -c 'bandeau-fermer' "$B")" "1 0"
+check "rappel revenu à la connexion suivante" "$(c "$U/compte" >/dev/null; T=$(tok); c --data-urlencode "_csrf=$T" "$U/deconnexion" >/dev/null; login_link lea lea@example.org; c "$U/page/agenda" >/dev/null; grep -c 'pas encore enregistrée' "$B")" "1"
 sql "INSERT INTO cotisation (membre_id, periode, paye_le, moyen) SELECT id, $(date +%Y), CURDATE(), 'cheque' FROM membre WHERE email = 'lea@example.org'"
 check "membre à jour : inscription possible" "$(post "$U/espace/diner-cotisants" "$U/espace/diner-cotisants/inscription" -d 'action=voeu' >/dev/null; sql "SELECT statut FROM inscription i JOIN membre m ON m.id = i.membre_id WHERE m.email = 'lea@example.org'")" "retenu"
 bilan
