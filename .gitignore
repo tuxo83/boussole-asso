@@ -6,3 +6,5 @@
 /app/stockage/*
 !/app/stockage/.htaccess
 !/app/stockage/.gitkeep
+/deploiement-ftp.conf
+/dist/
