@@ -9,11 +9,13 @@ return [
     'routes' => [
         ['GET', '/espaces', function () {
             $member = current_member();
+            $archives = !empty($_GET['archives']);
             $espaces = array_values(array_filter(
-                db_all('SELECT * FROM espace WHERE archive = 0 ORDER BY FIELD(type, "comite", "commission", "projet", "evenement"), titre'),
+                db_all('SELECT * FROM espace WHERE archive = ? ORDER BY FIELD(type, "comite", "commission", "projet", "evenement"), titre', [$archives ? 1 : 0]),
                 fn($espace) => espace_peut_voir($member, $espace)
             ));
-            render('espaces/liste', ['titre' => 'Espaces', 'espaces' => $espaces, 'membre' => $member]);
+            $nb_archives = count(array_filter(db_all('SELECT * FROM espace WHERE archive = 1'), fn($e) => espace_peut_voir($member, $e)));
+            render('espaces/liste', ['titre' => $archives ? 'Espaces archivés' : 'Espaces', 'espaces' => $espaces, 'membre' => $member, 'archives' => $archives, 'nb_archives' => $nb_archives]);
         }],
         ['GET', '/espaces/nouveau', function () {
             $member = require_member();
@@ -60,19 +62,54 @@ return [
                     : [],
                 'alertes' => espace_alertes($espace),
                 'peut_gerer' => espace_peut_gerer($member, $espace),
+                'parents_possibles' => is_admin($member)
+                    ? array_column(array_filter(db_all('SELECT slug, titre, id FROM espace WHERE archive = 0 ORDER BY titre'), fn($e) => !in_array((int) $e['id'], espace_descendants((int) $espace['id']), true)), 'titre', 'slug')
+                    : [],
                 'peut_contribuer' => espace_peut_contribuer($member, $espace),
             ]);
         }],
         ['POST', '/espace/{slug}/modifier', function (array $p) {
             [$espace, $member] = espace_action($p['slug'], 'gerer');
             [$v, $erreurs] = espace_valider($_POST + ['type' => $espace['type']]);
+            // Déplacer : seulement l'administrateur, jamais sous lui-même ni sous un de ses sous-espaces
+            $parent = $espace['parent_id'];
+            if (is_admin($member) && array_key_exists('parent', $_POST)) {
+                $cible = $_POST['parent'] === '' ? null : espace_par_slug((string) $_POST['parent']);
+                if ($_POST['parent'] !== '' && ($cible === null || in_array((int) $cible['id'], espace_descendants((int) $espace['id']), true))) {
+                    $erreurs['parent'] = 'Espace parent invalide (pas lui-même ni un de ses sous-espaces).';
+                } else {
+                    $parent = $cible['id'] ?? null;
+                }
+            }
             if ($erreurs) {
                 flash('erreur', implode(' ', $erreurs));
                 redirect('/espace/' . $espace['slug']);
             }
-            db_query('UPDATE espace SET titre = ?, description = ?, visibilite = ? WHERE id = ?', [$v['titre'], $v['description'], $v['visibilite'], $espace['id']]);
-            journal($espace['id'], $member, 'Description modifiée');
+            db_query('UPDATE espace SET titre = ?, description = ?, visibilite = ?, type = ?, parent_id = ? WHERE id = ?', [$v['titre'], $v['description'], $v['visibilite'], $v['type'], $parent, $espace['id']]);
+            journal($espace['id'], $member, 'Espace modifié');
             redirect('/espace/' . $espace['slug']);
+        }],
+        // Archiver : l'espace sort des listes et de l'agenda, sans rien perdre ; désarchiver le fait revenir
+        ['POST', '/espace/{slug}/archiver', function (array $p) {
+            [$espace, $member] = espace_action($p['slug'], 'gerer');
+            $archive = $espace['archive'] ? 0 : 1;
+            db_query('UPDATE espace SET archive = ? WHERE id = ?', [$archive, $espace['id']]);
+            journal($espace['id'], $member, $archive ? 'Espace archivé' : 'Espace désarchivé');
+            flash('succes', $archive ? 'Espace archivé : il reste consultable dans « Espaces archivés ».' : 'Espace désarchivé.');
+            redirect('/espace/' . $espace['slug']);
+        }],
+        // Supprimer définitivement (administrateur) : fichiers effacés du disque, sous-espaces remontés d'un niveau
+        ['POST', '/espace/{slug}/supprimer', function (array $p) {
+            $member = require_right('admin');
+            $espace = espace_ou_404($p['slug']);
+            foreach (db_all('SELECT stockage FROM fichier WHERE espace_id = ?', [$espace['id']]) as $f) {
+                @unlink(BOUSSOLE_ROOT . '/stockage/' . $f['stockage']);
+            }
+            db_query('UPDATE espace SET parent_id = ? WHERE parent_id = ?', [$espace['parent_id'], $espace['id']]);
+            db_query('DELETE FROM espace WHERE id = ?', [$espace['id']]);
+            journal(null, $member, 'Espace supprimé : ' . $espace['titre']);
+            flash('succes', 'Espace « ' . $espace['titre'] . ' » supprimé.');
+            redirect('/espaces');
         }],
         ['POST', '/espace/{slug}/meteo', function (array $p) {
             [$espace, $member] = espace_action($p['slug'], 'contribuer');
@@ -120,6 +157,15 @@ return [
             }
             db_query('INSERT INTO jalon (espace_id, date_jalon, libelle, destinataires) VALUES (?, ?, ?, ?)', [$espace['id'], $date, $libelle, ($_POST['destinataires'] ?? '') === 'equipe' ? 'equipe' : 'binome']);
             journal($espace['id'], $member, "Date clé ajoutée : $libelle ($date)");
+            redirect('/espace/' . $espace['slug']);
+        }],
+        ['POST', '/espace/{slug}/jalons/{id}/supprimer', function (array $p) {
+            [$espace, $member] = espace_action($p['slug'], 'contribuer');
+            $jalon = db_one('SELECT * FROM jalon WHERE id = ? AND espace_id = ?', [(int) $p['id'], $espace['id']]);
+            if ($jalon !== null) {
+                db_query('DELETE FROM jalon WHERE id = ?', [$jalon['id']]);
+                journal($espace['id'], $member, 'Date clé supprimée : ' . $jalon['libelle']);
+            }
             redirect('/espace/' . $espace['slug']);
         }],
         ['POST', '/espace/{slug}/jalons/{id}/fait', function (array $p) {
@@ -220,6 +266,18 @@ function espace_parent_autorise(array $member, string $slug): ?array
         return $parent;
     }
     espace_refus();
+}
+
+// L'espace et tous ses sous-espaces (pour interdire un déplacement en boucle)
+function espace_descendants(int $id): array
+{
+    $ids = [$id];
+    for ($i = 0; $i < count($ids); $i++) {
+        foreach (db_all('SELECT id FROM espace WHERE parent_id = ?', [$ids[$i]]) as $enfant) {
+            $ids[] = (int) $enfant['id'];
+        }
+    }
+    return $ids;
 }
 
 function espace_valider(array $input): array

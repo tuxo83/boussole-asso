@@ -154,6 +154,9 @@ function inscription_agir(array $ev, array $member, string $action): string
     $id = [$ev['espace_id'], $member['id']];
     switch ($action) {
         case 'voeu':
+            if (setting('inscription_cotisants', '1') === '1' && !espace_inscription_ouverte($member, db_one('SELECT * FROM espace WHERE id = ?', [$ev['espace_id']]) ?? ['visibilite' => 'equipe'])) {
+                return 'Inscription réservée aux membres à jour de cotisation : réglez votre cotisation pour vous inscrire.';
+            }
             if ($statut !== null && !in_array($statut, ['desiste', 'decline', 'expire'], true)) {
                 return 'Vous êtes déjà sur la liste.';
             }
@@ -171,6 +174,8 @@ function inscription_agir(array $ev, array $member, string $action): string
             } else {
                 $nouveau = 'attente';
             }
+            // Événement jamais réglé par l'organisateur : sa fiche est créée avec les valeurs par défaut
+            db_query('INSERT IGNORE INTO evenement (espace_id) VALUES (?)', [$ev['espace_id']]);
             db_query('REPLACE INTO inscription (evenement_id, membre_id, statut, rang) VALUES (?, ?, ?, ?)', [...$id, $nouveau,
                 $nouveau === 'attente' ? 1 + (int) db_value('SELECT COALESCE(MAX(rang), 0) FROM inscription WHERE evenement_id = ? AND statut = "attente"', [$ev['espace_id']]) : null]);
             evenement_promouvoir($ev);

@@ -66,6 +66,10 @@ $bouton_payer = $paiement && $ev['lien_paiement'] ? '<a class="bouton bouton-pri
   <p>Cet événement a eu lieu.</p>
   <?php elseif ($ev['etat'] === 'ouvert' && !evenement_accepte_voeux($ev) && $ev['mode'] !== 'ouvert'): ?>
   <p>Les inscriptions sont closes.</p>
+  <?php elseif (setting('inscription_cotisants', '1') === '1' && !espace_inscription_ouverte($membre, $espace)): ?>
+  <?php $adhesion = (string) setting('lien_adhesion', ''); ?>
+  <div class="statut-inscription statut-a-regler"><p><strong>Réglez votre cotisation pour vous inscrire.</strong> Cet événement est réservé aux membres à jour de cotisation.</p>
+    <p><?= c_bouton('Régler ma cotisation', $adhesion !== '' ? $adhesion : '/compte') ?></p></div>
   <?php else: ?>
   <?php if ($limite && $ev['etat'] === 'ouvert'): ?><p class="petit">Pas de course au clic : l'heure de dépôt ne compte pas. Priorité à celles et ceux qui sont venus le moins souvent.</p><?php endif ?>
   <p><?= $bouton('voeu', $ev['mode'] === 'ouvert' ? 'Je m\'inscris' : ($ev['etat'] === 'ouvert' ? 'Je souhaite venir' : 'M\'inscrire sur la liste d\'attente')) ?></p>

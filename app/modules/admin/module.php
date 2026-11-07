@@ -51,6 +51,7 @@ function admin_settings_validate(array $input): array
         'pied_de_page' => $text('pied_de_page', 500),
         'couleur_principale' => $text('couleur_principale', 7),
         'couleur_accent' => $text('couleur_accent', 7),
+        'couleur_membres' => $text('couleur_membres', 7),
         'css_personnalise' => $text('css_personnalise', 50000),
         'adresse_site' => rtrim($text('adresse_site', 300), '/'),
         'mail_expediteur' => $text('mail_expediteur', 190),
@@ -72,7 +73,11 @@ function admin_settings_validate(array $input): array
     if ($v['nom_association'] === '') {
         $erreurs['nom_association'] = 'Obligatoire.';
     }
-    foreach (['couleur_principale', 'couleur_accent'] as $key) {
+    foreach (['couleur_principale', 'couleur_accent', 'couleur_membres'] as $key) {
+        // Couleurs des niveaux d'accès : facultatives (vide = couleur par défaut)
+        if ($key === 'couleur_membres' && $v[$key] === '') {
+            continue;
+        }
         if (!preg_match('/^#[0-9a-fA-F]{6}$/', $v[$key])) {
             $erreurs[$key] = 'Couleur au format #rrggbb.';
         }

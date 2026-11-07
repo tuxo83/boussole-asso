@@ -11,6 +11,7 @@ agir() { as "$1"; post "$U/espace/$2" "$U/espace/$2/inscription" -d "action=$3" 
 DEMAIN=$(date -d '+1 day' +%Y-%m-%dT10:00); MOIS=$(date -d '+30 days' +%Y-%m-%dT18:30)
 
 install_admin
+sql "REPLACE INTO parametre (cle, valeur) VALUES ('inscription_cotisants', '0')"  # ce test porte sur l'attribution, pas sur la cotisation
 for p in alice bruno chloe david emma farid; do post "$U/admin/membres" "$U/admin/membres" -d "email=$p@example.org&prenom=${p^}" >/dev/null; done
 # Historique sur 12 mois : alice 3 participations, bruno 1, emma 1, chloé et david 0 (moyenne 5/7 ≈ 0,7)
 for n in 1 2 3; do

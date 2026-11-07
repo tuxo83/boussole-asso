@@ -65,8 +65,9 @@ function mcp_outils(): array
         ['name' => 'moi', 'description' => 'Qui suis-je : membre de la clé, ses droits, la portée de la clé.', 'inputSchema' => $objet([])],
         ['name' => 'lister_espaces', 'description' => 'Espaces visibles (comités, commissions, projets, événements), avec météo et alertes.', 'inputSchema' => $objet([])],
         ['name' => 'lire_espace', 'description' => "Détail d'un espace : équipe, dates clés, fichiers.", 'inputSchema' => $objet(['slug' => $texte("Identifiant de l'espace")], ['slug'])],
-        ['name' => 'modifier_espace', 'description' => "Changer la météo (soleil, eclaircie, pluie, orage) ou la description d'un espace.",
-            'inputSchema' => $objet(['slug' => $texte("Identifiant de l'espace"), 'meteo' => ['type' => 'string', 'enum' => ['soleil', 'eclaircie', 'pluie', 'orage']], 'description' => $texte('Nouvelle description')], ['slug'])],
+        ['name' => 'modifier_espace', 'description' => "Changer la météo (soleil, eclaircie, pluie, orage) ou la description d'un espace, ou l'archiver (true) / le désarchiver (false).",
+            'inputSchema' => $objet(['slug' => $texte("Identifiant de l'espace"), 'meteo' => ['type' => 'string', 'enum' => ['soleil', 'eclaircie', 'pluie', 'orage']], 'description' => $texte('Nouvelle description'),
+                'archive' => ['type' => 'boolean', 'description' => "true : archiver (sort des listes et de l'agenda) ; false : désarchiver"]], ['slug'])],
         ['name' => 'creer_espace', 'description' => 'Créer un espace : comité, commission, projet ou événement (administrateur, ou n°1 / n°2 du parent).',
             'inputSchema' => $objet(['type' => ['type' => 'string', 'enum' => array_keys(ESPACE_TYPES)], 'titre' => $texte('Titre'), 'description' => $texte('Description'),
                 'visibilite' => ['type' => 'string', 'enum' => array_keys(ESPACE_VISIBILITES), 'description' => 'equipe : son équipe ; adherents : membres connectés ; public : tout le monde'],
@@ -99,9 +100,12 @@ function mcp_outils(): array
         ['name' => 'regler_site', 'description' => "Réglages du site (clé « administration », administrateur) : nom, accroche (slogan), pied de page, lien d'adhésion HelloAsso, image du bandeau d'accueil (chemin renvoyé par ajouter_image).",
             'inputSchema' => $objet(['nom_association' => $texte("Nom de l'association"), 'slogan' => $texte("Phrase d'accroche"), 'pied_de_page' => $texte('Pied de page'),
                 'lien_adhesion' => $texte("Lien d'adhésion HelloAsso (https)"), 'bandeau_image' => $texte('Chemin uploads/img-… de l\'image du bandeau'),
-                'site_en_construction' => ['type' => 'boolean', 'description' => "Bandeau « en construction » et code d'accès pour les visiteurs"]])],
+                'site_en_construction' => ['type' => 'boolean', 'description' => "Bandeau « en construction » et code d'accès pour les visiteurs"],
+                'couleur_principale' => $texte('#rrggbb'), 'couleur_accent' => $texte('#rrggbb'), 'couleur_membres' => $texte('#rrggbb (agenda : réservé aux membres)')])],
         ['name' => 'ajouter_membre', 'description' => 'Ajouter un membre (clé « administration », droit « membres »).',
             'inputSchema' => $objet(['email' => $texte('E-mail'), 'prenom' => $texte('Prénom'), 'nom' => $texte('Nom')], ['email'])],
+        ['name' => 'inviter_membres', 'description' => "Envoyer l'invitation de bienvenue (comment se connecter) : à un membre, ou sans e-mail à tous ceux qui ne se sont jamais connectés. Clé « administration », droit « membres ».",
+            'inputSchema' => $objet(['email' => $texte('E-mail du membre (facultatif)')])],
         ['name' => 'lister_membres', 'description' => 'Membres (droit « membres » nécessaire).', 'inputSchema' => $objet([])],
     ];
 }
@@ -129,6 +133,7 @@ function mcp_appeler(string $name, array $a): array
         'ajouter_image' => api_image_ajouter((string) ($a['base64'] ?? '')),
         'regler_site' => api_reglages($a),
         'ajouter_membre' => api_membre_ajouter($a),
+        'inviter_membres' => api_inviter((string) ($a['email'] ?? '')),
         'lister_membres' => api_membres(),
         default => throw new ApiErreur("Outil inconnu : $name", 404),
     };

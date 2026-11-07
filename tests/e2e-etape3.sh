@@ -74,4 +74,28 @@ check "alice : réglages refusés" "$(c "$U/admin/parametres")" "403 "
 DAN=$(sql "SELECT id FROM membre WHERE email = 'dan@example.org'")
 post "$U/admin/membres" "$U/admin/membres/$DAN" -d 'prenom=Dan&actif=1&droits[]=admin' >/dev/null
 check "alice ne peut pas donner de droits" "$(sql "SELECT COUNT(*) FROM droit_plateforme WHERE membre_id = $DAN")" "0"
+# Archiver / supprimer un espace
+as bob
+check "bob (n°2) archive le comité" "$(post "$U/espace/comite-de-direction" "$U/espace/comite-de-direction/archiver")" "303 $U/espace/comite-de-direction"
+check "archivé : absent de la liste" "$(c "$U/espaces" >/dev/null; grep -c '>Comité de direction<' "$B")" "0"
+check "archivé : présent dans « Espaces archivés »" "$(c "$U/espaces?archives=1" >/dev/null; grep -c '>Comité de direction<' "$B")" "1"
+check "archivé : bandeau et bouton « Désarchiver »" "$(c "$U/espace/comite-de-direction" >/dev/null; grep -c 'Désarchiver' "$B")" "1"
+check "bob ne peut pas supprimer (administrateur seulement)" "$(post "$U/espace/comite-de-direction" "$U/espace/comite-de-direction/supprimer")" "403 "
+check "bob désarchive" "$(post "$U/espace/comite-de-direction" "$U/espace/comite-de-direction/archiver" >/dev/null; sql "SELECT archive FROM espace WHERE slug = 'comite-de-direction'")" "0"
+as admin
+post "$U/espaces/nouveau" "$U/espaces/nouveau" -d 'type=projet&titre=Sous projet&visibilite=equipe&parent=comite-de-direction' >/dev/null
+sql "UPDATE espace SET parent_id = (SELECT id FROM (SELECT id FROM espace WHERE slug = 'comite-de-direction') x) WHERE slug = 'sous-projet'"
+STOCK=$(sql "SELECT stockage FROM fichier WHERE nom = 'odj.txt'")
+check "suppression d'une date clé" "$(as bob; c "$U/espace/comite-de-direction" >/dev/null; JID=$(sql "SELECT id FROM jalon WHERE libelle = 'Bilan annuel'"); post "$U/espace/comite-de-direction" "$U/espace/comite-de-direction/jalons/$JID/supprimer" >/dev/null; sql "SELECT COUNT(*) FROM jalon WHERE libelle = 'Bilan annuel'")" "0"
+as admin
+TID=$(sql "SELECT id FROM type_membre WHERE libelle = 'Membre associé'")
+check "retrait d'un type de membre" "$(post "$U/admin/membres" "$U/admin/types-membre/$TID/supprimer" >/dev/null; sql "SELECT COUNT(*) FROM type_membre WHERE id = $TID")" "0"
+check "admin supprime le comité" "$(post "$U/espace/comite-de-direction" "$U/espace/comite-de-direction/supprimer")" "303 $U/espaces"
+check "espace, équipe, dates et fichiers effacés" "$(sql "SELECT (SELECT COUNT(*) FROM espace WHERE slug = 'comite-de-direction') + (SELECT COUNT(*) FROM fichier WHERE nom = 'odj.txt') + (SELECT COUNT(*) FROM jalon j JOIN espace e ON e.id = j.espace_id WHERE e.slug = 'comite-de-direction')")" "0"
+check "fichier effacé du disque" "$(find "$ROOT/app/stockage" -name "$STOCK" | wc -l)" "0"
+check "le sous-espace remonte d'un niveau" "$(sql "SELECT COALESCE(parent_id, 'aucun') FROM espace WHERE slug = 'sous-projet'")" "aucun"
+check "admin ne peut pas s'effacer lui-même" "$(post "$U/admin/membres" "$U/admin/membres/$ADMIN/effacer" >/dev/null; sql "SELECT COUNT(*) FROM membre WHERE id = $ADMIN")" "1"
+check "admin efface dan définitivement" "$(post "$U/admin/membres" "$U/admin/membres/$DAN/effacer" >/dev/null; sql "SELECT COUNT(*) FROM membre WHERE email = 'dan@example.org'")" "0"
+check "déplacer un espace sous un autre, et changer son type" "$(post "$U/espace/sous-projet" "$U/espace/sous-projet/modifier" -d 'titre=Sous projet&visibilite=equipe&type=commission&parent=journee-portes-ouvertes' >/dev/null; sql "SELECT CONCAT(e.type, ' ', p.slug) FROM espace e JOIN espace p ON p.id = e.parent_id WHERE e.slug = 'sous-projet'")" "commission journee-portes-ouvertes"
+check "déplacement en boucle refusé" "$(post "$U/espace/journee-portes-ouvertes" "$U/espace/journee-portes-ouvertes/modifier" -d 'titre=Journée portes ouvertes&visibilite=public&type=evenement&parent=sous-projet' >/dev/null; sql "SELECT COALESCE(parent_id, 'aucun') FROM espace WHERE slug = 'journee-portes-ouvertes'")" "aucun"
 bilan

@@ -59,4 +59,4 @@
   <p>Aucun second moyen disponible : définissez un mot de passe ou ajoutez une clé de sécurité depuis votre compte.</p>
   <?php endif ?>
 </section>
-<script src="<?= e(url('/assets/js/cles.js')) ?>?v=<?= e(BOUSSOLE_VERSION) ?>" defer></script>
+<script src="<?= e(asset('/assets/js/cles.js')) ?>" defer></script>

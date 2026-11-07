@@ -71,3 +71,11 @@ function menu_items(): array
     usort($items, fn($a, $b) => ($a['ordre'] ?? 50) <=> ($b['ordre'] ?? 50));
     return $items;
 }
+
+// Adresse d'un fichier statique avec sa date de modification : après une mise à jour, les navigateurs
+// rechargent le fichier au lieu de garder l'ancien en cache
+function asset(string $chemin): string
+{
+    $fichier = BOUSSOLE_ROOT . $chemin;
+    return url($chemin) . '?v=' . (is_file($fichier) ? filemtime($fichier) : BOUSSOLE_VERSION);
+}
