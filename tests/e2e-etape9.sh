@@ -13,6 +13,7 @@ appels() { { tr -d '\n' < "$HA/appels-$1.txt"; } 2>/dev/null | wc -c; }
 P=$(date +%Y)
 
 install_admin
+sql "REPLACE INTO parametre (cle, valeur) VALUES ('inscription_cotisants', '0')"  # inscriptions sans condition de cotisation dans ce test
 sql "REPLACE INTO parametre (cle, valeur) VALUES ('cotisation_relance_jours', '0')"
 for p in alice bob carl; do post "$U/admin/membres" "$U/admin/membres" -d "email=$p@example.org&prenom=${p^}" >/dev/null; done
 check "sans réglage : rien n'est appelé" "$(php "$ROOT/app/bin/cli.php" cron | grep HelloAsso) $(appels jeton)" "cron : 0 mise(s) à jour HelloAsso 0"

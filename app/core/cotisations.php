@@ -146,14 +146,14 @@ function cotisation_meteo_effacement(array $liste): string
 }
 
 // Effacement réel : le compte et tout ce qui s'y rattache disparaissent ; son nom est retiré du journal
-function membre_effacer(array $member, array $par): void
+function membre_effacer(array $member, array $par, string $motif = 'fin de la durée de conservation'): void
 {
     $nom = membre_nom($member);
     db_query('DELETE FROM membre WHERE id = ?', [$member['id']]);
     foreach (array_unique([$nom, $member['email']]) as $trace) {
         db_query('UPDATE journal SET action = REPLACE(action, ?, "membre effacé") WHERE action LIKE ?', [$trace, '%' . $trace . '%']);
     }
-    journal(null, $par, 'Données d\'un membre effacées (fin de la durée de conservation)');
+    journal(null, $par, "Données d'un membre effacées ($motif)");
 }
 
 // Import HelloAsso (export CSV du site HelloAsso) : on ne garde que l'e-mail et la date de paiement

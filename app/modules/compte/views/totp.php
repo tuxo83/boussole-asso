@@ -45,5 +45,5 @@
 </form>
 <?php endif ?>
 </details>
-<script src="<?= e(url('/assets/vendor/qrcode/qrcode.js')) ?>?v=<?= e(BOUSSOLE_VERSION) ?>" defer></script>
-<script src="<?= e(url('/assets/js/cles.js')) ?>?v=<?= e(BOUSSOLE_VERSION) ?>" defer></script>
+<script src="<?= e(asset('/assets/vendor/qrcode/qrcode.js')) ?>" defer></script>
+<script src="<?= e(asset('/assets/js/cles.js')) ?>" defer></script>

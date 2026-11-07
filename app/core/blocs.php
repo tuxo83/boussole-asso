@@ -5,10 +5,11 @@ declare(strict_types=1);
 
 const BLOCS_MAX = 500;
 const BLOCS_DYNAMIQUES = [
-    'evenements' => 'Liste des événements publics',
+    'evenements' => 'Les 3 prochains événements',
     'espaces-publics' => 'Liste des espaces publics',
     'espace-membres' => 'Bouton « Espace membres »',
     'adhesion' => 'Bouton « Adhérer » (lien HelloAsso des réglages)',
+    'agenda' => 'Agenda complet (à venir et passés)',
 ];
 
 // Mise en forme en ligne : on reconstruit le HTML à partir d'une liste blanche, jamais de copie brute
@@ -238,32 +239,24 @@ function bloc_dynamique(string $bloc): string
 {
     switch ($bloc) {
         case 'evenements':
-            evenements_cloturer_echus();
-            // Agenda : les événements publics en entier ; ceux réservés aux membres en aperçu (titre et date),
-            // pour montrer la vie de l'association ; jamais ceux réservés à une équipe
-            $membre = current_member();
-            $evenements = array_values(array_filter(db_all('SELECT s.*, e.debut, e.lieu FROM espace s LEFT JOIN evenement e ON e.espace_id = s.id
-                WHERE s.type = "evenement" AND s.visibilite IN ("public", "adherents", "cotisants") AND s.archive = 0 AND (e.debut IS NULL OR e.debut >= CURDATE()) ORDER BY e.debut IS NULL, e.debut'),
-                fn($ev) => $ev['visibilite'] === 'public' || $membre === null || espace_peut_voir($membre, $ev) || $ev['visibilite'] === 'cotisants'));
-            if (!$evenements) {
+            // Accueil : les 3 prochains, et le lien vers l'agenda complet
+            $prochains = evenements_visibles(true);
+            if (!$prochains) {
                 return '';
             }
-            $acces = array_unique(array_column($evenements, 'visibilite'));
-            $legende = count($acces) > 1 ? '<p class="legende-acces">' . implode('', array_map(fn($a) => '<span class="acces-' . $a . '">' . ['public' => 'Public', 'adherents' => 'Membres', 'cotisants' => 'Membres à jour de cotisation'][$a] . '</span>', ['public', 'adherents', 'cotisants'])) . '</p>' : '';
-            $html = '<h2 class="titre-bloc">Prochains événements</h2>' . $legende . '<div class="cartes">';
-            foreach ($evenements as $ev) {
-                if ($ev['visibilite'] !== 'public' && $membre === null) {
-                    // Visiteur : rien de l'événement réservé (ni titre, ni lieu, ni lien vers sa page), seulement qu'il existe et sa date
-                    $html .= carte_evenement($ev, 'Événement des membres', '/connexion', '<p class="petit">' . c_icone('cadenas') . ' Connectez-vous pour le découvrir et vous inscrire.</p>', true);
-                } elseif ($ev['visibilite'] === 'cotisants' && !espace_peut_voir($membre, $ev)) {
-                    // Membre pas encore à jour : titre et date, avec l'invitation à cotiser
-                    $html .= carte_evenement($ev, $ev['titre'], '/compte', '<p class="petit">' . c_icone('cadenas') . ' Réglez votre cotisation pour le découvrir et vous inscrire.</p>', true);
-                } else {
-                    $html .= carte_evenement($ev, $ev['titre'], '/espace/' . $ev['slug'], ($ev['lieu'] ? '<p class="lieu">' . c_icone('lieu') . ' ' . e($ev['lieu']) . '</p>' : '')
-                        . '<p class="resume">' . e($ev['description']) . '</p>', false);
-                }
-            }
-            return $html . '</div>';
+            $agenda = db_value('SELECT slug FROM page WHERE publiee = 1 AND blocs LIKE ? LIMIT 1', ['%"bloc":"agenda"%']);
+            // Lien discret à côté du titre plutôt qu'un bouton de plus (Élise)
+            return '<div class="titre-avec-lien"><h2 class="titre-bloc">Prochains événements</h2>'
+                . ($agenda ? '<a href="' . e(url('/page/' . $agenda)) . '">Tout l\'agenda →</a>' : '') . '</div>' . cartes_evenements(array_slice($prochains, 0, 3));
+        case 'agenda':
+            // Agenda complet : tout ce qui vient, puis ce qui a eu lieu sur 12 mois
+            $prochains = evenements_visibles(true);
+            $passes = evenements_visibles(false);
+            // Visiteur seulement : comment s'inscrire (un membre connecté n'a pas besoin de ce rappel)
+            $aide = current_member() === null ? '<p class="agenda-visiteur">' . c_icone('cadenas') . ' Membres : <a href="' . e(url('/connexion')) . '">connectez-vous</a> pour voir les événements réservés et vous inscrire.'
+                . (setting('lien_adhesion', '') !== '' ? ' Pas encore membre ? <a href="' . e(url('/page/adherer')) . '">Adhérer</a>.' : '') . '</p>' : '';
+            return $aide . ($prochains ? '<h2 class="titre-bloc">À venir</h2>' . cartes_evenements($prochains) : '<p>Aucun événement annoncé pour l\'instant.</p>')
+                . ($passes ? '<h2 class="titre-bloc">Événements passés</h2>' . cartes_evenements($passes, true) : '');
         case 'espaces-publics':
             $espaces = db_all('SELECT * FROM espace WHERE visibilite = "public" AND archive = 0 AND type <> "evenement" ORDER BY titre');
             if (!$espaces) {
@@ -289,10 +282,37 @@ function carte_evenement(array $ev, string $titre, string $lien, string $contenu
     $mois = ['', 'janv.', 'févr.', 'mars', 'avril', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
     $date = $ev['debut'] !== null
         ? '<span class="jour">' . (int) date('j', strtotime($ev['debut'])) . '</span><span class="mois">' . $mois[(int) date('n', strtotime($ev['debut']))] . '</span>'
-        : '<span class="mois">date à venir</span>';
-    $bandeau = ['adherents' => 'Réservé aux membres', 'cotisants' => 'Membres à jour de cotisation'][$ev['visibilite']] ?? '';
-    return '<article class="carte carte-evenement acces-' . e($ev['visibilite']) . ($verrouille ? ' carte-reservee' : '') . '">'
-        . ($bandeau !== '' ? '<span class="ruban">' . $bandeau . '</span>' : '')
+        : '<span class="date-icone" title="Date à venir">' . c_icone('calendrier') . '</span>';
+    $bandeau = $ev['visibilite'] === 'public' ? 'Ouvert à tous' : 'Réservé aux membres';
+    return '<article class="carte carte-evenement acces-' . ($ev['visibilite'] === 'public' ? 'public' : 'membres') . ($verrouille ? ' carte-reservee' : '') . '">'
+        . '<span class="ruban">' . $bandeau . '</span>'
         . '<div class="evenement-tete"><span class="date-tuile">' . $date . '</span><h3><a href="' . e(url($lien)) . '">' . e($titre) . '</a></h3></div>'
         . ($ev['debut'] !== null ? '<p class="discret">' . e(evenement_date($ev['debut'])) . '</p>' : '') . $contenu . '</article>';
+}
+
+// Événements montrés dans l'agenda : publics et réservés aux membres (jamais ceux d'une équipe)
+function evenements_visibles(bool $avenir): array
+{
+    evenements_cloturer_echus();
+    $membre = current_member();
+    $lignes = db_all('SELECT s.*, e.debut, e.lieu FROM espace s LEFT JOIN evenement e ON e.espace_id = s.id
+        WHERE s.type = "evenement" AND s.visibilite IN ("public", "adherents", "cotisants") AND s.archive = 0 AND '
+        . ($avenir ? '(e.debut IS NULL OR e.debut >= CURDATE()) ORDER BY e.debut IS NULL, e.debut' : 'e.debut < CURDATE() AND e.debut >= CURDATE() - INTERVAL 12 MONTH ORDER BY e.debut DESC'));
+    return array_values(array_filter($lignes, fn($ev) => $ev['visibilite'] === 'public' || $membre === null || espace_peut_voir($membre, $ev)));
+}
+
+function cartes_evenements(array $evenements, bool $passes = false): string
+{
+    $membre = current_member();
+    $html = '<div class="cartes' . ($passes ? ' cartes-passees' : '') . '">';
+    foreach ($evenements as $ev) {
+        if ($ev['visibilite'] !== 'public' && $membre === null) {
+            // Visiteur : rien de l'événement réservé (ni titre, ni lieu, ni adresse de sa page), seulement qu'il existe et sa date
+            $html .= carte_evenement($ev, 'Événement des membres', '/evenement/' . (int) $ev['id'], '<p class="petit">' . c_icone('cadenas') . ($passes ? ' Réservé aux membres.' : ' Connectez-vous pour le découvrir et vous inscrire.') . '</p>', true);
+        } else {
+            $html .= carte_evenement($ev, $ev['titre'], '/espace/' . $ev['slug'], ($ev['lieu'] ? '<p class="lieu">' . c_icone('lieu') . ' ' . e($ev['lieu']) . '</p>' : '')
+                . '<p class="resume">' . e($ev['description']) . '</p>', false);
+        }
+    }
+    return $html . '</div>';
 }

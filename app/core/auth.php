@@ -187,3 +187,15 @@ function use_login_code(string $email, string $code): ?array
     db_query('UPDATE connexion_jeton SET utilise_le = NOW() WHERE id = ?', [$token['id']]);
     return $member;
 }
+
+// Invitation de bienvenue : comment se connecter (aucun mot de passe n'est envoyé ; le lien se demande sur le site)
+function membre_inviter(array $member, ?array $par): void
+{
+    $site = (string) setting('nom_association', 'Boussole');
+    mail_send($member['email'], "Bienvenue sur le site de $site", "Bonjour " . trim((string) $member['prenom']) . ",\n\n"
+        . "Votre compte membre est prêt sur le site de $site : agenda et inscriptions aux événements, votre cotisation, les espaces de travail.\n\n"
+        . "Pour vous connecter, ouvrez cette adresse et saisissez votre e-mail (" . $member['email'] . ") : vous recevrez aussitôt un lien de connexion, sans mot de passe à retenir.\n"
+        . absolute_url('/connexion?email=' . rawurlencode($member['email'])) . "\n\nÀ bientôt,\n$site\n");
+    db_query('UPDATE membre SET invite_le = NOW() WHERE id = ?', [$member['id']]);
+    journal(null, $par, 'Invitation envoyée : ' . membre_nom($member), $par === null ? 'web' : null);
+}

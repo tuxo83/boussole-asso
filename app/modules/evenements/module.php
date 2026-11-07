@@ -5,6 +5,13 @@ declare(strict_types=1);
 return [
     'ordre' => 35,
     'routes' => [
+        // Lien d'une carte « réservé aux membres » vue par un visiteur : connexion, puis retour sur l'événement
+        // (le numéro ne dit rien de l'événement, contrairement à son adresse)
+        ['GET', '/evenement/{id}', function (array $p) {
+            require_member();
+            $espace = db_one('SELECT * FROM espace WHERE id = ? AND type = "evenement"', [(int) $p['id']]);
+            redirect($espace !== null ? '/espace/' . $espace['slug'] : '/');
+        }],
         ['POST', '/espace/{slug}/evenement', function (array $p) {
             [$espace, $member] = evenement_action($p['slug'], 'gerer');
             $erreurs = evenement_enregistrer($espace, $member, $_POST);

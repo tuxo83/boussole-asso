@@ -1,6 +1,10 @@
 <?php $action = fn(string $chemin) => e(url('/espace/' . $espace['slug'] . $chemin)); ?>
 <p class="discret"><?= e(ESPACE_TYPES[$espace['type']]) ?><?php if ($parent): ?> · dans <a href="<?= e(url('/espace/' . $parent['slug'])) ?>"><?= e($parent['titre']) ?></a><?php endif ?></p>
 <h1><?= e($espace['titre']) ?></h1>
+<?php if ($espace['archive']): ?>
+<div class="alerte alerte-info" role="status">Cet espace est archivé : il n'apparaît plus dans les listes ni dans l'agenda.
+  <?php if ($peut_gerer): ?><form method="post" action="<?= $action('/archiver') ?>" class="en-ligne"><?= csrf_field() ?><button type="submit" class="lien-bouton">Désarchiver</button></form><?php endif ?></div>
+<?php endif ?>
 <p><?= c_meteo($espace['meteo']) ?> · <span class="discret"><?= e(ESPACE_VISIBILITES[$espace['visibilite']]) ?></span></p>
 
 <?php if ($alertes && $peut_contribuer): ?>
@@ -61,6 +65,7 @@
       <?= $jalon['fait'] ? ' <span class="discret">(fait)</span>' : ($depasse ? ' <strong>(dépassée)</strong>' : '') ?>
       <?php if ($peut_contribuer): ?>
       <form method="post" action="<?= $action('/jalons/' . (int) $jalon['id'] . '/fait') ?>" class="en-ligne"><?= csrf_field() ?><button type="submit" class="lien-bouton"><?= $jalon['fait'] ? 'rouvrir' : 'marquer fait' ?></button></form>
+      <form method="post" action="<?= $action('/jalons/' . (int) $jalon['id'] . '/supprimer') ?>" class="en-ligne"><?= csrf_field() ?><button type="submit" class="lien-bouton" data-confirmer="Supprimer la date « <?= e($jalon['libelle']) ?> » ?">supprimer</button></form>
       <?php endif ?>
     </li>
     <?php endforeach ?>
@@ -114,11 +119,23 @@
 <form method="post" action="<?= $action('/modifier') ?>" class="formulaire">
   <?= csrf_field() ?>
   <?= c_champ('titre', 'Titre', ['valeur' => $espace['titre'], 'requis' => true, 'max' => 200]) ?>
+  <?= c_champ('type', 'Type', ['type' => 'select', 'valeur' => $espace['type'], 'choix' => ESPACE_TYPES]) ?>
+  <?php if (is_admin($membre)): ?>
+  <?= c_champ('parent', 'Dans l\'espace', ['type' => 'select', 'valeur' => $parent['slug'] ?? '', 'choix' => ['' => '— Au premier niveau'] + $parents_possibles]) ?>
+  <?php endif ?>
   <?= c_champ('description', 'Description', ['type' => 'textarea', 'valeur' => $espace['description']]) ?>
   <?= c_champ('visibilite', 'Qui peut le voir ?', ['type' => 'select', 'valeur' => $espace['visibilite'], 'choix' => ESPACE_VISIBILITES]) ?>
   <button type="submit" class="bouton bouton-secondaire">Enregistrer</button>
 </form>
 </details>
+<div class="en-ligne separe">
+  <?php if (!$espace['archive']): ?>
+  <form method="post" action="<?= $action('/archiver') ?>"><?= csrf_field() ?><button type="submit" class="bouton bouton-secondaire" data-confirmer="Archiver « <?= e($espace['titre']) ?> » ? Il sortira des listes et de l'agenda, sans rien perdre.">Archiver l'espace</button></form>
+  <?php endif ?>
+  <?php if (is_admin($membre)): ?>
+  <form method="post" action="<?= $action('/supprimer') ?>"><?= csrf_field() ?><button type="submit" class="bouton bouton-danger" data-confirmer="Supprimer définitivement « <?= e($espace['titre']) ?> », ses dates, ses fichiers et ses inscriptions ? C'est irréversible.">Supprimer définitivement</button></form>
+  <?php endif ?>
+</div>
 <?php endif ?>
 
 <?php if ($journal): ?>

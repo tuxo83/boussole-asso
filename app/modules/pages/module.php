@@ -20,7 +20,7 @@ return [
                 'titre' => $page['titre'],
                 'page' => $page,
                 'chemin' => page_ancetres($page),
-                'enfants' => db_all('SELECT slug, titre, reservee_membres FROM page WHERE parent_id = ? AND publiee = 1' . (current_member() === null ? ' AND reservee_membres = 0' : '') . ' ORDER BY ordre, titre', [$page['id']]),
+                'enfants' => db_all('SELECT slug, titre, reservee_membres FROM page WHERE parent_id = ? AND publiee = 1 ORDER BY ordre, titre', [$page['id']]),
             ]);
         }],
         ['GET', '/admin/pages', function () {
@@ -82,6 +82,30 @@ return [
             redirect('/admin/pages');
         }],
         // Envoi d'image depuis l'éditeur : réponse JSON
+        // Médiathèque : revoir les images envoyées, voir où elles servent, supprimer celles qui ne servent plus
+        ['GET', '/admin/images', function () {
+            require_right('publications');
+            $images = db_all('SELECT i.*, m.prenom, m.nom, m.email FROM image i LEFT JOIN membre m ON m.id = i.depose_par ORDER BY i.depose_le DESC');
+            foreach ($images as &$image) {
+                $image['usages'] = image_usages($image['chemin']);
+            }
+            render('pages/admin-images', ['titre' => 'Images', 'images' => $images]);
+        }],
+        ['POST', '/admin/images/{id}/supprimer', function (array $p) {
+            $member = require_right('publications');
+            $image = db_one('SELECT * FROM image WHERE id = ?', [(int) $p['id']]);
+            if ($image !== null) {
+                if (image_usages($image['chemin'])) {
+                    flash('erreur', "Cette image sert encore : retirez-la d'abord des pages ou des réglages indiqués.");
+                    redirect('/admin/images');
+                }
+                @unlink(BOUSSOLE_ROOT . '/' . $image['chemin']);
+                db_query('DELETE FROM image WHERE id = ?', [$image['id']]);
+                journal(null, $member, 'Image supprimée : ' . $image['chemin']);
+                flash('succes', 'Image supprimée.');
+            }
+            redirect('/admin/images');
+        }],
         ['POST', '/admin/images', function () {
             $member = require_right('publications');
             [$chemin, $erreur] = image_enregistrer($_FILES['image'] ?? [], $member);
@@ -91,8 +115,9 @@ return [
     ],
     // Menu : pages publiées de premier niveau cochées « dans le menu »
     'menu' => fn() => array_map(
-        fn($page) => ['libelle' => $page['titre'], 'lien' => '/page/' . $page['slug'], 'ordre' => 60 + (int) $page['ordre'] / 1000],
-        db_all('SELECT slug, titre, ordre FROM page WHERE publiee = 1 AND dans_menu = 1 AND parent_id IS NULL AND est_accueil = 0' . (current_member() === null ? ' AND reservee_membres = 0' : '') . ' ORDER BY ordre, titre')
+        // Page réservée : visible dans le menu avec un cadenas pour un visiteur (le lien mène à la connexion, puis à la page)
+        fn($page) => ['libelle' => $page['titre'], 'lien' => '/page/' . $page['slug'], 'ordre' => 60 + (int) $page['ordre'] / 1000, 'verrou' => $page['reservee_membres'] && current_member() === null],
+        db_all('SELECT slug, titre, ordre, reservee_membres FROM page WHERE publiee = 1 AND dans_menu = 1 AND parent_id IS NULL AND est_accueil = 0 ORDER BY ordre, titre')
     ),
 ];
 
@@ -159,4 +184,14 @@ function page_arbre(array $pages, ?int $parent = null, int $niveau = 0): array
         }
     }
     return $out;
+}
+
+// Où une image sert-elle ? Pages (blocs, où « / » est échappé en JSON : on cherche le nom du fichier) et réglages
+function image_usages(string $chemin): array
+{
+    $usages = array_map(fn($p) => 'page « ' . $p['titre'] . ' »', db_all('SELECT titre FROM page WHERE blocs LIKE ? OR contenu LIKE ?', ['%' . basename($chemin) . '%', '%' . basename($chemin) . '%']));
+    foreach (db_all('SELECT cle FROM parametre WHERE valeur = ?', [$chemin]) as $r) {
+        $usages[] = $r['cle'] === 'bandeau_image' ? 'image du bandeau (réglages)' : 'réglage « ' . $r['cle'] . ' »';
+    }
+    return $usages;
 }

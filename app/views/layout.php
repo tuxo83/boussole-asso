@@ -10,8 +10,8 @@ $chemin = request_path();
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title><?= e(isset($titre) ? $titre . ' · ' . $nom : $nom) ?></title>
-<link rel="stylesheet" href="<?= e(url('/assets/css/boussole.css')) ?>?v=<?= e(BOUSSOLE_VERSION) ?>">
-<style>:root{--couleur-principale:<?= color_setting('couleur_principale', '#1f4e79') ?>;--couleur-accent:<?= color_setting('couleur_accent', '#c8102e') ?>}</style>
+<link rel="stylesheet" href="<?= e(asset('/assets/css/boussole.css')) ?>">
+<style>:root{--couleur-principale:<?= color_setting('couleur_principale', '#1f4e79') ?>;--couleur-accent:<?= color_setting('couleur_accent', '#c8102e') ?>;--acces-membres:<?= color_setting('couleur_membres', '#5a2d91') ?>}</style>
 <?php if (installation_done() && trim((string) setting('css_personnalise', '')) !== ''): ?>
 <link rel="stylesheet" href="<?= e(url('/theme.css')) ?>?v=<?= e(substr(md5((string) setting('css_personnalise')), 0, 8)) ?>">
 <?php endif ?>
@@ -31,7 +31,7 @@ $chemin = request_path();
     <nav aria-label="Menu principal" class="navigation">
       <ul class="menu">
         <?php foreach ($menu as $item): if (isset($item['zone'])) { continue; } ?>
-        <li><a href="<?= e(url($item['lien'])) ?>"<?= $item['lien'] === $chemin ? ' aria-current="page"' : '' ?>><?= e($item['libelle']) ?></a></li>
+        <li><a href="<?= e(url($item['lien'])) ?>"<?= $item['lien'] === $chemin ? ' aria-current="page"' : '' ?><?= !empty($item['verrou']) ? ' class="lien-verrou" title="Réservé aux membres"' : '' ?>><?= !empty($item['verrou']) ? c_icone('cadenas') : '' ?><?= e($item['libelle']) ?></a></li>
         <?php endforeach ?>
       </ul>
       <ul class="menu menu-membre">
@@ -43,6 +43,11 @@ $chemin = request_path();
     <?php endif ?>
   </div>
 </header>
+<?php $moi = installation_done() ? current_member() : null; ?>
+<?php if ($moi !== null && cotisation_a_jour($moi) === null): ?>
+<div class="bandeau-cotisation" role="note"><div class="conteneur">Votre cotisation <?= e(cotisation_periode_libelle(cotisation_periode())) ?> n'est pas encore enregistrée.
+  <?php $adhesion = (string) setting('lien_adhesion', ''); ?><a href="<?= e($adhesion !== '' ? $adhesion : url('/compte')) ?>"<?= $adhesion !== '' ? ' target="_blank" rel="noopener noreferrer"' : '' ?>>Régler ma cotisation</a></div></div>
+<?php endif ?>
 <main id="contenu" class="conteneur">
   <?php foreach (flash() as $message): ?><?= c_alerte($message['type'], (string) $message['message']) ?><?php endforeach ?>
   <?= $content ?>
@@ -62,6 +67,6 @@ $chemin = request_path();
     <p class="discret"><a href="<?= e(BOUSSOLE_DEPOT) ?>" rel="noopener"><?= e(t('pied.propulse')) ?></a>, logiciel libre</p>
   </div>
 </footer>
-<script src="<?= e(url('/assets/js/boussole.js')) ?>?v=<?= e(BOUSSOLE_VERSION) ?>" defer></script>
+<script src="<?= e(asset('/assets/js/boussole.js')) ?>" defer></script>
 </body>
 </html>
