@@ -49,7 +49,7 @@ return [
                 redirect('/compte/cles');
             }
             // Clé d'écriture pour un compte qui a des droits de gestion : double authentification exigée
-            if (($_POST['portee'] ?? '') === 'ecriture' && member_rights($member['id']) && count(facteurs()) < 2) {
+            if (in_array($_POST['portee'] ?? '', ['ecriture', 'admin'], true) && member_rights($member['id']) && count(facteurs()) < 2) {
                 $_SESSION['apres_connexion'] = '/compte/cles';
                 flash('info', 'Confirmez votre identité une seconde fois avant de créer une clé d\'écriture.');
                 redirect('/connexion/double-authentification');

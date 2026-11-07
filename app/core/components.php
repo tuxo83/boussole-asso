@@ -31,6 +31,12 @@ const ICONES = [
     'lieu' => '<path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/>',
     'personnes' => '<circle cx="9" cy="8.5" r="3.2"/><path d="M3 19.5a6 6 0 0 1 12 0"/><circle cx="17" cy="9.5" r="2.5"/><path d="M15.5 14.2a5 5 0 0 1 5.5 5.3"/>',
     'attention' => '<path d="M12 3.5 2.8 19.5h18.4z" stroke-linejoin="round"/><path d="M12 10v4.2"/><circle cx="12" cy="17" r=".6" fill="currentColor"/>',
+    'ecole' => '<path d="M3 9.5 12 5l9 4.5-9 4.5z" stroke-linejoin="round"/><path d="M7 11.5v4.2c0 1.3 2.2 2.8 5 2.8s5-1.5 5-2.8v-4.2M21 9.5v5"/>',
+    'bouclier' => '<path d="M12 3.2 19 6v5.5c0 4.4-3 8-7 9.3-4-1.3-7-4.9-7-9.3V6z" stroke-linejoin="round"/><path d="M9 12l2.2 2.2L15.5 10"/>',
+    'ancre' => '<circle cx="12" cy="5.5" r="2"/><path d="M12 7.5V20M8 11h8M5 14a7 7 0 0 0 14 0"/>',
+    'medaille' => '<circle cx="12" cy="14.5" r="5"/><path d="M8.5 10.5 6 3h4l2 4 2-4h4l-2.5 7.5"/><path d="m12 12.3 0.8 1.6 1.7 0.2 -1.2 1.2 0.3 1.7 -1.6 -0.8 -1.6 0.8 0.3 -1.7 -1.2 -1.2 1.7 -0.2z"/>',
+    'reseau' => '<circle cx="12" cy="5" r="2.2"/><circle cx="5" cy="18" r="2.2"/><circle cx="19" cy="18" r="2.2"/><path d="M11 7 6 16M13 7l5 9M7.2 18h9.6"/>',
+    'ecran' => '<rect x="3" y="4.5" width="18" height="12" rx="1.8"/><path d="M8.5 20h7M12 16.5V20"/><path d="m10 9 2 1.5L10 12" stroke-linejoin="round"/>',
     'horloge' => '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
 ];
 

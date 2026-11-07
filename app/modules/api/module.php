@@ -96,6 +96,12 @@ function mcp_outils(): array
             'inputSchema' => $objet(['email' => $texte('E-mail du membre'), 'paye_le' => $texte('Date du paiement AAAA-MM-JJ (par défaut aujourd\'hui)'), 'moyen' => ['type' => 'string', 'enum' => array_keys(COTISATION_MOYENS)]], ['email', 'moyen'])],
         ['name' => 'ajouter_image', 'description' => "Envoyer une image pour une page (JPEG, PNG, WebP, GIF ; 8 Mo maximum ; métadonnées supprimées). Renvoie le bloc image à placer dans les blocs d'une page (ajouter légende et texte alternatif).",
             'inputSchema' => $objet(['base64' => $texte('Contenu de l\'image en base64')], ['base64'])],
+        ['name' => 'regler_site', 'description' => "Réglages du site (clé « administration », administrateur) : nom, accroche (slogan), pied de page, lien d'adhésion HelloAsso, image du bandeau d'accueil (chemin renvoyé par ajouter_image).",
+            'inputSchema' => $objet(['nom_association' => $texte("Nom de l'association"), 'slogan' => $texte("Phrase d'accroche"), 'pied_de_page' => $texte('Pied de page'),
+                'lien_adhesion' => $texte("Lien d'adhésion HelloAsso (https)"), 'bandeau_image' => $texte('Chemin uploads/img-… de l\'image du bandeau'),
+                'site_en_construction' => ['type' => 'boolean', 'description' => "Bandeau « en construction » et code d'accès pour les visiteurs"]])],
+        ['name' => 'ajouter_membre', 'description' => 'Ajouter un membre (clé « administration », droit « membres »).',
+            'inputSchema' => $objet(['email' => $texte('E-mail'), 'prenom' => $texte('Prénom'), 'nom' => $texte('Nom')], ['email'])],
         ['name' => 'lister_membres', 'description' => 'Membres (droit « membres » nécessaire).', 'inputSchema' => $objet([])],
     ];
 }
@@ -121,6 +127,8 @@ function mcp_appeler(string $name, array $a): array
         'lister_cotisations' => api_cotisations(isset($a['periode']) ? (int) $a['periode'] : null),
         'marquer_cotisation' => api_cotisation_marquer((string) ($a['email'] ?? ''), (string) ($a['paye_le'] ?? ''), (string) ($a['moyen'] ?? '')),
         'ajouter_image' => api_image_ajouter((string) ($a['base64'] ?? '')),
+        'regler_site' => api_reglages($a),
+        'ajouter_membre' => api_membre_ajouter($a),
         'lister_membres' => api_membres(),
         default => throw new ApiErreur("Outil inconnu : $name", 404),
     };
