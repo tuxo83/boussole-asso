@@ -92,3 +92,12 @@ document.querySelectorAll('.zone-depot').forEach(function (zone) {
   ['dragenter', 'dragover'].forEach(function (t) { zone.addEventListener(t, function () { zone.classList.add('survol'); }); });
   ['dragleave', 'drop'].forEach(function (t) { zone.addEventListener(t, function () { zone.classList.remove('survol'); }); });
 });
+
+// « Cliquer pour modifier » : un clic n'importe où sur un bloc ouvre l'éditeur à cet endroit
+document.querySelectorAll('.en-edition .bloc-editable').forEach(function (bloc) {
+  bloc.addEventListener('click', function (event) {
+    if (event.target.closest('.bloc-crayon')) { return; }
+    event.preventDefault();
+    window.location.href = bloc.querySelector('.bloc-crayon').href;
+  });
+});

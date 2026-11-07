@@ -432,3 +432,13 @@ main.conteneur { padding-top: 2rem; padding-bottom: 4.5rem; }
 .meteo-options button { background: none; border: 0; padding: 0; min-height: var(--cible); cursor: pointer; font: inherit; border-radius: 999px; }
 .meteo-options button[aria-pressed="true"] .meteo { box-shadow: 0 0 0 2px currentColor; }
 .meteo-menu > summary::before, .meteo-menu > summary::after { display: none; content: none; }
+
+/* « Cliquer pour modifier » (pour qui peut publier) */
+.barre-edition { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; margin: 0 0 1rem; padding: .5rem .75rem; border: 1px dashed var(--bordure-forte); border-radius: var(--rayon-petit); background: var(--fond-doux); font-size: .92rem; }
+.barre-edition svg, .bloc-crayon svg { width: 1rem; height: 1rem; margin-right: .3rem; }
+.en-edition .bloc-editable { position: relative; cursor: pointer; border-radius: var(--rayon-petit); outline: 2px dashed transparent; outline-offset: 6px; transition: outline-color .12s, background .12s; }
+.en-edition .bloc-editable:hover, .en-edition .bloc-editable:focus-within { outline-color: var(--couleur-principale); background: color-mix(in srgb, var(--couleur-principale) 4%, transparent); }
+.bloc-crayon { position: absolute; z-index: 3; top: -.9rem; right: 0; display: none; align-items: center; padding: .2rem .6rem; border-radius: 999px; background: var(--couleur-principale); color: #fff; font-size: .8rem; font-weight: 600; text-decoration: none; }
+.en-edition .bloc-editable:hover > .bloc-crayon, .bloc-crayon:focus { display: inline-flex; }
+.contenu .bloc-editable > :is(p, ul, ol, blockquote, h1, h2, h3, h4) { max-width: 46rem; }
+.editeur .bloc-cible { background: color-mix(in srgb, var(--couleur-accent) 10%, transparent); border-radius: var(--rayon-petit); transition: background .6s; }
