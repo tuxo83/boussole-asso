@@ -121,6 +121,7 @@ function bloc_normaliser(array $block): ?array
         'boussole' => isset(BLOCS_DYNAMIQUES[$d['bloc'] ?? '']) ? ['type' => 'boussole', 'data' => ['bloc' => $d['bloc']]] : null,
         'cartes' => bloc_cartes($d),
         'chiffres' => bloc_chiffres($d),
+        'frise' => bloc_frise($d),
         'bouton' => bloc_bouton($d),
         default => null,
     };
@@ -152,6 +153,20 @@ function bloc_cartes(array $d): ?array
             'texte' => mb_substr(bloc_inline((string) ($item['texte'] ?? '')), 0, 600), 'lien' => bloc_lien_bouton($item['lien'] ?? '')];
     }
     return $items ? ['type' => 'cartes', 'data' => ['items' => $items]] : null;
+}
+
+// Frise chronologique : date courte (année, mois…) et texte d'une ou deux lignes, 20 étapes au plus
+function bloc_frise(array $d): ?array
+{
+    $items = [];
+    foreach (array_slice(is_array($d['items'] ?? null) ? $d['items'] : [], 0, 20) as $item) {
+        $date = bloc_texte_simple($item['date'] ?? '', 20);
+        $texte = mb_substr(bloc_inline((string) ($item['texte'] ?? '')), 0, 400);
+        if ($date !== '' && $texte !== '') {
+            $items[] = ['date' => $date, 'texte' => $texte];
+        }
+    }
+    return $items ? ['type' => 'frise', 'data' => ['items' => $items]] : null;
 }
 
 // Chiffres clés : valeur et libellé (6 au plus)
@@ -216,6 +231,7 @@ function blocs_rendre(?string $json): string
                 return '<article class="carte carte-action">' . ($c['icone'] !== '' ? '<span class="carte-icone">' . c_icone($c['icone']) . '</span>' : '')
                     . '<h3>' . $titre . '</h3>' . ($c['texte'] !== '' ? '<p>' . $c['texte'] . '</p>' : '') . '</article>';
             }, $d['items'])) . '</div>',
+            'frise' => '<ol class="chronologie">' . implode('', array_map(fn($f) => '<li><strong class="chrono-date">' . e($f['date']) . '</strong><p>' . $f['texte'] . '</p></li>', $d['items'])) . '</ol>',
             'chiffres' => '<div class="chiffres">' . implode('', array_map(fn($c) => '<div><strong>' . e($c['valeur']) . '</strong><span>' . e($c['libelle']) . '</span></div>', $d['items'])) . '</div>',
             'bouton' => ($lien = bloc_lien_resolu($d['lien'])) !== '' ? '<p class="bloc-bouton"><a class="bouton bouton-' . $d['style'] . '" href="' . e(str_starts_with($lien, '/') ? url($lien) : $lien) . '"' . (preg_match('#^https?://#', $lien) ? ' target="_blank" rel="noopener noreferrer"' : '') . '>' . e($d['texte']) . '</a></p>' : '',
             default => '',
