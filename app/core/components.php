@@ -37,6 +37,7 @@ const ICONES = [
     'medaille' => '<circle cx="12" cy="14.5" r="5"/><path d="M8.5 10.5 6 3h4l2 4 2-4h4l-2.5 7.5"/><path d="m12 12.3 0.8 1.6 1.7 0.2 -1.2 1.2 0.3 1.7 -1.6 -0.8 -1.6 0.8 0.3 -1.7 -1.2 -1.2 1.7 -0.2z"/>',
     'reseau' => '<circle cx="12" cy="5" r="2.2"/><circle cx="5" cy="18" r="2.2"/><circle cx="19" cy="18" r="2.2"/><path d="M11 7 6 16M13 7l5 9M7.2 18h9.6"/>',
     'ecran' => '<rect x="3" y="4.5" width="18" height="12" rx="1.8"/><path d="M8.5 20h7M12 16.5V20"/><path d="m10 9 2 1.5L10 12" stroke-linejoin="round"/>',
+    'cadenas' => '<rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/><circle cx="12" cy="15.5" r="1.2" fill="currentColor"/>',
     'horloge' => '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
 ];
 

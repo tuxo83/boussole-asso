@@ -252,8 +252,9 @@ function bloc_dynamique(string $bloc): string
             foreach ($evenements as $ev) {
                 // Visiteur : rien de l'événement réservé (ni titre, ni lieu, ni lien vers sa page), seulement qu'il existe et sa date
                 if ($ev['visibilite'] !== 'public' && $membre === null) {
-                    $html .= c_carte('Événement réservé aux membres', '<p><span class="badge badge-membres">Membres</span></p><p><strong>' . e(evenement_date($ev['debut'])) . '</strong></p>'
-                        . '<p class="petit">Connectez-vous pour le découvrir et vous inscrire.</p>', '/connexion');
+                    $html .= '<article class="carte carte-reservee"><span class="ruban">Réservé aux membres</span><span class="carte-icone">' . c_icone('cadenas') . '</span>'
+                        . '<h3><a href="' . e(url('/connexion')) . '">Événement des membres</a></h3><p><strong>' . e(evenement_date($ev['debut'])) . '</strong></p>'
+                        . '<p class="petit">Connectez-vous pour le découvrir et vous inscrire.</p></article>';
                     continue;
                 }
                 $html .= c_carte($ev['titre'], ($ev['visibilite'] !== 'public' ? '<p><span class="badge badge-membres">Réservé aux membres</span></p>' : '')

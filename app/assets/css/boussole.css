@@ -291,3 +291,11 @@ main.conteneur { padding-top: 2rem; padding-bottom: 4.5rem; }
 .sous-pages .cartes > .carte { max-width: 24rem; }
 /* Pages (hors accueil) : les boutons se centrent comme la colonne de lecture */
 .contenu:not(.contenu-accueil) > .bloc-bouton { display: block; text-align: center; margin: 1.5rem auto; }
+
+/* Événement réservé aux membres, vu par un visiteur : grisé, rayé, ruban en travers, cadenas */
+.carte-reservee { overflow: hidden; color: var(--texte-doux); border-style: dashed; border-color: var(--bordure-forte);
+  background: repeating-linear-gradient(135deg, #f7f8fa 0 12px, #eef0f4 12px 24px); }
+.carte-reservee h3 a { color: var(--texte-doux); }
+.carte-reservee .carte-icone { background: #e4e7ec; color: #5b6573; }
+.ruban { display: block; margin: -1.15rem -1.25rem 1rem; padding: .45rem 1.25rem; background: #5a2d91; color: #fff; font-size: .75rem; font-weight: 700;
+  letter-spacing: .05em; text-transform: uppercase; }
