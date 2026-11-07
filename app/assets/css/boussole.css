@@ -466,3 +466,18 @@ h1.en-place-vue .en-place-crayon svg { width: 1.4rem; height: 1.4rem; }
 .contenu:not(.contenu-accueil) > .bloc-editable > .bloc-bouton { display: block; margin: 1.5rem 0; }
 .contenu > .bloc-editable > .agenda-visiteur { max-width: none; }
 .contenu > .bloc-editable > .chronologie { max-width: 46rem; }
+
+/* Crayon flottant (remplace la barre d'édition) : hors du flux, il ne décale rien */
+.barre-edition { display: none; }
+.crayon-flottant { position: fixed; z-index: 20; right: 1.25rem; bottom: 1.25rem; display: flex; flex-direction: column; align-items: flex-end; gap: .4rem; }
+.crayon-flottant > summary { list-style: none; }
+.crayon-flottant > summary::-webkit-details-marker, .crayon-flottant > summary::before { display: none; content: none; }
+.crayon-bouton { display: inline-flex; align-items: center; justify-content: center; gap: .35rem; min-width: 2.9rem; min-height: 2.9rem; padding: 0 .9rem; border-radius: 999px; background: var(--couleur-principale); color: #fff; box-shadow: 0 4px 14px rgba(0, 0, 0, .18); cursor: pointer; font-weight: 600; font-size: .9rem; text-decoration: none; opacity: .75; transition: opacity .15s; }
+details.crayon-flottant > .crayon-bouton { padding: 0; }
+.crayon-bouton:hover, .crayon-bouton:focus-visible, .crayon-flottant[open] > .crayon-bouton, .crayon-flottant.actif .crayon-bouton { opacity: 1; color: #fff; }
+.crayon-bouton svg { width: 1.2rem; height: 1.2rem; }
+.crayon-menu { position: absolute; right: 0; bottom: calc(100% + .5rem); display: flex; flex-direction: column; min-width: 16rem; padding: .4rem; background: var(--fond); border: 1px solid var(--bordure); border-radius: var(--rayon); box-shadow: var(--ombre); }
+.crayon-menu a { padding: .55rem .7rem; border-radius: var(--rayon-petit); text-decoration: none; font-size: .93rem; }
+.crayon-menu a:hover { background: var(--fond-doux); }
+.crayon-lien { font-size: .85rem; background: var(--fond); padding: .2rem .6rem; border-radius: 999px; box-shadow: var(--ombre); }
+@media print { .crayon-flottant { display: none; } }
