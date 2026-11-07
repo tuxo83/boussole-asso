@@ -248,7 +248,7 @@ function bloc_dynamique(string $bloc): string
             if (!$evenements) {
                 return '';
             }
-            $html = '<h2 class="titre-bloc">Prochains événements</h2><div class="grille">';
+            $html = '<h2 class="titre-bloc">Prochains événements</h2><div class="cartes">';
             foreach ($evenements as $ev) {
                 // Visiteur : rien de l'événement réservé (ni titre, ni lieu, ni lien vers sa page), seulement qu'il existe et sa date
                 if ($ev['visibilite'] !== 'public' && $membre === null) {
