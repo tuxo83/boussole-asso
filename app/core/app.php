@@ -12,6 +12,11 @@ require __DIR__ . '/view.php';
 require __DIR__ . '/components.php';
 require __DIR__ . '/csrf.php';
 require __DIR__ . '/settings.php';
+require __DIR__ . '/secret.php';
+require __DIR__ . '/totp.php';
+require __DIR__ . '/mail.php';
+require __DIR__ . '/auth.php';
+require __DIR__ . '/humain.php';
 
 // Configuration écrite par install.sh ou par l'assistant d'installation ; null tant qu'elle n'existe pas
 function config(): ?array
@@ -115,4 +120,14 @@ function redirect(string $path): never
 {
     header('Location: ' . url($path), true, 303);
     exit;
+}
+
+// Adresse complète (dans les e-mails) : l'adresse publique réglée dans l'admin, sinon celle de la requête
+function absolute_url(string $path): string
+{
+    $base = rtrim((string) setting('adresse_site', ''), '/');
+    if ($base === '') {
+        $base = (is_https() ? 'https://' : 'http://') . ($_SERVER['HTTP_HOST'] ?? 'localhost') . base_path();
+    }
+    return $base . '/' . ltrim($path, '/');
 }

@@ -46,7 +46,15 @@ function c_champ(string $nom, string $libelle, array $options = []): string
         $attributs .= ' maxlength="' . (int) $options['max'] . '"';
     }
     $html = '<div class="champ"><label for="' . e($id) . '">' . e($libelle) . '</label>';
-    if ($type === 'textarea') {
+    if ($type === 'select') {
+        $html .= '<select' . $attributs . '>';
+        foreach ($options['choix'] ?? [] as $cle => $libelle_choix) {
+            $html .= '<option value="' . e((string) $cle) . '"' . ((string) $cle === $valeur ? ' selected' : '') . '>' . e($libelle_choix) . '</option>';
+        }
+        $html .= '</select>';
+    } elseif ($type === 'color') {
+        $html .= '<span class="couleur"><input type="color"' . $attributs . ' value="' . e($valeur) . '"><output>' . e($valeur) . '</output></span>';
+    } elseif ($type === 'textarea') {
         $html .= '<textarea' . $attributs . ' rows="' . (int) ($options['lignes'] ?? 6) . '">' . e($valeur) . '</textarea>';
     } else {
         $html .= '<input type="' . e($type) . '"' . $attributs . ' value="' . e($valeur) . '">';

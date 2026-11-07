@@ -45,5 +45,6 @@ $chemin = request_path();
     <p class="discret"><?= e(t('pied.propulse')) ?></p>
   </div>
 </footer>
+<script src="<?= e(url('/assets/js/boussole.js')) ?>?v=<?= e(BOUSSOLE_VERSION) ?>" defer></script>
 </body>
 </html>

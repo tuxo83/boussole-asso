@@ -59,3 +59,16 @@ th, td { text-align: left; padding: .5rem; border-bottom: 1px solid var(--bordur
 @media (max-width: 40rem) {
   .entete-interne { flex-direction: column; align-items: flex-start; }
 }
+
+/* Champ piège du captcha invisible : hors écran, ignoré par les lecteurs d'écran */
+.piege { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
+
+/* Relecture du panel, étape 2 */
+.bandeau { background: var(--fond-doux); border-radius: var(--rayon); padding: 2rem 1.5rem; margin: .5rem 0 1.5rem; }
+.bandeau h1 { font-size: clamp(1.8rem, 6vw, 2.6rem); margin-top: 0; }
+h1 { font-size: clamp(1.6rem, 5vw, 2.2rem); }
+.separe { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--bordure); }
+.champ select { font: inherit; padding: .5rem; border: 1px solid #8a94a3; border-radius: var(--rayon); background: #fff; }
+.couleur { display: flex; align-items: center; gap: .75rem; }
+.couleur input[type="color"] { width: 3.5rem; height: 2.5rem; padding: .15rem; border: 1px solid #8a94a3; border-radius: var(--rayon); }
+.couleur output { font-family: ui-monospace, monospace; }
