@@ -18,6 +18,8 @@ require __DIR__ . '/mail.php';
 require __DIR__ . '/auth.php';
 require __DIR__ . '/humain.php';
 require __DIR__ . '/espaces.php';
+require __DIR__ . '/blocs.php';
+require __DIR__ . '/images.php';
 
 // Configuration écrite par install.sh ou par l'assistant d'installation ; null tant qu'elle n'existe pas
 function config(): ?array
