@@ -153,6 +153,67 @@ function api_espace_modifier(string $slug, array $args): array
     return api_espace($slug);
 }
 
+// Créer un espace : l'administrateur partout ; le n°1 ou le n°2 d'un espace, en dessous de celui-ci
+function api_espace_creer(array $args): array
+{
+    api_ecriture();
+    $member = current_member();
+    $parent = !empty($args['parent']) ? espace_par_slug((string) $args['parent']) : null;
+    if (!is_admin($member) && ($parent === null || !espace_peut_gerer($member, $parent))) {
+        throw new ApiErreur("Créer un espace : administrateur, ou n°1 / n°2 de l'espace parent", 403);
+    }
+    $type = (string) ($args['type'] ?? '');
+    $titre = mb_substr(trim((string) ($args['titre'] ?? '')), 0, 200);
+    $visibilite = (string) ($args['visibilite'] ?? 'equipe');
+    if (!isset(ESPACE_TYPES[$type]) || $titre === '' || !isset(ESPACE_VISIBILITES[$visibilite])) {
+        throw new ApiErreur('Type (' . implode(', ', array_keys(ESPACE_TYPES)) . '), titre et visibilité (' . implode(', ', array_keys(ESPACE_VISIBILITES)) . ') obligatoires');
+    }
+    $meteo = in_array($args['meteo'] ?? '', ['soleil', 'eclaircie', 'pluie', 'orage'], true) ? $args['meteo'] : 'eclaircie';
+    $slug = slug_unique($titre);
+    db_query('INSERT INTO espace (type, titre, slug, description, visibilite, meteo, parent_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [$type, $titre, $slug, mb_substr(trim((string) ($args['description'] ?? '')), 0, 20000), $visibilite, $meteo, $parent['id'] ?? null]);
+    $id = (int) db()->lastInsertId();
+    if (!is_admin($member)) {
+        db_query('INSERT INTO espace_membre (espace_id, membre_id, niveau) VALUES (?, ?, "n1")', [$id, $member['id']]);
+    }
+    journal($id, $member, 'Espace créé');
+    return api_espace($slug);
+}
+
+// Ajouter quelqu'un à l'équipe d'un espace (ou changer son niveau) : n°1 / n°2 de l'espace ou administrateur
+function api_equipe_ajouter(string $slug, string $email, string $niveau, string $libelle): array
+{
+    api_ecriture();
+    $member = current_member();
+    $espace = espace_par_slug($slug);
+    if ($espace === null || !espace_peut_gerer($member, $espace)) {
+        throw new ApiErreur('Espace introuvable ou droits insuffisants', 403);
+    }
+    $personne = db_one('SELECT * FROM membre WHERE email = ? AND actif = 1', [mb_strtolower(trim($email))]);
+    if ($personne === null || !isset(ESPACE_NIVEAUX[$niveau])) {
+        throw new ApiErreur($personne === null ? 'Aucun membre actif avec cet e-mail' : 'Niveau : ' . implode(', ', array_keys(ESPACE_NIVEAUX)), $personne === null ? 404 : 400);
+    }
+    db_query('REPLACE INTO espace_membre (espace_id, membre_id, niveau, libelle) VALUES (?, ?, ?, ?)', [$espace['id'], $personne['id'], $niveau, mb_substr(trim($libelle), 0, 100)]);
+    journal($espace['id'], $member, 'Équipe : ' . membre_nom($personne) . ' (' . ESPACE_NIVEAUX[$niveau] . ')');
+    return api_espace($slug);
+}
+
+function api_evenement_regler(string $slug, array $args): array
+{
+    api_ecriture();
+    $member = current_member();
+    $espace = espace_par_slug($slug);
+    if ($espace === null || $espace['type'] !== 'evenement' || !espace_peut_gerer($member, $espace)) {
+        throw new ApiErreur('Événement introuvable ou droits insuffisants', 403);
+    }
+    $erreurs = evenement_enregistrer($espace, $member, $args);
+    if ($erreurs) {
+        throw new ApiErreur(implode(' ', $erreurs) . ' Dates au format AAAA-MM-JJ HH:MM.');
+    }
+    $ev = evenement_de($espace);
+    return ['slug' => $slug, 'debut' => $ev['debut'], 'lieu' => $ev['lieu'], 'mode' => $ev['mode'], 'places' => $ev['places'], 'cloture' => $ev['cloture'], 'reglement' => $ev['reglement']];
+}
+
 function api_date_cle_ajouter(string $slug, string $date, string $libelle): array
 {
     api_ecriture();

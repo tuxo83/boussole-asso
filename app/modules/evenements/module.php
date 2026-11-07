@@ -7,35 +7,11 @@ return [
     'routes' => [
         ['POST', '/espace/{slug}/evenement', function (array $p) {
             [$espace, $member] = evenement_action($p['slug'], 'gerer');
-            $ev = evenement_de($espace);
-            $mode = (string) ($_POST['mode'] ?? 'ouvert');
-            $places = (int) ($_POST['places'] ?? 0);
-            $debut = evenement_lire_date((string) ($_POST['debut'] ?? ''));
-            $cloture = evenement_lire_date((string) ($_POST['cloture'] ?? ''));
-            $erreurs = array_filter([
-                !isset(EVENEMENT_MODES[$mode]) ? 'Mode inconnu.' : null,
-                $mode !== 'ouvert' && $places < 1 ? 'Indiquez le nombre de places.' : null,
-                $mode !== 'ouvert' && $cloture === null ? 'Indiquez la date de clôture des vœux.' : null,
-                $cloture !== null && $debut !== null && $cloture > $debut ? "La clôture doit précéder l'événement." : null,
-                $ev['etat'] !== 'ouvert' && $mode !== $ev['mode'] ? "Les places sont déjà attribuées : le mode ne change plus." : null,
-            ]);
+            $erreurs = evenement_enregistrer($espace, $member, $_POST);
             if ($erreurs) {
                 flash('erreur', implode(' ', $erreurs));
                 redirect('/espace/' . $espace['slug']);
             }
-            // Lien de paiement HelloAsso : son dernier segment est le nom du formulaire de billetterie (lecture automatique des paiements)
-            $lien = trim((string) ($_POST['lien_paiement'] ?? ''));
-            $lien = preg_match('#^https://[^\s"<>]+$#', $lien) ? mb_substr($lien, 0, 300) : null;
-            $billetterie = $lien !== null && str_contains($lien, 'helloasso.com') ? strtolower(preg_replace('#^.*/#', '', rtrim(strtok($lien, '?'), '/'))) : null;
-            $reglement = isset(EVENEMENT_REGLEMENTS[$_POST['reglement'] ?? '']) ? $_POST['reglement'] : 'aucun';
-            db_query('INSERT INTO evenement (espace_id, debut, lieu, mode, places, cloture, helloasso_formulaire, reglement, lien_paiement, delai_jours, dernieres_jours) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ON DUPLICATE KEY UPDATE debut = VALUES(debut), lieu = VALUES(lieu), mode = VALUES(mode), places = VALUES(places), cloture = VALUES(cloture), helloasso_formulaire = VALUES(helloasso_formulaire),
-                reglement = VALUES(reglement), lien_paiement = VALUES(lien_paiement), delai_jours = VALUES(delai_jours), dernieres_jours = VALUES(dernieres_jours)',
-                [$espace['id'], $debut, mb_substr(trim((string) ($_POST['lieu'] ?? '')), 0, 200), $mode, $places ?: null, $cloture, $billetterie ? mb_substr($billetterie, 0, 150) : null,
-                    $reglement, $lien, max(1, min(60, (int) ($_POST['delai_jours'] ?? 5))), max(0, min(90, (int) ($_POST['dernieres_jours'] ?? 7)))]);
-            journal($espace['id'], $member, "Réglages de l'événement modifiés");
-            // Plus de places après attribution : la liste d'attente en profite
-            evenement_promouvoir(evenement_de($espace));
             flash('succes', 'Réglages enregistrés.');
             redirect('/espace/' . $espace['slug']);
         }],
@@ -126,11 +102,6 @@ function evenement_action(string $slug, string $droit): array
     return [$espace, $member];
 }
 
-function evenement_lire_date(string $value): ?string
-{
-    $date = DateTime::createFromFormat('Y-m-d\TH:i', $value);
-    return $date === false ? null : $date->format('Y-m-d H:i:00');
-}
 
 // Données de la partie « inscriptions » d'une fiche d'événement
 function evenement_vue(array $espace, ?array $member): array
