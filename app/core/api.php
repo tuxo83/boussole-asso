@@ -108,7 +108,7 @@ function api_administration(string $droit = 'admin'): array
     return $member;
 }
 
-const REGLAGES_API = ['nom_association' => 150, 'slogan' => 200, 'pied_de_page' => 500, 'lien_adhesion' => 300, 'bandeau_image' => 80,
+const REGLAGES_API = ['nom_association' => 150, 'slogan' => 200, 'pied_de_page' => 500, 'lien_adhesion' => 300, 'bandeau_image' => 80, 'logo' => 80,
     'couleur_principale' => 7, 'couleur_accent' => 7, 'couleur_membres' => 7];
 
 // Réglages du site (administration) : texte, lien d'adhésion (https), image du bandeau (image déjà envoyée)
@@ -123,7 +123,7 @@ function api_reglages(array $args): array
         $valide = match ($cle) {
             'nom_association' => $valeur !== '',
             'lien_adhesion' => $valeur === '' || preg_match('#^https://[^\s"<>]+$#', $valeur) === 1,
-            'bandeau_image' => $valeur === '' || preg_match('#^uploads/img-[a-f0-9]{24}\.(webp|png|jpg)$#', $valeur) === 1,
+            'bandeau_image', 'logo' => $valeur === '' || preg_match('#^uploads/img-[a-f0-9]{24}\.(webp|png|jpg)$#', $valeur) === 1,
             'couleur_principale', 'couleur_accent', 'couleur_membres' => preg_match('/^#[0-9a-fA-F]{6}$/', $valeur) === 1,
             default => true,
         };

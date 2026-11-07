@@ -191,7 +191,7 @@ function image_usages(string $chemin): array
 {
     $usages = array_map(fn($p) => 'page « ' . $p['titre'] . ' »', db_all('SELECT titre FROM page WHERE blocs LIKE ? OR contenu LIKE ?', ['%' . basename($chemin) . '%', '%' . basename($chemin) . '%']));
     foreach (db_all('SELECT cle FROM parametre WHERE valeur = ?', [$chemin]) as $r) {
-        $usages[] = $r['cle'] === 'bandeau_image' ? 'image du bandeau (réglages)' : 'réglage « ' . $r['cle'] . ' »';
+        $usages[] = ['bandeau_image' => 'image du bandeau (réglages)', 'logo' => 'logo du site (réglages)'][$r['cle']] ?? 'réglage « ' . $r['cle'] . ' »';
     }
     return $usages;
 }
