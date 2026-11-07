@@ -10,7 +10,7 @@ const EVENEMENT_MODES = [
 ];
 const INSCRIPTION_STATUTS = [
     'invite' => 'invité, réponse attendue', 'voeu' => 'vœu déposé', 'retenu' => 'inscrit',
-    'attente' => "liste d'attente", 'desiste' => 'désisté', 'decline' => 'invitation déclinée',
+    'attente' => "liste d'attente", 'desiste' => 'désisté', 'decline' => 'invitation déclinée', 'expire' => 'délai dépassé',
 ];
 const EVENEMENT_GROUPES = [
     0 => "Invités de l'organisateur",
@@ -22,7 +22,8 @@ const EVENEMENT_GROUPES = [
 function evenement_de(array $espace): array
 {
     return db_one('SELECT * FROM evenement WHERE espace_id = ?', [$espace['id']])
-        ?? ['espace_id' => $espace['id'], 'debut' => null, 'lieu' => '', 'mode' => 'ouvert', 'places' => null, 'cloture' => null, 'etat' => 'ouvert', 'helloasso_formulaire' => null];
+        ?? ['espace_id' => $espace['id'], 'debut' => null, 'lieu' => '', 'mode' => 'ouvert', 'places' => null, 'cloture' => null, 'etat' => 'ouvert', 'helloasso_formulaire' => null,
+            'reglement' => 'aucun', 'lien_paiement' => null, 'delai_jours' => 5, 'dernieres_jours' => 7, 'dernieres_annoncees' => 0];
 }
 
 function evenement_limite(array $ev): bool
@@ -113,11 +114,12 @@ function evenement_valider(array $ev, array $retenus, ?array $par): void
     $retenus = array_map('intval', $retenus);
     $rang = 0;
     foreach (db_all('SELECT i.*, m.email FROM inscription i JOIN membre m ON m.id = i.membre_id WHERE i.evenement_id = ? AND i.statut = "voeu" ORDER BY i.rang IS NULL, i.rang, i.cree_le', [$ev['espace_id']]) as $v) {
-        $pris = in_array((int) $v['membre_id'], $retenus, true);
-        db_query('UPDATE inscription SET statut = ?, rang = ? WHERE evenement_id = ? AND membre_id = ?', [$pris ? 'retenu' : 'attente', $pris ? null : ++$rang, $ev['espace_id'], $v['membre_id']]);
-        mail_send($v['email'], ($pris ? 'Inscription confirmée : ' : "Liste d'attente : ") . evenement_titre($ev), ($pris
-            ? "Votre place est confirmée. Si vous ne pouvez plus venir, libérez-la sur la page de l'événement."
-            : "Il n'y avait pas assez de places. Vous êtes n°$rang sur la liste d'attente : vous serez prévenu si une place se libère.") . "\n\n" . evenement_lien($ev));
+        if (in_array((int) $v['membre_id'], $retenus, true)) {
+            evenement_donner_place($ev, $v, evenement_exige($ev) ? 'Place réservée : ' : 'Inscription confirmée : ', 'Les places sont attribuées.');
+            continue;
+        }
+        db_query('UPDATE inscription SET statut = "attente", rang = ? WHERE evenement_id = ? AND membre_id = ?', [++$rang, $ev['espace_id'], $v['membre_id']]);
+        mail_send($v['email'], "Liste d'attente : " . evenement_titre($ev), "Il n'y avait pas assez de places. Vous êtes n°$rang sur la liste d'attente : vous serez prévenu si une place se libère.\n\n" . evenement_lien($ev));
     }
     db_query('UPDATE evenement SET etat = "attribuee" WHERE espace_id = ?', [$ev['espace_id']]);
     journal($ev['espace_id'], $par, 'Places attribuées (' . count($retenus) . ' inscrits)', $par === null ? 'web' : null);
@@ -129,13 +131,17 @@ function evenement_promouvoir(array $ev): void
     if ($ev['etat'] !== 'attribuee' || !evenement_limite($ev)) {
         return;
     }
+    // Dernières places : plus de tour par tour, la liste d'attente est prévenue en une fois
+    if (evenement_exige($ev) && evenement_phase($ev) === 'dernieres') {
+        evenement_annoncer_places($ev);
+        return;
+    }
     while ((int) db_value('SELECT COUNT(*) FROM inscription WHERE evenement_id = ? AND statut = "retenu"', [$ev['espace_id']]) < (int) $ev['places']) {
         $suivant = db_one('SELECT i.*, m.email FROM inscription i JOIN membre m ON m.id = i.membre_id WHERE i.evenement_id = ? AND i.statut = "attente" ORDER BY i.rang LIMIT 1', [$ev['espace_id']]);
         if ($suivant === null) {
             return;
         }
-        db_query('UPDATE inscription SET statut = "retenu", rang = NULL WHERE evenement_id = ? AND membre_id = ? AND statut = "attente"', [$ev['espace_id'], $suivant['membre_id']]);
-        mail_send($suivant['email'], 'Une place pour vous : ' . evenement_titre($ev), "Une place s'est libérée : vous êtes inscrit. Si vous ne pouvez pas venir, libérez-la sur la page de l'événement.\n\n" . evenement_lien($ev));
+        evenement_donner_place($ev, $suivant, 'Une place pour vous : ', "Une place s'est libérée.");
         journal($ev['espace_id'], null, "Place libérée : promotion depuis la liste d'attente", 'web');
     }
 }
@@ -148,7 +154,7 @@ function inscription_agir(array $ev, array $member, string $action): string
     $id = [$ev['espace_id'], $member['id']];
     switch ($action) {
         case 'voeu':
-            if ($statut !== null && !in_array($statut, ['desiste', 'decline'], true)) {
+            if ($statut !== null && !in_array($statut, ['desiste', 'decline', 'expire'], true)) {
                 return 'Vous êtes déjà sur la liste.';
             }
             if ($ev['debut'] !== null && date('Y-m-d H:i:s') >= $ev['debut']) {
@@ -188,6 +194,22 @@ function inscription_agir(array $ev, array $member, string $action): string
                 evenement_promouvoir($ev);
             }
             return 'C\'est noté, merci de nous avoir prévenus.';
+        case 'venue':
+            if ($statut !== 'retenu' || $ev['reglement'] !== 'confirmation') {
+                return 'Rien à confirmer.';
+            }
+            db_query('UPDATE inscription SET confirme_le = NOW(), echeance = NULL WHERE evenement_id = ? AND membre_id = ?', $id);
+            return 'Merci, votre venue est confirmée.';
+        case 'prendre':
+            if ($statut !== 'attente' || $ev['reglement'] !== 'confirmation' || evenement_phase($ev) !== 'dernieres') {
+                return 'Pas de place à prendre pour l\'instant.';
+            }
+            if (evenement_places_libres($ev) === 0) {
+                return 'Désolé, la dernière place vient d\'être prise.';
+            }
+            db_query('UPDATE inscription SET statut = "retenu", rang = NULL, confirme_le = NOW(), echeance = NULL WHERE evenement_id = ? AND membre_id = ? AND statut = "attente"', $id);
+            journal($ev['espace_id'], $member, 'Dernière place prise : ' . membre_nom($member));
+            return 'La place est à vous !';
         case 'confirmer':
         case 'decliner':
             if ($statut !== 'invite' || !evenement_accepte_voeux($ev)) {

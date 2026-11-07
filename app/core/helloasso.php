@@ -114,6 +114,8 @@ function helloasso_synchroniser(bool $force = false): int
             $n += db_query('UPDATE inscription i JOIN membre m ON m.id = i.membre_id SET i.paye_le = ? WHERE i.evenement_id = ? AND m.email = ? AND i.paye_le IS NULL', [$date, $ev['espace_id'], $email])->rowCount();
         }
     }
+    // Paiements de billetterie : les règles des événements s'appliquent aussitôt (place gardée, dernières places)
+    evenements_regler_tous();
     setting_set('helloasso_erreur', '');
     setting_set('helloasso_reussie', date('Y-m-d H:i:s'));
     return $n;

@@ -30,6 +30,7 @@
 ## Pages du site : éditeur à blocs
 - Éditeur à blocs open source (Editor.js, licence Apache 2.0), embarqué dans le dépôt : aucun CDN, aucun service externe.
 - Le contenu est enregistré en blocs (JSON) et affiché avec nos propres composants : jamais de HTML libre.
+- Événements payants ou à confirmer : phases nommées (Vœux, Paiement ou Confirmation, Dernières places, Événement) ; N jours par personne retenue, sinon la place passe au suivant ; à J-X, premier qui paie ou confirme ; rappel la veille de chaque échéance ; frise et temps restant affichés.
 - Site en construction : bandeau sur chaque page et code d'accès à 6 chiffres pour les visiteurs (essais limités, retenu 30 jours, changer le code ferme les anciens accès) ; connexion des membres, API, MCP et HelloAsso restent accessibles.
 - Déploiement : FTPS par `deploiement-ftp.sh` (configuration, images et fichiers du site jamais touchés ; mises à jour de la base à la première visite) ; tâches planifiées par le cron, ou à défaut par les visites (au plus toutes les 10 minutes).
 - HelloAsso (facultatif) : lecture des paiements par l'API officielle toutes les 10 minutes (réglable) et à chaque notification ; la notification ne fait que déclencher une lecture, son contenu n'est jamais cru ; seuls l'e-mail et la date sont gardés ; secret chiffré ; le CSV reste disponible.

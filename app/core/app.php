@@ -21,6 +21,7 @@ require __DIR__ . '/espaces.php';
 require __DIR__ . '/blocs.php';
 require __DIR__ . '/images.php';
 require __DIR__ . '/evenements.php';
+require __DIR__ . '/reglement.php';
 require __DIR__ . '/cotisations.php';
 require __DIR__ . '/rappels.php';
 require __DIR__ . '/helloasso.php';

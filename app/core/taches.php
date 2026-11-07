@@ -16,6 +16,8 @@ function taches_planifiees(): array
             cotisations_relances_auto() . ' relance(s) de cotisation',
             rappels_envoyer() . ' rappel(s) envoyé(s)',
             helloasso_synchroniser() . ' mise(s) à jour HelloAsso',
+            evenements_regler_tous() . ' événement(s) à règlement vérifié(s)',
+            evenements_rappels_echeance() . " rappel(s) d'échéance",
         ];
     } finally {
         db_value("SELECT RELEASE_LOCK('boussole_taches')");
