@@ -6,7 +6,7 @@ set -u
 source "$(dirname "$0")/commun.sh" "$@"
 reglages() { # reglages <actif 1 ou vide> <code>
     as admin; c "$U/admin/parametres" >/dev/null; local t; t=$(tok)
-    c --data-urlencode "_csrf=$t" -d "nom_association=Asso test&couleur_principale=%231f4e79&couleur_accent=%23c8102e&smtp_securite=starttls&rappel_jalons=14&rappel_jalons_evenements=60&rappel_participants=7&construction_active=$1&construction_code=$2" "$U/admin/parametres"
+    c --data-urlencode "_csrf=$t" -d "nom_association=Asso test&couleur_principale=%231f4e79&couleur_accent=%23c8102e&smtp_securite=starttls&mail_expediteur=noreply@example.org&rappel_jalons=14&rappel_jalons_evenements=60&rappel_participants=7&construction_active=$1&construction_code=$2" "$U/admin/parametres"
 }
 code_actuel() { sql "SELECT valeur FROM parametre WHERE cle = 'construction_code'"; }
 
@@ -58,4 +58,12 @@ check "agenda public : un événement réservé est signalé, sans titre ni dét
 check "agenda public : rien des événements d'équipe" "$(grep -c 'Réunion' "$B")" "0"
 as admin
 check "membre connecté : détail visible" "$(c "$U/page/agenda" >/dev/null; grep -c 'Détail confidentiel' "$B")" "1"
+# Niveau « membres à jour de cotisation »
+sql "INSERT INTO espace (type, titre, slug, description, visibilite) VALUES ('evenement', 'Dîner des cotisants', 'diner-cotisants', 'Menu et lieu du dîner', 'cotisants')"
+sql "INSERT INTO membre (email, prenom, actif) VALUES ('lea@example.org', 'Léa', 1)"
+login_link lea lea@example.org
+check "membre pas à jour : titre et invitation à cotiser, sans détail" "$(c "$U/page/agenda" >/dev/null; grep -c 'Dîner des cotisants' "$B") $(grep -c 'Réglez votre cotisation' "$B") $(grep -c 'Menu et lieu' "$B")" "1 1 0"
+check "membre pas à jour : la page de l'événement est refusée" "$(c "$U/espace/diner-cotisants" | cut -c1-3)" "403"
+sql "INSERT INTO cotisation (membre_id, periode, paye_le, moyen) SELECT id, $(date +%Y), CURDATE(), 'cheque' FROM membre WHERE email = 'lea@example.org'"
+check "membre à jour : détail visible" "$(c "$U/page/agenda" >/dev/null; grep -c 'Menu et lieu' "$B") $(c "$U/espace/diner-cotisants" | cut -c1-3)" "1 200"
 bilan
