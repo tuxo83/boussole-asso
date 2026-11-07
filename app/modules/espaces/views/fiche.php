@@ -11,9 +11,30 @@ $cible_alerte = fn(string $a) => match (true) {
     str_contains($a, 'date') => '#dates',
     default => null,
 };
+// Modifier sur place (n°1, n°2, administrateur) : on clique sur le titre, la description ou la visibilité ;
+// le formulaire renvoie les autres valeurs telles quelles
+$garder = function (array $sauf) use ($espace): string {
+    $html = csrf_field();
+    foreach (['titre', 'description', 'visibilite', 'type'] as $champ) {
+        if (!in_array($champ, $sauf, true)) {
+            $html .= '<input type="hidden" name="' . $champ . '" value="' . e($espace[$champ]) . '">';
+        }
+    }
+    return $html;
+};
+$boutons = '<span class="en-place-boutons"><button type="submit" class="bouton bouton-principal">Enregistrer</button> <button type="button" class="lien-bouton" data-en-place-annuler>Annuler</button></span>';
 ?>
 <p class="discret"><?= e(ESPACE_TYPES[$espace['type']]) ?><?php if ($parent): ?> · dans <a href="<?= e(url('/espace/' . $parent['slug'])) ?>"><?= e($parent['titre']) ?></a><?php endif ?></p>
+<?php if ($peut_gerer): ?>
+<div class="en-place" data-en-place>
+  <h1 class="en-place-vue" tabindex="0" role="button" aria-label="Modifier le titre : <?= e($espace['titre']) ?>"><?= e($espace['titre']) ?><span class="en-place-crayon"><?= c_icone('crayon') ?></span></h1>
+  <form method="post" action="<?= $action('/modifier') ?>" class="en-place-form"><?= $garder(['titre']) ?>
+    <label for="sur-place-titre" class="visuellement-cache">Titre</label>
+    <input id="sur-place-titre" name="titre" value="<?= e($espace['titre']) ?>" required maxlength="200" class="en-place-titre"><?= $boutons ?></form>
+</div>
+<?php else: ?>
 <h1><?= e($espace['titre']) ?></h1>
+<?php endif ?>
 <?php if ($espace['archive']): ?>
 <div class="alerte alerte-info" role="status">Cet espace est archivé : il n'apparaît plus dans les listes ni dans l'agenda.
   <?php if ($peut_gerer): ?><form method="post" action="<?= $action('/archiver') ?>" class="en-ligne"><?= csrf_field() ?><button type="submit" class="lien-bouton">Désarchiver</button></form><?php endif ?></div>
@@ -33,7 +54,16 @@ $cible_alerte = fn(string $a) => match (true) {
   <?php else: ?>
   <?= c_meteo($espace['meteo']) ?>
   <?php endif ?>
+  <?php if ($peut_gerer): ?>
+  <span class="en-place en-place-ligne" data-en-place>
+    <span class="en-place-vue discret" tabindex="0" role="button" aria-label="Modifier qui peut voir l'espace"><?= e(ESPACE_VISIBILITES[$espace['visibilite']]) ?><span class="en-place-crayon"><?= c_icone('crayon') ?></span></span>
+    <form method="post" action="<?= $action('/modifier') ?>" class="en-place-form"><?= $garder(['visibilite']) ?>
+      <label for="sur-place-visibilite" class="visuellement-cache">Qui peut voir l'espace ?</label>
+      <select id="sur-place-visibilite" name="visibilite"><?php foreach (ESPACE_VISIBILITES as $cle => $libelle): ?><option value="<?= e($cle) ?>"<?= $espace['visibilite'] === $cle ? ' selected' : '' ?>><?= e($libelle) ?></option><?php endforeach ?></select><?= $boutons ?></form>
+  </span>
+  <?php else: ?>
   <span class="discret"><?= e(ESPACE_VISIBILITES[$espace['visibilite']]) ?></span>
+  <?php endif ?>
 </div>
 
 <?php if ($alertes && $peut_contribuer): ?>
@@ -43,7 +73,16 @@ $cible_alerte = fn(string $a) => match (true) {
 </div>
 <?php endif ?>
 
+<?php if ($peut_gerer): ?>
+<div class="en-place en-place-texte" data-en-place>
+  <div class="en-place-vue" tabindex="0" role="button" aria-label="Modifier la description"><?= $espace['description'] !== '' ? c_texte($espace['description']) : '<p class="discret">Ajouter une description…</p>' ?><span class="en-place-crayon"><?= c_icone('crayon') ?></span></div>
+  <form method="post" action="<?= $action('/modifier') ?>" class="en-place-form"><?= $garder(['description']) ?>
+    <label for="sur-place-description" class="visuellement-cache">Description</label>
+    <textarea id="sur-place-description" name="description" rows="4"><?= e($espace['description']) ?></textarea><?= $boutons ?></form>
+</div>
+<?php else: ?>
 <?= c_texte($espace['description']) ?>
+<?php endif ?>
 <?php if ($espace['type'] === 'evenement'): ?><?= partial('evenements/bloc', evenement_vue($espace, $membre)) ?><?php endif ?>
 
 <?php // Une rubrique vide n'est montrée qu'à ceux qui peuvent la remplir ?>
@@ -149,16 +188,14 @@ $cible_alerte = fn(string $a) => match (true) {
 
 <?php if ($peut_gerer): ?>
 <details class="separe gerer-espace"><summary>Gérer l'espace</summary>
-  <h3>Modifier</h3>
+  <p class="petit">Le titre, la description et la visibilité se modifient d'un clic, directement en haut de la page.</p>
+  <h3>Type et emplacement</h3>
   <form method="post" action="<?= $action('/modifier') ?>" class="formulaire">
-    <?= csrf_field() ?>
-    <?= c_champ('titre', 'Titre', ['valeur' => $espace['titre'], 'requis' => true, 'max' => 200]) ?>
+    <?= $garder(['type']) ?>
     <?= c_champ('type', 'Type', ['type' => 'select', 'valeur' => $espace['type'], 'choix' => ESPACE_TYPES]) ?>
     <?php if (is_admin($membre)): ?>
     <?= c_champ('parent', 'Dans l\'espace', ['type' => 'select', 'valeur' => $parent['slug'] ?? '', 'choix' => ['' => '— Au premier niveau'] + $parents_possibles]) ?>
     <?php endif ?>
-    <?= c_champ('description', 'Description', ['type' => 'textarea', 'valeur' => $espace['description']]) ?>
-    <?= c_champ('visibilite', 'Qui peut le voir ?', ['type' => 'select', 'valeur' => $espace['visibilite'], 'choix' => ESPACE_VISIBILITES]) ?>
     <button type="submit" class="bouton bouton-secondaire">Enregistrer</button>
   </form>
   <p class="en-ligne">

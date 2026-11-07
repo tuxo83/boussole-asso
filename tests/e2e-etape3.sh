@@ -120,4 +120,7 @@ check "historique du compte : mot de passe choisi, connexions, échec de connexi
 check "historique : action d'un administrateur signée" "$(c "$U/admin/membres/$BOB/historique" >/dev/null; grep -c 'Mot de passe provisoire donné par un administrateur' "$B")" "1"
 check "mon historique dans Mon compte" "$(as bobmdp; c "$U/compte" >/dev/null; grep -c 'Mot de passe provisoire remplacé' "$B")" "1"
 as admin
+check "espace : titre, description et visibilité modifiables sur place par qui gère, pas par un visiteur" "$(c "$U/espace/journee-portes-ouvertes" >/dev/null; grep -c 'data-en-place>' "$B") $(as visiteur; c "$U/espace/journee-portes-ouvertes" >/dev/null; grep -c 'data-en-place>' "$B")" "3 0"
+as admin
+check "modifier seulement la description garde le titre et la visibilité" "$(post "$U/espace/journee-portes-ouvertes" "$U/espace/journee-portes-ouvertes/modifier" -d 'titre=Journée portes ouvertes&visibilite=public&type=evenement&description=Nouvelle description' >/dev/null; sql "SELECT CONCAT(titre, ' | ', visibilite, ' | ', description) FROM espace WHERE slug = 'journee-portes-ouvertes'")" "Journée portes ouvertes | public | Nouvelle description"
 bilan
