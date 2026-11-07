@@ -72,3 +72,12 @@ document.querySelectorAll('[data-filtre]').forEach(function (input) {
     items.forEach(function (li) { li.hidden = q !== '' && !li.dataset.texte.includes(q); });
   });
 });
+
+// Bouton « Copier » : copie le texte d'un bloc (configuration, clé)
+document.querySelectorAll('[data-copier]').forEach(function (button) {
+  button.addEventListener('click', function () {
+    const text = document.getElementById(button.dataset.copier).textContent;
+    const done = function () { const old = button.textContent; button.textContent = 'Copié ✓'; setTimeout(function () { button.textContent = old; }, 2000); };
+    if (navigator.clipboard) { navigator.clipboard.writeText(text).then(done); } else { window.prompt('Copiez :', text); }
+  });
+});
