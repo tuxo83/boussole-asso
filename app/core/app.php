@@ -21,6 +21,7 @@ require __DIR__ . '/espaces.php';
 require __DIR__ . '/blocs.php';
 require __DIR__ . '/images.php';
 require __DIR__ . '/evenements.php';
+require __DIR__ . '/cotisations.php';
 require __DIR__ . '/api.php';
 
 // Configuration écrite par install.sh ou par l'assistant d'installation ; null tant qu'elle n'existe pas

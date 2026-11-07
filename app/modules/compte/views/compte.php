@@ -5,6 +5,10 @@
   <?= c_carte('Double authentification', (int) $membre['totp_actif'] === 1
       ? '<p>Active.</p>'
       : '<p>Inactive' . (member_rights($membre['id']) ? ' : obligatoire pour la gestion.' : '.') . '</p>' . c_bouton('Activer', '/compte/double-authentification')) ?>
+  <?php $ma = cotisation_a_jour($membre); $depuis = cotisation_depuis($membre); ?>
+  <?= c_carte('Ma cotisation ' . cotisation_periode_libelle(cotisation_periode()), $ma
+      ? '<p><span class="badge badge-ok">À jour</span></p><p class="petit">Payée le ' . e(date('d/m/Y', strtotime($ma['paye_le']))) . ($depuis !== null && $depuis < cotisation_periode() ? ' · fidèle depuis ' . e(cotisation_periode_libelle($depuis)) : '') . '</p>'
+      : '<p><span class="badge">Pas encore à jour</span></p><p class="petit">Si vous avez déjà payé, l\'enregistrement peut prendre quelques jours.</p>') ?>
   <?php $inscriptions = evenement_mes_inscriptions($membre); ?>
   <?= c_carte('Mes inscriptions', $inscriptions ? '<ul class="liste">' . implode('', array_map(fn($i) => '<li><a href="' . e(url('/espace/' . $i['slug'])) . '">' . e($i['titre']) . '</a> <span class="discret">· ' . e(evenement_date($i['debut'])) . ' · ' . e(INSCRIPTION_STATUTS[$i['statut']]) . ($i['statut'] === 'attente' ? ' n°' . (int) $i['rang'] : '') . '</span></li>', $inscriptions)) . '</ul>' : '<p>Aucune inscription à venir.</p>') ?>
   <?= c_carte("Clés d'API (IA, MCP)", '<p>Donner à un outil ou à une IA un accès avec vos droits.</p>' . c_bouton('Mes clés', '/compte/cles', 'secondaire')) ?>
@@ -13,6 +17,9 @@
   <?php endif ?>
   <?php if (has_right($membre, 'publications')): ?>
   <?= c_carte('Pages du site', '<p>Créer et modifier les pages publiques.</p>' . c_bouton('Gérer les pages', '/admin/pages', 'secondaire')) ?>
+  <?php endif ?>
+  <?php if (has_right($membre, 'cotisations')): $effacer = cotisation_a_effacer(); ?>
+  <?= c_carte('Cotisations', '<p>Qui est à jour, chèques, import HelloAsso, relances.</p>' . ($effacer ? '<p>' . c_meteo(cotisation_meteo_effacement($effacer)) . ' ' . count($effacer) . ' donnée(s) à effacer</p>' : '') . c_bouton('Gérer les cotisations', '/cotisations', 'secondaire')) ?>
   <?php endif ?>
   <?php if (has_right($membre, 'membres')): ?>
   <?= c_carte('Membres', '<p>Ajouter, modifier, donner des droits.</p>' . c_bouton('Gérer les membres', '/admin/membres', 'secondaire')) ?>

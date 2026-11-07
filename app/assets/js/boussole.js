@@ -63,3 +63,12 @@ document.querySelectorAll('[data-confirmer]').forEach(function (button) {
   };
   form.addEventListener('change', update);
 })();
+
+// Filtre instantané d'une liste (nom, e-mail)
+document.querySelectorAll('[data-filtre]').forEach(function (input) {
+  const items = document.querySelectorAll(input.dataset.filtre + ' > li');
+  input.addEventListener('input', function () {
+    const q = input.value.trim().toLowerCase();
+    items.forEach(function (li) { li.hidden = q !== '' && !li.dataset.texte.includes(q); });
+  });
+});

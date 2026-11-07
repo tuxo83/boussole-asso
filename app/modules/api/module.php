@@ -18,6 +18,9 @@ return [
         ['POST', '/api/pages/{id}', fn(array $p) => api_repondre(fn() => api_page_ecrire((int) $p['id'], api_corps()))],
         ['GET', '/api/evenements', fn() => api_repondre(fn() => api_evenements())],
         ['POST', '/api/evenements/{slug}/inscription', fn(array $p) => api_repondre(fn() => api_inscription($p['slug'], (string) (api_corps()['action'] ?? 'voeu')))],
+        ['GET', '/api/cotisations/moi', fn() => api_repondre(fn() => api_ma_cotisation())],
+        ['GET', '/api/cotisations', fn() => api_repondre(fn() => api_cotisations(isset($_GET['periode']) ? (int) $_GET['periode'] : null))],
+        ['POST', '/api/cotisations', fn() => api_repondre(fn() => api_cotisation_marquer((string) (api_corps()['email'] ?? ''), (string) (api_corps()['paye_le'] ?? ''), (string) (api_corps()['moyen'] ?? '')))],
         ['GET', '/api/membres', fn() => api_repondre(fn() => api_membres())],
         ['POST', '/mcp', fn() => mcp_repondre()],
         // Transport HTTP du MCP sans flux serveur : GET n'est pas proposé
@@ -74,6 +77,10 @@ function mcp_outils(): array
         ['name' => 'lister_evenements', 'description' => "Événements à venir visibles, avec date, lieu, places et ma situation (vœu, inscrit, liste d'attente…).", 'inputSchema' => $objet([])],
         ['name' => 'inscription_evenement', 'description' => "M'inscrire à un événement ou me désister (pour moi seulement). Places limitées : on dépose un vœu, attribué à la clôture de façon équitable.",
             'inputSchema' => $objet(['slug' => $texte("Identifiant de l'événement"), 'action' => ['type' => 'string', 'enum' => ['voeu', 'retirer', 'desister', 'confirmer', 'decliner']]], ['slug', 'action'])],
+        ['name' => 'ma_cotisation', 'description' => 'Suis-je à jour de cotisation, depuis quand.', 'inputSchema' => $objet([])],
+        ['name' => 'lister_cotisations', 'description' => "Qui est à jour pour une période (droit « cotisations »). Période = année de début, par défaut l'actuelle.", 'inputSchema' => $objet(['periode' => ['type' => 'integer']])],
+        ['name' => 'marquer_cotisation', 'description' => 'Enregistrer une cotisation payée (droit « cotisations ») : e-mail du membre, date AAAA-MM-JJ, moyen. Aucun montant ni donnée bancaire.',
+            'inputSchema' => $objet(['email' => $texte('E-mail du membre'), 'paye_le' => $texte('Date du paiement AAAA-MM-JJ (par défaut aujourd\'hui)'), 'moyen' => ['type' => 'string', 'enum' => array_keys(COTISATION_MOYENS)]], ['email', 'moyen'])],
         ['name' => 'lister_membres', 'description' => 'Membres (droit « membres » nécessaire).', 'inputSchema' => $objet([])],
     ];
 }
@@ -92,6 +99,9 @@ function mcp_appeler(string $name, array $a): array
         'modifier_page' => api_page_ecrire((int) ($a['id'] ?? 0), $a),
         'lister_evenements' => api_evenements(),
         'inscription_evenement' => api_inscription((string) ($a['slug'] ?? ''), (string) ($a['action'] ?? '')),
+        'ma_cotisation' => api_ma_cotisation(),
+        'lister_cotisations' => api_cotisations(isset($a['periode']) ? (int) $a['periode'] : null),
+        'marquer_cotisation' => api_cotisation_marquer((string) ($a['email'] ?? ''), (string) ($a['paye_le'] ?? ''), (string) ($a['moyen'] ?? '')),
         'lister_membres' => api_membres(),
         default => throw new ApiErreur("Outil inconnu : $name", 404),
     };
@@ -130,7 +140,7 @@ function mcp_repondre(): void
                 'protocolVersion' => $version,
                 'capabilities' => ['tools' => (object) []],
                 'serverInfo' => ['name' => 'boussole', 'version' => BOUSSOLE_VERSION],
-                'instructions' => 'Outils pour ' . setting('nom_association', 'cette association') . ' : espaces, dates clés, pages du site, événements et inscriptions. Les droits sont ceux du membre propriétaire de la clé.',
+                'instructions' => 'Outils pour ' . setting('nom_association', 'cette association') . ' : espaces, dates clés, pages du site, événements et inscriptions, cotisations. Les droits sont ceux du membre propriétaire de la clé.',
             ]]);
             return;
         case 'ping':
