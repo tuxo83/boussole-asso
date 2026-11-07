@@ -47,8 +47,9 @@ with sync_playwright() as p:
     page.click('button[type=submit]')
     page.wait_for_url(SITE + '/compte')
     page.goto(SITE + '/compte/double-authentification')
+    page.click('summary:has-text("Application d\'authentification")')
     page.fill('#champ-code', totp(page.inner_text('code.cle').replace(' ', '')))
-    page.click('form.formulaire button[type=submit]')
+    page.click('form[action$="/compte/double-authentification"] button[type=submit]')
     page.wait_for_url(SITE + '/compte')
 
     # Création de pages : une page, puis une sous-page

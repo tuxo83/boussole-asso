@@ -15,7 +15,7 @@
 <form method="post" action="<?= e(url('/compte/cles')) ?>" class="formulaire">
   <?= csrf_field() ?>
   <?= c_champ('libelle', 'Nom de la clé', ['requis' => true, 'max' => 100, 'aide' => 'Ex. « Assistant IA, rédaction des pages ».']) ?>
-  <?= c_champ('portee', 'Portée', ['type' => 'select', 'valeur' => 'lecture', 'choix' => ['lecture' => 'Lecture seule', 'ecriture' => 'Lecture et écriture']]) ?>
+  <?= c_champ('portee', 'Portée', ['type' => 'select', 'valeur' => 'lecture', 'choix' => ['lecture' => 'Lecture seule', 'ecriture' => 'Lecture et écriture'] + (is_admin(current_member()) ? ['admin' => 'Administration (réglages du site, membres)'] : []), 'aide' => 'Toujours dans la limite de vos propres droits.']) ?>
   <?= c_champ('duree', 'Durée de validité', ['type' => 'select', 'valeur' => '30', 'choix' => CLE_DUREES]) ?>
   <button type="submit" class="bouton bouton-principal">Créer la clé</button>
 </form>
@@ -23,7 +23,7 @@
 <h2>Mes clés</h2>
 <ul class="liste">
   <?php foreach ($cles as $cle): $active = cle_active($cle); ?>
-  <li><strong><?= e($cle['libelle']) ?></strong> <span class="discret">· bsl_<?= e($cle['prefixe']) ?>_… · <?= $cle['portee'] === 'ecriture' ? 'lecture et écriture' : 'lecture seule' ?>
+  <li><strong><?= e($cle['libelle']) ?></strong> <span class="discret">· bsl_<?= e($cle['prefixe']) ?>_… · <?= ['lecture' => 'lecture seule', 'ecriture' => 'lecture et écriture', 'admin' => 'administration'][$cle['portee']] ?>
     · <?= e(cle_validite($cle)) ?>
     · <?= $cle['derniere_utilisation'] ? 'utilisée le ' . e(date('d/m/Y H:i', strtotime($cle['derniere_utilisation']))) : 'jamais utilisée' ?></span>
     <?php if ($active): ?>
