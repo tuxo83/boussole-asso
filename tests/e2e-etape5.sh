@@ -39,7 +39,7 @@ check "bob : liste des membres refusée" "$(api "$BOB_WRITE" "$U/api/membres")" 
 check "MCP initialize" "$(mcp "$BOB_WRITE" '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"test","version":"1"}}}')$(grep -o '"protocolVersion":"[^"]*"' "$B")" '200"protocolVersion":"2025-06-18"'
 check "MCP notification : 202 sans corps" "$(mcp "$BOB_WRITE" '{"jsonrpc":"2.0","method":"notifications/initialized"}')$(wc -c < "$B")" "2020"
 # shellcheck disable=SC2016
-check "MCP tools/list : 19 outils" "$(mcp "$BOB_WRITE" '{"jsonrpc":"2.0","id":2,"method":"tools/list"}'; php -r 'echo count(json_decode(file_get_contents($argv[1]),true)["result"]["tools"]);' "$B")" "20019"
+check "MCP tools/list : 21 outils" "$(mcp "$BOB_WRITE" '{"jsonrpc":"2.0","id":2,"method":"tools/list"}'; php -r 'echo count(json_decode(file_get_contents($argv[1]),true)["result"]["tools"]);' "$B")" "20021"
 check "MCP ajouter_date_cle" "$(mcp "$BOB_WRITE" '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"ajouter_date_cle","arguments":{"slug":"projet-bob","date":"2027-03-01","libelle":"Rendu"}}}'; grep -o '"isError":[a-z]*' "$B")" '200"isError":false'
 check "MCP : outil refusé → isError" "$(mcp "$BOB_WRITE" '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"lire_espace","arguments":{"slug":"comite-secret"}}}'; grep -o '"isError":[a-z]*' "$B")" '200"isError":true'
 check "MCP : méthode inconnue → -32601" "$(mcp "$BOB_WRITE" '{"jsonrpc":"2.0","id":5,"method":"resources/list"}'; grep -o '"code":-32601' "$B")" '200"code":-32601'
@@ -89,6 +89,19 @@ BOB2="bsl_0000aaaa_$(printf 'b%.0s' {1..40})"
 sql "INSERT INTO cle_api (membre_id, libelle, prefixe, empreinte, portee, expire_le) SELECT id, 'Bob 2', '0000aaaa', SHA2('$BOB2', 256), 'ecriture', NULL FROM membre WHERE email = 'bob@example.org'"
 check "MCP ajouter_equipe" "$(mcpcall "$ADMIN_KEY" ajouter_equipe '{"slug":"trinome-academique","email":"bob@example.org","niveau":"n1","libelle":"Responsable"}' | grep -o '"isError":[a-z]*')" '"isError":false'
 check "MCP creer_espace : un simple membre ne crée pas d'espace au premier niveau" "$(mcpcall "$BOB2" creer_espace '{"type":"projet","titre":"X"}' | grep -o '"isError":[a-z]*')" '"isError":true'
+
+# Clé « administration » : réglages du site et membres, dans la limite des droits
+post "$U/compte/cles" "$U/compte/cles" -d 'libelle=Admin&portee=admin&duree=7' >/dev/null; c "$U/compte/cles" >/dev/null
+ADM=$(grep -o 'bsl_[a-f0-9]\{8\}_[a-f0-9]\{40\}' "$B" | head -1)
+check "clé administration créée" "$(sql "SELECT portee FROM cle_api WHERE libelle = 'Admin'")" "admin"
+check "regler_site refusé avec une clé d'écriture" "$(mcpcall "$ADMIN_KEY" regler_site '{"slogan":"x"}' | grep -c 'administration')" "1"
+check "regler_site : accroche et lien d'adhésion" "$(mcpcall "$ADM" regler_site '{"slogan":"Esprit de défense","lien_adhesion":"https://www.helloasso.com/x"}' | grep -o '"isError":[a-z]*') $(sql "SELECT valeur FROM parametre WHERE cle = 'slogan'")" '"isError":false Esprit de défense'
+check "regler_site : lien non https refusé" "$(mcpcall "$ADM" regler_site '{"lien_adhesion":"javascript:alert(1)"}' | grep -o '"isError":[a-z]*')" '"isError":true'
+check "regler_site : mode construction activé, code fourni" "$(mcpcall "$ADM" regler_site '{"site_en_construction":true}' | grep -c 'code_acces[^,]*[0-9]\{6\}') $(sql "SELECT valeur FROM parametre WHERE cle = 'construction_active'")" "1 1"
+mcpcall "$ADM" regler_site '{"site_en_construction":false}' >/dev/null
+check "ajouter_membre" "$(mcpcall "$ADM" ajouter_membre '{"email":"carla@example.org","prenom":"Carla"}' | grep -o '"isError":[a-z]*') $(sql "SELECT COUNT(*) FROM membre WHERE email = 'carla@example.org'")" '"isError":false 1'
+sql "INSERT INTO cle_api (membre_id, libelle, prefixe, empreinte, portee, expire_le) SELECT id, 'Bob admin', '0000bbbb', SHA2('bsl_0000bbbb_$(printf 'c%.0s' {1..40})', 256), 'admin', NULL FROM membre WHERE email = 'bob@example.org'"
+check "clé administration d'un non-administrateur : refusée" "$(mcpcall "bsl_0000bbbb_$(printf 'c%.0s' {1..40})" regler_site '{"slogan":"pirate"}' | grep -o '"isError":[a-z]*') $(sql "SELECT valeur FROM parametre WHERE cle = 'slogan'")" '"isError":true Esprit de défense'
 
 # Clé sans limite de durée et configuration MCP prête à copier
 post "$U/compte/cles" "$U/compte/cles" -d 'libelle=Sans limite&portee=lecture&duree=0' >/dev/null; c "$U/compte/cles" >/dev/null

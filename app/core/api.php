@@ -60,7 +60,7 @@ function api_creer_cle(array $member, string $libelle, string $portee, int $jour
     $prefixe = bin2hex(random_bytes(4));
     $cle = 'bsl_' . $prefixe . '_' . bin2hex(random_bytes(20));
     db_query('INSERT INTO cle_api (membre_id, libelle, prefixe, empreinte, portee, expire_le) VALUES (?, ?, ?, ?, ?, IF(? = 0, NULL, CURDATE() + INTERVAL ? DAY))',
-        [$member['id'], $libelle, $prefixe, hash('sha256', $cle), $portee === 'ecriture' ? 'ecriture' : 'lecture', $jours, $jours]);
+        [$member['id'], $libelle, $prefixe, hash('sha256', $cle), $portee === 'admin' && !is_admin($member) ? 'ecriture' : (in_array($portee, ['ecriture', 'admin'], true) ? $portee : 'lecture'), $jours, $jours]);
     return $cle;
 }
 
@@ -90,9 +90,74 @@ function api_authentifier(): void
 
 function api_ecriture(): void
 {
-    if (api_portee() !== 'ecriture') {
+    if (!in_array(api_portee(), ['ecriture', 'admin'], true)) {
         throw new ApiErreur('Cette clé est en lecture seule', 403);
     }
+}
+
+// Réglages et membres : clé « administration » ET droit correspondant du propriétaire
+function api_administration(string $droit = 'admin'): array
+{
+    $member = current_member();
+    if (api_portee() !== 'admin') {
+        throw new ApiErreur('Il faut une clé d\'API de portée « administration »', 403);
+    }
+    if (!has_right($member, $droit)) {
+        throw new ApiErreur('Droit « ' . $droit . ' » nécessaire', 403);
+    }
+    return $member;
+}
+
+const REGLAGES_API = ['nom_association' => 150, 'slogan' => 200, 'pied_de_page' => 500, 'lien_adhesion' => 300, 'bandeau_image' => 80];
+
+// Réglages du site (administration) : texte, lien d'adhésion (https), image du bandeau (image déjà envoyée)
+function api_reglages(array $args): array
+{
+    $member = api_administration();
+    foreach (REGLAGES_API as $cle => $max) {
+        if (!array_key_exists($cle, $args)) {
+            continue;
+        }
+        $valeur = mb_substr(trim((string) $args[$cle]), 0, $max);
+        $valide = match ($cle) {
+            'nom_association' => $valeur !== '',
+            'lien_adhesion' => $valeur === '' || preg_match('#^https://[^\s"<>]+$#', $valeur) === 1,
+            'bandeau_image' => $valeur === '' || preg_match('#^uploads/img-[a-f0-9]{24}\.(webp|png|jpg)$#', $valeur) === 1,
+            default => true,
+        };
+        if (!$valide) {
+            throw new ApiErreur("Valeur refusée pour « $cle »");
+        }
+        setting_set($cle, $valeur);
+        journal(null, $member, "Réglage modifié : $cle");
+    }
+    // Site en construction : bandeau et code d'accès à 6 chiffres (tiré au hasard s'il n'y en a pas)
+    if (array_key_exists('site_en_construction', $args)) {
+        $actif = (bool) $args['site_en_construction'];
+        if ($actif && !preg_match('/^\d{6}$/', (string) setting('construction_code', ''))) {
+            setting_set('construction_code', sprintf('%06d', random_int(0, 999999)));
+        }
+        setting_set('construction_active', $actif ? '1' : '');
+        journal(null, $member, 'Site en construction : ' . ($actif ? 'activé' : 'désactivé'));
+    }
+    return array_combine(array_keys(REGLAGES_API), array_map(fn($c) => (string) setting($c, ''), array_keys(REGLAGES_API)))
+        + ['site_en_construction' => setting('construction_active', '') === '1', 'code_acces' => setting('construction_active', '') === '1' ? (string) setting('construction_code', '') : ''];
+}
+
+// Ajouter un membre (droit « membres », clé « administration »)
+function api_membre_ajouter(array $args): array
+{
+    $member = api_administration('membres');
+    $email = mb_strtolower(trim((string) ($args['email'] ?? '')));
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        throw new ApiErreur('E-mail invalide');
+    }
+    if (db_one('SELECT id FROM membre WHERE email = ?', [$email]) !== null) {
+        throw new ApiErreur('Ce membre existe déjà', 409);
+    }
+    db_query('INSERT INTO membre (email, prenom, nom, actif) VALUES (?, ?, ?, 1)', [$email, mb_substr(trim((string) ($args['prenom'] ?? '')), 0, 100), mb_substr(trim((string) ($args['nom'] ?? '')), 0, 100)]);
+    journal(null, $member, 'Membre ajouté : ' . $email);
+    return ['email' => $email, 'prenom' => (string) ($args['prenom'] ?? ''), 'nom' => (string) ($args['nom'] ?? '')];
 }
 
 // ---------- Actions (appelées par l'API JSON et par le MCP)

@@ -231,3 +231,27 @@ tr:last-child td { border-bottom: 0; }
 .qrcode svg { display: block; width: 100%; height: auto; }
 .config { background: #0f1720; color: #e6edf3; padding: 1rem; border-radius: var(--rayon-petit); overflow-x: auto; font-size: .85rem; line-height: 1.45; white-space: pre; }
 .alerte h3 { margin-top: 1.25rem; }
+
+/* Vitrine : bandeau photo, cartes, chiffres clés */
+.bandeau-photo { position: relative; overflow: hidden; color: #fff; min-height: clamp(18rem, 42vw, 26rem); display: flex; flex-direction: column; justify-content: flex-end;
+  background: linear-gradient(180deg, rgba(10, 25, 45, .05) 0%, rgba(10, 25, 45, .72) 100%), var(--bandeau) center / cover no-repeat; }
+.bandeau-photo h1 { color: #fff; text-shadow: 0 2px 12px rgba(0, 0, 0, .35); }
+.bandeau-photo .slogan { color: rgba(255, 255, 255, .92); max-width: 40rem; }
+.bandeau-photo .bouton-secondaire { background: rgba(255, 255, 255, .92); border-color: #fff; }
+.contenu-accueil { max-width: none; }
+.contenu-accueil > p, .contenu-accueil > ul, .contenu-accueil > blockquote { max-width: 46rem; }
+.contenu-accueil > h2 { font-size: clamp(1.4rem, 3vw, 1.75rem); margin-top: 2.75rem; }
+.contenu-accueil > h3 { font-size: 1.3rem; margin-top: 2.5rem; }
+.cartes { display: grid; grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr)); gap: 1rem; margin: 1.25rem 0; }
+.carte-action h3 { margin-top: .5rem; }
+.carte-icone { display: inline-flex; align-items: center; justify-content: center; width: 2.75rem; height: 2.75rem; border-radius: 50%; background: var(--principale-doux); color: var(--couleur-principale); }
+.carte-icone svg { width: 1.5rem; height: 1.5rem; }
+.carte-action p { color: var(--texte-doux); font-size: .95rem; }
+.chiffres { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: 1rem; margin: 2rem 0; padding: 1.5rem; border-radius: var(--rayon); background: var(--principale-doux); text-align: center; }
+.chiffres strong { display: block; font-size: clamp(1.8rem, 4vw, 2.4rem); color: var(--principale-fonce); letter-spacing: -.02em; line-height: 1.1; }
+.chiffres span { color: var(--texte-doux); font-size: .92rem; }
+.bloc-repetable { background: var(--fond-doux); border: 1px dashed var(--bordure-forte); border-radius: var(--rayon-petit); padding: .75rem; display: flex; flex-direction: column; gap: .4rem; }
+.bloc-repetable-titre { margin: 0; font-size: .85rem; color: var(--texte-doux); font-weight: 600; }
+.bloc-ligne { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; padding: .35rem 0; border-bottom: 1px solid var(--bordure); }
+.champ-bloc, .bloc-ligne select, .bloc-repetable select { font: inherit; min-height: 2.4rem; padding: .3rem .6rem; border: 1px solid var(--bordure-forte); border-radius: var(--rayon-petit); background: #fff; flex: 1 1 10rem; }
+.bloc-bouton { display: inline-block; margin: .5rem .5rem .5rem 0; }

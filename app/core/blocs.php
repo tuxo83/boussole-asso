@@ -118,8 +118,64 @@ function bloc_normaliser(array $block): ?array
             ? ['type' => 'image', 'data' => ['chemin' => $d['chemin'], 'legende' => mb_substr(trim(strip_tags((string) ($d['legende'] ?? ''))), 0, 300), 'alt' => mb_substr(trim(strip_tags((string) ($d['alt'] ?? ''))), 0, 300)]]
             : null,
         'boussole' => isset(BLOCS_DYNAMIQUES[$d['bloc'] ?? '']) ? ['type' => 'boussole', 'data' => ['bloc' => $d['bloc']]] : null,
+        'cartes' => bloc_cartes($d),
+        'chiffres' => bloc_chiffres($d),
+        'bouton' => bloc_bouton($d),
         default => null,
     };
+}
+
+// Texte simple (sans mise en forme) d'un champ
+function bloc_texte_simple(mixed $value, int $max): string
+{
+    return mb_substr(trim(html_entity_decode(strip_tags((string) $value), ENT_QUOTES | ENT_HTML5, 'UTF-8')), 0, $max);
+}
+
+// Lien d'un bouton ou d'une carte : adresse sûre, ou « adhesion » (le lien d'adhésion des réglages)
+function bloc_lien_bouton(mixed $value): string
+{
+    $lien = trim((string) $value);
+    return $lien === 'adhesion' ? 'adhesion' : (bloc_lien_sur(mb_substr($lien, 0, 300)) ?? '');
+}
+
+// Cartes : icône, titre, texte court, lien (12 au plus)
+function bloc_cartes(array $d): ?array
+{
+    $items = [];
+    foreach (array_slice(is_array($d['items'] ?? null) ? $d['items'] : [], 0, 12) as $item) {
+        $titre = bloc_texte_simple($item['titre'] ?? '', 80);
+        if ($titre === '') {
+            continue;
+        }
+        $items[] = ['icone' => isset(ICONES[$item['icone'] ?? '']) ? $item['icone'] : '', 'titre' => $titre,
+            'texte' => mb_substr(bloc_inline((string) ($item['texte'] ?? '')), 0, 600), 'lien' => bloc_lien_bouton($item['lien'] ?? '')];
+    }
+    return $items ? ['type' => 'cartes', 'data' => ['items' => $items]] : null;
+}
+
+// Chiffres clés : valeur et libellé (6 au plus)
+function bloc_chiffres(array $d): ?array
+{
+    $items = [];
+    foreach (array_slice(is_array($d['items'] ?? null) ? $d['items'] : [], 0, 6) as $item) {
+        $valeur = bloc_texte_simple($item['valeur'] ?? '', 12);
+        if ($valeur !== '') {
+            $items[] = ['valeur' => $valeur, 'libelle' => bloc_texte_simple($item['libelle'] ?? '', 80)];
+        }
+    }
+    return $items ? ['type' => 'chiffres', 'data' => ['items' => $items]] : null;
+}
+
+function bloc_bouton(array $d): ?array
+{
+    $texte = bloc_texte_simple($d['texte'] ?? '', 60);
+    $lien = bloc_lien_bouton($d['lien'] ?? '');
+    return $texte !== '' && $lien !== '' ? ['type' => 'bouton', 'data' => ['texte' => $texte, 'lien' => $lien, 'style' => ($d['style'] ?? '') === 'secondaire' ? 'secondaire' : 'principal']] : null;
+}
+
+function bloc_lien_resolu(string $lien): string
+{
+    return $lien === 'adhesion' ? (string) setting('lien_adhesion', '') : $lien;
 }
 
 // Listes : éléments texte ou objets { content, items } (listes imbriquées), 3 niveaux au plus
@@ -153,6 +209,14 @@ function blocs_rendre(?string $json): string
             'image' => '<figure><img src="' . e(url($d['chemin'])) . '" alt="' . e($d['alt']) . '" loading="lazy">'
                 . ($d['legende'] !== '' ? '<figcaption>' . e($d['legende']) . '</figcaption>' : '') . '</figure>',
             'boussole' => bloc_dynamique($d['bloc']),
+            'cartes' => '<div class="cartes">' . implode('', array_map(function ($c) {
+                $lien = bloc_lien_resolu($c['lien']);
+                $titre = $lien !== '' ? '<a href="' . e(str_starts_with($lien, '/') ? url($lien) : $lien) . '">' . e($c['titre']) . '</a>' : e($c['titre']);
+                return '<article class="carte carte-action">' . ($c['icone'] !== '' ? '<span class="carte-icone">' . c_icone($c['icone']) . '</span>' : '')
+                    . '<h3>' . $titre . '</h3>' . ($c['texte'] !== '' ? '<p>' . $c['texte'] . '</p>' : '') . '</article>';
+            }, $d['items'])) . '</div>',
+            'chiffres' => '<div class="chiffres">' . implode('', array_map(fn($c) => '<div><strong>' . e($c['valeur']) . '</strong><span>' . e($c['libelle']) . '</span></div>', $d['items'])) . '</div>',
+            'bouton' => ($lien = bloc_lien_resolu($d['lien'])) !== '' ? '<p class="bloc-bouton"><a class="bouton bouton-' . $d['style'] . '" href="' . e(str_starts_with($lien, '/') ? url($lien) : $lien) . '"' . (str_starts_with($lien, '/') ? '' : ' rel="noopener noreferrer"') . '>' . e($d['texte']) . '</a></p>' : '',
             default => '',
         };
     }
@@ -178,9 +242,9 @@ function bloc_dynamique(string $bloc): string
             $evenements = db_all('SELECT s.*, e.debut, e.lieu FROM espace s LEFT JOIN evenement e ON e.espace_id = s.id
                 WHERE s.type = "evenement" AND s.visibilite = "public" AND s.archive = 0 AND (e.debut IS NULL OR e.debut >= CURDATE()) ORDER BY e.debut IS NULL, e.debut');
             if (!$evenements) {
-                return '<p class="discret">Aucun événement à venir pour l\'instant.</p>';
+                return '';
             }
-            $html = '<div class="grille">';
+            $html = '<h2 class="titre-bloc">Prochains événements</h2><div class="grille">';
             foreach ($evenements as $ev) {
                 $html .= c_carte($ev['titre'], '<p><strong>' . e(evenement_date($ev['debut'])) . '</strong>' . ($ev['lieu'] ? ' · ' . e($ev['lieu']) : '') . '</p><p>' . e(mb_strimwidth($ev['description'], 0, 160, '…')) . '</p>', '/espace/' . $ev['slug']);
             }
