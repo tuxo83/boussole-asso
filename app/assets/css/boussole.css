@@ -365,3 +365,36 @@ main.conteneur { padding-top: 2rem; padding-bottom: 4.5rem; }
 .message-contact h2 { font-size: 1.1rem; margin: .25rem 0; }
 .message-nouveau { border-left: 4px solid var(--couleur-accent); }
 .message-texte { white-space: normal; overflow-wrap: anywhere; }
+
+/* Éditeur : les blocs s'éditent sous la forme qu'ils ont sur le site (cartes, chiffres, frise), champs sans cadre */
+.bloc-repetable .champ-bloc { border: 1px solid transparent; background: transparent; resize: vertical; }
+.bloc-repetable .champ-bloc:hover { border-color: var(--bordure); }
+.bloc-repetable .champ-bloc:focus { border-color: var(--couleur-principale); background: #fff; outline: none; }
+.bloc-retirer { align-self: flex-end; font-size: .8rem; }
+/* Cartes : une grille de cartes */
+.edition-cartes { background: transparent; }
+.edition-cartes .bloc-repetable-liste { display: grid; grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr)); gap: .75rem; }
+.edition-cartes .bloc-ligne { flex-direction: column; align-items: stretch; flex-wrap: nowrap; gap: .2rem; padding: .75rem; border: 1px solid var(--bordure); border-radius: var(--rayon); background: var(--fond); box-shadow: var(--ombre); }
+.edition-cartes .champ-icone { flex: none; align-self: flex-start; min-height: 2rem; font-size: .85rem; color: var(--texte-doux); }
+.edition-cartes .champ-titre { font-weight: 700; font-size: 1.02rem; color: var(--texte); }
+.edition-cartes .champ-texte { color: var(--texte-doux); font-size: .93rem; line-height: 1.5; }
+.edition-cartes .champ-lien { font-size: .82rem; color: var(--couleur-principale); }
+/* Chiffres clés : le bandeau des chiffres */
+.edition-chiffres { background: var(--fond-doux); border-style: solid; border-color: transparent; }
+.edition-chiffres .bloc-repetable-liste { display: grid; grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr)); gap: .5rem; }
+.edition-chiffres .bloc-ligne { flex-direction: column; align-items: stretch; border: 0; gap: 0; }
+.edition-chiffres .champ-valeur { text-align: center; font-size: 1.9rem; font-weight: 800; color: var(--couleur-principale); flex: none; }
+.edition-chiffres .champ-libelle { text-align: center; font-size: .9rem; color: var(--texte-doux); flex: none; }
+.edition-chiffres .bloc-retirer { align-self: center; }
+/* Frise : année à droite, trait et pastille, texte */
+.edition-frise { background: transparent; }
+.edition-frise .bloc-ligne { display: grid; grid-template-columns: 4.5rem 1fr auto; column-gap: 1.5rem; position: relative; border: 0; padding: 0 0 .9rem; align-items: start; }
+.edition-frise .bloc-ligne::before { content: ""; position: absolute; left: 5.25rem; top: .9rem; bottom: -.1rem; width: 2px; margin-left: -1px; background: var(--bordure); }
+.edition-frise .bloc-ligne:last-child::before { display: none; }
+.edition-frise .bloc-ligne::after { content: ""; position: absolute; left: 5.25rem; top: .85rem; width: .75rem; height: .75rem; margin-left: -.375rem; border-radius: 50%; background: var(--couleur-principale); }
+.edition-frise .champ-date { text-align: right; font-weight: 700; color: var(--couleur-principale); min-width: 0; }
+.edition-frise .champ-texte { min-width: 0; line-height: 1.5; }
+.edition-frise .bloc-retirer { align-self: start; margin-top: .4rem; }
+.edition-cartes .champ-bloc, .edition-cartes .champ-icone, .edition-frise .champ-bloc { flex: none; min-height: 0; }
+.edition-cartes .champ-texte { min-height: 2.6rem; overflow: hidden; resize: none; }
+.edition-frise .champ-texte { min-height: 2.6rem; overflow: hidden; resize: none; }
