@@ -156,6 +156,9 @@ tr:last-child td { border-bottom: 0; }
 /* Pages : texte en colonne lisible, cartes et chiffres sur toute la largeur */
 .contenu { max-width: none; }
 .contenu > p, .contenu > ul, .contenu > ol, .contenu > blockquote, .contenu > h1, .contenu > h2, .contenu > h3, .contenu > h4 { max-width: 46rem; }
+/* Pages (hors accueil) : la colonne de lecture est centrée, le fil d'Ariane s'aligne dessus */
+.contenu:not(.contenu-accueil) > :is(p, ul, ol, blockquote, h1, h2, h3, h4) { margin-left: auto; margin-right: auto; }
+main > .ariane, main > .sous-pages > h2 { max-width: 46rem; margin-left: auto; margin-right: auto; }
 .contenu figure { margin: 1.75rem 0; }
 .contenu img { max-width: 100%; height: auto; border-radius: var(--rayon); }
 .contenu figcaption { color: var(--texte-doux); font-size: .92rem; margin-top: .4rem; }
@@ -277,3 +280,4 @@ main h1 { margin-top: 1rem; }
 .pied-grille { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 1rem 2rem; margin-bottom: 1rem; }
 .pied-nom { font-weight: 700; color: var(--texte); margin: 0 0 .25rem; }
 .pied-liens { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: .25rem 1.25rem; }
+.sous-pages .cartes { grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); }
