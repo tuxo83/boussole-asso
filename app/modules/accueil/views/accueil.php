@@ -7,8 +7,9 @@
     <?= c_bouton(current_member() !== null ? 'Mon espace' : 'Espace membres', current_member() !== null ? '/compte' : '/connexion', $adhesion !== '' && current_member() === null ? 'secondaire' : 'principal') ?>
   </p>
 </section>
-<?php if ($page): ?>
-<div class="contenu contenu-accueil"><?= $page['blocs'] !== null ? blocs_rendre($page['blocs']) : c_texte($page['contenu']) ?></div>
+<?php if ($page): $peut_publier = current_member() !== null && has_right(current_member(), 'publications'); $edition = page_mode_edition(); ?>
+<?php if ($peut_publier): ?><?= page_barre_edition($page, $edition) ?><?php endif ?>
+<div class="contenu contenu-accueil<?= $edition ? ' en-edition' : '' ?>"><?= $page['blocs'] !== null ? blocs_rendre($page['blocs'], $edition ? url('/admin/pages/' . (int) $page['id']) : null) : c_texte($page['contenu']) ?></div>
 <?php else: ?>
 <?= c_texte($presentation) ?>
 <?php endif ?>
