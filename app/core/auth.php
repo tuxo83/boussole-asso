@@ -107,8 +107,11 @@ function login_first_step(array $member, string $facteur): void
 
 function login_complete(array $member): never
 {
+    $deja = !empty($_SESSION['connecte']);
     $_SESSION['connecte'] = true;
     unset($_SESSION['rappel_cotisation_masque']); // le rappel de cotisation masqué revient à chaque connexion
+    $preuves = ['mdp' => 'mot de passe', 'email' => 'e-mail', 'code' => 'code e-mail', 'totp' => 'application', 'cle' => 'clé de sécurité'];
+    journal_compte((int) $member['id'], $member, ($deja ? 'Seconde vérification' : 'Connexion') . ' (' . implode(' + ', array_map(fn($f) => $preuves[$f] ?? $f, facteurs())) . ')');
     db_query('UPDATE membre SET derniere_connexion = NOW() WHERE id = ?', [$member['id']]);
     // Page demandée avant la connexion, sinon l'arrivée réglée selon la cotisation (par défaut « Mon compte »)
     $next = $_SESSION['apres_connexion'] ?? connexion_arrivee($member);

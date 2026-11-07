@@ -68,10 +68,21 @@ function espace_alertes(array $espace): array
 }
 
 // Journal de l'espace (qui, quand, quoi) ; toute action le met aussi « à jour »
-function journal(int|string|null $espaceId, ?array $member, string $action, ?string $via = null): void
+// Historique d'un compte (sécurité) : ce qui arrive au compte $cible, fait par lui-même ou par un responsable
+function journal_compte(int $cible, ?array $acteur, string $action): void
+{
+    journal(null, $acteur, $action, null, $cible);
+}
+
+function historique_compte(int $cible, int $limite = 30): array
+{
+    return db_all('SELECT j.*, m.prenom, m.nom, m.email FROM journal j LEFT JOIN membre m ON m.id = j.membre_id WHERE j.cible_id = ? ORDER BY j.le DESC, j.id DESC LIMIT ' . max(1, $limite), [$cible]);
+}
+
+function journal(int|string|null $espaceId, ?array $member, string $action, ?string $via = null, ?int $cible = null): void
 {
     $via ??= api_member() !== null ? 'ia' : 'web';
-    db_query('INSERT INTO journal (espace_id, membre_id, action, via) VALUES (?, ?, ?, ?)', [$espaceId, $member['id'] ?? null, mb_substr($action, 0, 255), $via]);
+    db_query('INSERT INTO journal (espace_id, membre_id, action, via, cible_id) VALUES (?, ?, ?, ?, ?)', [$espaceId, $member['id'] ?? null, mb_substr($action, 0, 255), $via, $cible]);
     if ($espaceId !== null) {
         db_query('UPDATE espace SET modifie_le = NOW() WHERE id = ?', [$espaceId]);
     }

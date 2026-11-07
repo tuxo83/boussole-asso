@@ -43,6 +43,10 @@
   <?= c_champ('confirmation', 'Confirmation', ['type' => 'password']) ?>
   <button type="submit" class="bouton bouton-secondaire">Enregistrer</button>
 </form>
+<details class="separe"><summary>Mon historique</summary>
+  <p class="petit">Les dernières connexions et modifications de votre compte. Une ligne que vous ne reconnaissez pas ? Changez votre mot de passe et prévenez l'association.</p>
+  <?= partial('historique', ['historique' => $historique ?? [], 'cible_id' => $membre['id']]) ?>
+</details>
 <form method="post" action="<?= e(url('/deconnexion')) ?>" class="separe">
   <?= csrf_field() ?>
   <button type="submit" class="bouton bouton-secondaire">Se déconnecter</button>

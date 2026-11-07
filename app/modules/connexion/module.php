@@ -29,6 +29,9 @@ return [
                 if ($member !== null && $member['mot_de_passe'] !== null && password_verify($password, $member['mot_de_passe'])) {
                     login_first_step($member, 'mdp');
                 }
+                if ($member !== null) {
+                    journal_compte((int) $member['id'], null, 'Échec de connexion : mot de passe incorrect');
+                }
                 http_response_code(422);
                 render('connexion/connexion', ['titre' => 'Connexion', 'email' => $email, 'erreur' => 'E-mail ou mot de passe incorrect.']);
                 return;

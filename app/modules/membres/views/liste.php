@@ -57,6 +57,7 @@
   <form method="post" action="<?= e(url('/admin/membres/inviter')) ?>"><?= csrf_field() ?><input type="hidden" name="membre_id" value="<?= (int) $m['id'] ?>">
     <button type="submit" class="lien-bouton"><?= $m['invite_le'] ? "Renvoyer l'invitation de bienvenue" : "Envoyer l'invitation de bienvenue" ?></button></form>
   <?php endif ?>
+  <?php if (is_admin($gestionnaire)): ?><p><a href="<?= e(url('/admin/membres/' . (int) $m['id'] . '/historique')) ?>">Historique du compte</a></p><?php endif ?>
   <?php if (is_admin($gestionnaire) && (int) $m['id'] !== (int) $gestionnaire['id']): ?>
   <form method="post" action="<?= e(url('/admin/membres/' . (int) $m['id'] . '/mot-de-passe-provisoire')) ?>"><?= csrf_field() ?>
     <button type="submit" class="lien-bouton" data-confirmer="Donner un mot de passe provisoire à <?= e(membre_nom($m)) ?> ? Son mot de passe actuel ne marchera plus ; il devra en choisir un à sa prochaine connexion.">Mot de passe provisoire<?= $m['mot_de_passe_provisoire'] ? ' (déjà donné, pas encore changé)' : '' ?></button></form>
