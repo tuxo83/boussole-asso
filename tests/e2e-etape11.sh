@@ -54,7 +54,7 @@ check "page réservée : visible et dans le menu une fois connecté" "$(c "$U/pa
 sql "INSERT INTO espace (type, titre, slug, description, visibilite) VALUES ('evenement', 'Visite réservée', 'visite-reservee', 'Détail confidentiel du rendez-vous', 'adherents'), ('evenement', 'Réunion d''équipe', 'reunion-equipe', 'Interne', 'equipe')"
 sql "INSERT INTO page (slug, titre, contenu, blocs, publiee) VALUES ('agenda', 'Agenda', '', '{\"blocks\":[{\"type\":\"boussole\",\"data\":{\"bloc\":\"evenements\"}}]}', 1)"
 as visiteur5
-check "agenda public : un événement réservé est signalé, sans titre ni détail ni lien" "$(c "$U/page/agenda" >/dev/null; grep -c 'Événement réservé aux membres' "$B") $(grep -c 'Visite réservée\|Détail confidentiel\|visite-reservee' "$B")" "1 0"
+check "agenda public : un événement réservé est signalé, sans titre ni détail ni lien" "$(c "$U/page/agenda" >/dev/null; grep -c 'Réservé aux membres' "$B") $(grep -c 'Visite réservée\|Détail confidentiel\|visite-reservee' "$B")" "1 0"
 check "agenda public : rien des événements d'équipe" "$(grep -c 'Réunion' "$B")" "0"
 as admin
 check "membre connecté : détail visible" "$(c "$U/page/agenda" >/dev/null; grep -c 'Détail confidentiel' "$B")" "1"
