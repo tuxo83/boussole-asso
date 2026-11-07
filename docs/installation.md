@@ -11,6 +11,16 @@
 
 La plupart des offres mutualisées conviennent (OVH, o2switch, Infomaniak, IONOS, Gandi…).
 
+## Trois façons d'installer
+
+| Façon | Pour qui | Comment |
+|---|---|---|
+| Installateur en un fichier | une association sans technicien | Télécharger `installer-boussole.php` depuis la dernière version publiée sur GitHub, le déposer à la racine du site (gestionnaire de fichiers de l'hébergeur ou FTP), l'ouvrir dans le navigateur. Il vérifie l'hébergement, télécharge Boussole, contrôle son empreinte, l'installe, affiche un **code d'installation** à noter, puis se supprime. |
+| Script FTPS | quelqu'un à l'aise avec un terminal | `./deploiement-ftp.sh` (voir ci-dessous) |
+| Déploiement automatique par GitHub | une association qui suit les nouvelles versions | Copier le dépôt (fork), puis dans la copie : *Settings › Secrets and variables › Actions*, créer `FTP_HOTE`, `FTP_UTILISATEUR`, `FTP_MOT_DE_PASSE`, `FTP_DOSSIER` (et `SITE_ADRESSE`). À chaque mise à jour de la copie, GitHub envoie le site par FTPS. Les secrets restent dans la copie de l'association. |
+
+Le code d'installation empêche une autre personne de terminer l'installation à votre place entre le dépôt du fichier et votre première visite.
+
 ## Première installation
 
 1. Créer une base de données dans l'espace client de l'hébergeur et noter : serveur, nom de la base, utilisateur, mot de passe.

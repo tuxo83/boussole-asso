@@ -11,8 +11,9 @@
     <?= c_champ('db_user', 'Utilisateur', ['valeur' => $valeurs['db_user'] ?? '', 'requis' => true]) ?>
     <?= c_champ('db_password', 'Mot de passe', ['type' => 'password']) ?>
   </fieldset>
-  <?php elseif (!empty(config()['code_installation'])): ?>
-  <?= c_champ('code_installation', "Code d'installation", ['requis' => true, 'aide' => 'Affiché dans le journal du déploiement.', 'erreur' => $erreurs['code_installation'] ?? null]) ?>
+  <?php endif ?>
+  <?php if (installation_code_attendu() !== null): ?>
+  <?= c_champ('code_installation', "Code d'installation", ['requis' => true, 'aide' => "Affiché par l'installateur ou dans le journal du déploiement.", 'erreur' => $erreurs['code_installation'] ?? null]) ?>
   <?php endif ?>
   <fieldset>
     <legend>Association</legend>

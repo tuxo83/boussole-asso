@@ -68,11 +68,23 @@ function installation_validate(array $input): array
         if (!is_writable(dirname(config_path()))) {
             $erreurs['db'] = "Le dossier config/ n'est pas accessible en écriture.";
         }
-    } elseif (!empty($config['code_installation']) && !hash_equals((string) $config['code_installation'], $v['code_installation'])) {
-        // Configuration préparée au déploiement : seul celui qui a le code peut finir l'installation
+    }
+    if (installation_code_attendu() !== null && !hash_equals(installation_code_attendu(), $v['code_installation'])) {
         $erreurs['code_installation'] = "Code d'installation incorrect.";
     }
     return [$v, $erreurs];
+}
+
+// Code exigé pour finir l'installation : préparé par install.sh (config.php) ou par l'installateur en un fichier
+// (config/code-installation.php). Seule la personne qui a lancé l'un ou l'autre le connaît.
+function installation_code_attendu(): ?string
+{
+    $code = config()['code_installation'] ?? null;
+    $file = dirname(config_path()) . '/code-installation.php';
+    if (empty($code) && is_file($file)) {
+        $code = require $file;
+    }
+    return is_string($code) && $code !== '' ? $code : null;
 }
 
 function installation_db_config(array $v): array
@@ -103,4 +115,5 @@ function installation_apply(array $v): void
     $host = preg_replace('/:\d+$/', '', (string) ($_SERVER['HTTP_HOST'] ?? 'localhost'));
     $set->execute(['mail_expediteur', 'noreply@' . (filter_var("x@$host", FILTER_VALIDATE_EMAIL) ? $host : 'localhost.localdomain')]);
     $set->execute(['installation_terminee', '1']);
+    @unlink(dirname(config_path()) . '/code-installation.php');
 }
