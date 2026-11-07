@@ -358,3 +358,10 @@ main.conteneur { padding-top: 2rem; padding-bottom: 4.5rem; }
 .chronologie li:last-child::after { background: var(--couleur-accent); }
 .chrono-date { text-align: right; font-weight: 700; color: var(--couleur-principale); font-variant-numeric: tabular-nums; line-height: 1.6; }
 .chronologie li > p { margin: 0; padding-left: .75rem; line-height: 1.6; }
+
+/* Formulaire de contact et messages reçus */
+.formulaire-contact { max-width: 46rem; }
+.message-contact { margin: 0 0 1rem; max-width: 52rem; }
+.message-contact h2 { font-size: 1.1rem; margin: .25rem 0; }
+.message-nouveau { border-left: 4px solid var(--couleur-accent); }
+.message-texte { white-space: normal; overflow-wrap: anywhere; }

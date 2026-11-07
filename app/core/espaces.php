@@ -93,6 +93,13 @@ function slug_unique(string $title): string
     return $slug;
 }
 
+// Les messages ne sont gardés qu'un temps (réglable, 12 mois par défaut)
+function messages_contact_purger(): int
+{
+    $mois = max(1, min(60, (int) setting('contact_conservation_mois', '12')));
+    return db()->exec('DELETE FROM message_contact WHERE recu_le < NOW() - INTERVAL ' . $mois . ' MONTH') ?: 0;
+}
+
 // Le journal des actions n'est gardé qu'un temps (réglable, 3 ans par défaut), comme l'annonce la page de confidentialité
 function journal_purger(): int
 {

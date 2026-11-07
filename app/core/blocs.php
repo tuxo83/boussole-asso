@@ -10,6 +10,7 @@ const BLOCS_DYNAMIQUES = [
     'espace-membres' => 'Bouton « Espace membres »',
     'adhesion' => 'Bouton « Adhérer » (lien HelloAsso des réglages)',
     'agenda' => 'Agenda complet (à venir et passés)',
+    'contact' => 'Formulaire de contact',
 ];
 
 // Mise en forme en ligne : on reconstruit le HTML à partir d'une liste blanche, jamais de copie brute
@@ -264,6 +265,17 @@ function bloc_dynamique(string $bloc): string
             // Lien discret à côté du titre plutôt qu'un bouton de plus (Élise)
             return '<div class="titre-avec-lien"><h2 class="titre-bloc">Prochains événements</h2>'
                 . ($agenda ? '<a href="' . e(url('/page/' . $agenda)) . '">Tout l\'agenda →</a>' : '') . '</div>' . cartes_evenements(array_slice($prochains, 0, 3));
+        case 'contact':
+            // L'adresse de l'association n'apparaît pas : le message passe par le site (Administration → Messages reçus)
+            $moi = current_member();
+            return '<form method="post" action="' . e(url('/contact')) . '" class="formulaire formulaire-contact">' . csrf_field() . humain_champs()
+                . '<input type="hidden" name="retour" value="' . e(request_path()) . '">'
+                . c_champ('nom', 'Votre nom', ['requis' => true, 'max' => 100, 'valeur' => $moi ? membre_nom($moi) : ''])
+                . c_champ('email', 'Votre adresse e-mail', ['type' => 'email', 'requis' => true, 'valeur' => $moi['email'] ?? '', 'aide' => 'Pour vous répondre.'])
+                . c_champ('objet', 'Objet', ['max' => 200])
+                . c_champ('message', 'Votre message', ['type' => 'textarea', 'requis' => true, 'max' => 5000])
+                . '<p class="petit">Vos coordonnées servent seulement à vous répondre (<a href="' . e(url('/page/confidentialite')) . '">confidentialité</a>).</p>'
+                . '<button type="submit" class="bouton bouton-principal">Envoyer</button></form>';
         case 'agenda':
             // Agenda complet : tout ce qui vient, puis ce qui a eu lieu sur 12 mois
             $prochains = evenements_visibles(true);

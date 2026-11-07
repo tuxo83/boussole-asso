@@ -24,6 +24,7 @@
   </fieldset>
   <fieldset>
     <legend>Conservation</legend>
+    <?= c_champ('contact_conservation_mois', 'Garder les messages du formulaire de contact pendant (mois)', ['type' => 'number', 'valeur' => $v['contact_conservation_mois'] ?? '12', 'aide' => 'De 1 à 60 mois, puis effacement automatique.']) ?>
     <?= c_champ('journal_conservation_ans', 'Garder le journal des actions pendant (années)', ['type' => 'number', 'valeur' => $v['journal_conservation_ans'] ?? '3', 'aide' => 'De 1 à 10 ans. Les lignes plus anciennes sont effacées automatiquement. À indiquer dans la page de confidentialité.']) ?>
   </fieldset>
   <fieldset>
@@ -42,6 +43,7 @@
   </fieldset>
   <fieldset>
     <legend>Envoi des e-mails</legend>
+    <?= c_champ('contact_destinataire', 'Adresse qui reçoit les messages du formulaire de contact', ['type' => 'email', 'valeur' => $v['contact_destinataire'] ?? '', 'aide' => 'Vide : les administrateurs. Les messages restent aussi consultables dans Administration → Messages reçus.']) ?>
     <?= c_champ('mail_expediteur', 'Adresse d\'expédition', ['type' => 'email', 'valeur' => $v['mail_expediteur'] ?? '', 'erreur' => $erreurs['mail_expediteur'] ?? null]) ?>
     <?= c_champ('smtp_hote', 'Serveur SMTP', ['valeur' => $v['smtp_hote'] ?? '', 'aide' => "Vide : la fonction d'envoi de l'hébergeur est utilisée."]) ?>
     <?= c_champ('smtp_port', 'Port', ['valeur' => $v['smtp_port'] ?? '587', 'erreur' => $erreurs['smtp_port'] ?? null]) ?>
