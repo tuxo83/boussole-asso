@@ -70,7 +70,7 @@ check "membre pas à jour : invitation à cotiser au lieu de l'inscription" "$(g
 check "membre pas à jour : inscription refusée" "$(post "$U/espace/diner-cotisants" "$U/espace/diner-cotisants/inscription" -d 'action=voeu' >/dev/null; sql "SELECT COUNT(*) FROM inscription i JOIN membre m ON m.id = i.membre_id WHERE m.email = 'lea@example.org'")" "0"
 check "rappel de cotisation affiché, avec « Masquer »" "$(c "$U/page/agenda" >/dev/null; grep -c 'pas encore enregistrée' "$B") $(grep -c 'bandeau-fermer' "$B")" "1 1"
 check "rappel masqué jusqu'à la prochaine connexion" "$(post "$U/page/agenda" "$U/compte/rappel-cotisation/masquer" -d 'retour=/page/agenda') $(c "$U/page/agenda" >/dev/null; grep -c 'pas encore enregistrée' "$B")" "303 $U/page/agenda 0"
-check "rappel toujours visible sur « Mon compte », sans croix" "$(c "$U/compte" >/dev/null; grep -c 'pas encore enregistrée' "$B") $(grep -c 'bandeau-fermer' "$B")" "1 0"
+check "sur « Mon compte », pas de bandeau en double : la carte cotisation le dit" "$(c "$U/compte" >/dev/null; grep -c 'pas encore enregistrée' "$B") $(grep -c 'Pas encore réglée' "$B")" "0 1"
 check "rappel revenu à la connexion suivante" "$(c "$U/compte" >/dev/null; T=$(tok); c --data-urlencode "_csrf=$T" "$U/deconnexion" >/dev/null; login_link lea lea@example.org; c "$U/page/agenda" >/dev/null; grep -c 'pas encore enregistrée' "$B")" "1"
 # Arrivée après connexion selon la cotisation (réglable)
 sql "INSERT INTO parametre (cle, valeur) VALUES ('arrivee_cotisant', '/page/statuts'), ('arrivee_non_cotisant', '/espaces') ON DUPLICATE KEY UPDATE valeur = VALUES(valeur)"
@@ -85,4 +85,6 @@ check "connexion, membre à jour : autre arrivée réglée" "$(arrivee lea3 lea@
 sql "DELETE FROM parametre WHERE cle IN ('arrivee_cotisant', 'arrivee_non_cotisant')"
 check "sans réglage : « Mon compte »" "$(arrivee lea4 lea@example.org)" "303 $U/compte"
 check "membre à jour : inscription possible" "$(post "$U/espace/diner-cotisants" "$U/espace/diner-cotisants/inscription" -d 'action=voeu' >/dev/null; sql "SELECT statut FROM inscription i JOIN membre m ON m.id = i.membre_id WHERE m.email = 'lea@example.org'")" "retenu"
+sql "INSERT INTO page (slug, titre, contenu, blocs, publiee) VALUES ('agenda-complet', 'Agenda complet', '', '{\"blocks\":[{\"type\":\"boussole\",\"data\":{\"bloc\":\"agenda\"}}]}', 1)"
+check "agenda : mes inscriptions en premier, avec leur statut, pas en double dans la suite" "$(c "$U/page/agenda-complet" >/dev/null; grep -c 'Mes inscriptions' "$B") $(grep -o 'Dîner des cotisants' "$B" | wc -l) $(grep -c 'badge badge-ok\">Inscrit' "$B")" "1 1 1"
 bilan

@@ -66,6 +66,23 @@ return [
                 (int) $cible['id'] === (int) $gestionnaire['id'] ? 1 : (empty($_POST['actif']) ? 0 : 1),
                 $cible['id'],
             ]);
+            // Compte de démonstration (administrateur) : mot de passe choisi ici, ni provisoire ni modifiable par ses utilisateurs
+            if (is_admin($gestionnaire) && (int) $cible['id'] !== (int) $gestionnaire['id']) {
+                $demo = empty($_POST['compte_demo']) ? 0 : 1;
+                if ($demo !== (int) ($cible['compte_demo'] ?? 0)) {
+                    db_query('UPDATE membre SET compte_demo = ? WHERE id = ?', [$demo, $cible['id']]);
+                    journal_compte((int) $cible['id'], $gestionnaire, $demo ? 'Marqué compte de démonstration' : 'N\'est plus un compte de démonstration');
+                }
+                $mdp_demo = (string) ($_POST['mot_de_passe_demo'] ?? '');
+                if ($demo && $mdp_demo !== '') {
+                    if (mb_strlen($mdp_demo) < 8) {
+                        flash('erreur', 'Mot de passe de démonstration trop court (8 caractères au moins) : il n\'a pas été changé.');
+                    } else {
+                        db_query('UPDATE membre SET mot_de_passe = ?, mot_de_passe_provisoire = 0 WHERE id = ?', [password_hash($mdp_demo, PASSWORD_DEFAULT), $cible['id']]);
+                        journal_compte((int) $cible['id'], $gestionnaire, 'Mot de passe de démonstration fixé par un administrateur');
+                    }
+                }
+            }
             // Seul l'administrateur attribue des droits ; il ne peut pas retirer le dernier administrateur
             if (is_admin($gestionnaire)) {
                 $droits = array_values(array_intersect(array_keys(DROITS), (array) ($_POST['droits'] ?? [])));
@@ -150,6 +167,10 @@ return [
             $cible = db_one('SELECT * FROM membre WHERE id = ?', [(int) $p['id']]);
             if ($cible === null || (int) $cible['id'] === (int) $gestionnaire['id']) {
                 flash('erreur', 'Pour votre propre compte, utilisez « Mon compte ».');
+                redirect('/admin/membres');
+            }
+            if (!empty($cible['compte_demo'])) {
+                flash('erreur', 'Compte de démonstration : fixez son mot de passe dans sa fiche.');
                 redirect('/admin/membres');
             }
             $provisoire = mot_de_passe_provisoire();
