@@ -141,4 +141,11 @@ check "réunion d'équipe créée dans l'espace, avec date et lieu" "$(post "$U/
 check "la réunion apparaît dans l'espace et dans « Mes prochains rendez-vous »" "$(c "$U/espace/cyber" >/dev/null; grep -c 'Réunion cyber' "$B") $(c "$U/compte" >/dev/null; grep -c 'Réunion · Cyber' "$B")" "1 1"
 as alice
 check "un membre hors de l'équipe ne la voit pas" "$(c "$U/espace/reunion-cyber" | cut -c1-3) $(c "$U/espace/cyber" >/dev/null; grep -c 'Réunion cyber' "$B")" "403 0"
+# Bloc « Équipe d'un espace » dans une page : noms et rôles lus dans l'espace, jamais l'adresse
+as admin
+post "$U/espace/cyber" "$U/espace/cyber/equipe" -d 'email=carole@example.org&niveau=n1&libelle=Bureau : Présidente ; Délégations : Cyber' >/dev/null
+sql "INSERT INTO page (slug, titre, contenu, blocs, publiee) VALUES ('qui-fait-quoi', 'Qui fait quoi', '', '{\"blocks\":[{\"type\":\"equipe\",\"data\":{\"espace\":\"cyber\"}}]}', 1)"
+check "bloc équipe : groupes et rôles venus de l'espace, sans adresse" "$(c "$U/page/qui-fait-quoi" >/dev/null; grep -c '<h3>Bureau</h3>' "$B") $(grep -c '<h3>Délégations</h3>' "$B") $(grep -c 'Présidente' "$B") $(grep -c 'carole@example.org' "$B")" "1 1 1 0"
+post "$U/espace/cyber" "$U/espace/cyber/equipe" -d 'email=carole@example.org&niveau=n1&libelle=Bureau : Trésorière' >/dev/null
+check "bloc équipe : un changement dans l'espace se voit aussitôt sur la page" "$(c "$U/page/qui-fait-quoi" >/dev/null; grep -c 'Trésorière' "$B") $(grep -c 'Présidente' "$B")" "1 0"
 bilan

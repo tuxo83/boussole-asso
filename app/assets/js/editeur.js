@@ -68,6 +68,32 @@
     save() { return { bloc: this.select.value }; }
   }
 
+  // Équipe d'un espace : on choisit l'espace ; les noms et les rôles viennent de l'espace, mis à jour tout seuls
+  const espaces = JSON.parse(holder.dataset.espaces || '{}');
+  class EquipeEspace {
+    static get toolbox() { return { title: 'Équipe d\'un espace', icon: '☷' }; }
+    constructor({ data }) { this.data = data || {}; }
+    render() {
+      const select = document.createElement('select');
+      Object.entries(espaces).forEach(([slug, titre]) => {
+        const option = document.createElement('option');
+        option.value = slug;
+        option.textContent = titre;
+        option.selected = slug === this.data.espace;
+        select.append(option);
+      });
+      this.select = select;
+      const box = document.createElement('div');
+      box.className = 'bloc-dynamique';
+      const aide = document.createElement('p');
+      aide.className = 'petit';
+      aide.textContent = 'Les noms et les rôles viennent de l\'équipe de l\'espace. Rôle « Bureau : Président » = groupe Bureau ; plusieurs rôles séparés par « ; ».';
+      box.append('Équipe de l\'espace : ', select, aide);
+      return box;
+    }
+    save() { return { espace: this.select.value }; }
+  }
+
   const icones = JSON.parse(holder.dataset.icones || '{}');
   // Le contenu enregistré est du HTML : &#039; → ' pour l'afficher tel qu'on le lit sur le site
   const decoder = function (html) { const t = document.createElement('textarea'); t.innerHTML = html || ''; return t.value; };
@@ -186,6 +212,7 @@
       chiffres: Chiffres,
       frise: Frise,
       bouton: Bouton,
+      equipe: EquipeEspace,
     },
   });
 
