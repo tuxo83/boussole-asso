@@ -1029,3 +1029,15 @@ dialog.dialogue:not([open]) { display: block; position: static; width: auto; box
 .carte-choix-texte { display: flex; flex-direction: column; }
 .carte-choix-texte small { color: var(--texte-doux); font-size: .85rem; line-height: 1.4; }
 .formulaire-creation { max-width: 46rem; }
+
+/* Réglages d'un événement : sections, choix en cartes, champs côte à côte */
+.reglages-evenement { max-width: 48rem; }
+.bloc-reglage { border: 1px solid var(--bordure); border-radius: var(--rayon); padding: 1rem 1.1rem .5rem; margin: 0 0 1rem; background: var(--fond); }
+.bloc-reglage legend { font-weight: 800; padding: 0 .4rem; margin-left: -.4rem; }
+.champs-ligne { display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); gap: 0 1rem; }
+.choix-cartes { display: grid; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); gap: .5rem; margin-bottom: 1rem; }
+.choix-cartes .carte-choix { padding: .7rem .85rem; }
+.bloc-reglage .avance > summary { cursor: pointer; font-weight: 600; color: var(--couleur-principale); min-height: var(--cible); display: flex; align-items: center; }
+.case-bloc { display: flex; align-items: flex-start; gap: .6rem; }
+.case-bloc input { margin-top: .25rem; flex: none; }
+.case-bloc span { display: flex; flex-direction: column; }

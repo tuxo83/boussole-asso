@@ -308,3 +308,16 @@ document.querySelectorAll('[data-creation]').forEach(function (form) {
   types.forEach(function (r) { r.addEventListener('change', maj); });
   maj();
 });
+
+// Réglages d'un événement : les places et le paiement n'apparaissent que si on les a choisis
+document.querySelectorAll('[data-reglages-evenement]').forEach(function (form) {
+  function maj() {
+    var mode = form.querySelector('input[name="mode"]:checked');
+    var reglement = form.querySelector('input[name="reglement"]:checked');
+    var limite = mode && mode.value !== 'ouvert';
+    form.querySelectorAll('[data-si-limite]').forEach(function (b) { b.hidden = !limite; });
+    form.querySelectorAll('[data-si-paiement]').forEach(function (b) { b.hidden = !(limite && reglement && reglement.value === 'paiement'); });
+  }
+  form.addEventListener('change', maj);
+  maj();
+});
