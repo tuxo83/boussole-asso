@@ -160,3 +160,11 @@ function absolute_url(string $path): string
     }
     return $base . '/' . ltrim($path, '/');
 }
+
+// Version déployée (écrite par install.sh selon le versioning de la documentation d'infra) : version, commit, date du commit, date du déploiement
+function boussole_version(): array
+{
+    $fichier = BOUSSOLE_ROOT . '/config/VERSION.txt';
+    $lignes = is_file($fichier) ? array_map('trim', file($fichier)) : [];
+    return ['version' => $lignes[0] ?? 'développement', 'commit' => $lignes[1] ?? '', 'commit_le' => $lignes[2] ?? '', 'deploye_le' => $lignes[3] ?? ''];
+}

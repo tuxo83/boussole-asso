@@ -50,3 +50,6 @@
 </ul>
 </section>
 <?php endif ?>
+<?php if (is_admin($membre)): $v = boussole_version(); ?>
+<p class="version-site discret">Boussole <strong><?= e($v['version']) ?></strong><?= $v['commit'] !== '' ? ' · commit ' . e($v['commit']) : '' ?><?= $v['deploye_le'] !== '' ? ' · déployée le ' . e(date('d/m/Y à H\hi', strtotime($v['deploye_le']))) : '' ?></p>
+<?php endif ?>

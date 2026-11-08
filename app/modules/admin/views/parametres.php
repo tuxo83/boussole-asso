@@ -1,4 +1,5 @@
 <h1>Réglages</h1>
+<?php $v = boussole_version(); ?><p class="version-site discret">Boussole <strong><?= e($v['version']) ?></strong><?= $v['commit'] !== '' ? ' · commit ' . e($v['commit']) : '' ?><?= $v['deploye_le'] !== '' ? ' · déployée le ' . e(date('d/m/Y à H\\hi', strtotime($v['deploye_le']))) : '' ?></p>
 <form method="post" action="<?= e(url('/admin/parametres')) ?>" class="formulaire" enctype="multipart/form-data">
   <?= csrf_field() ?>
   <fieldset>
