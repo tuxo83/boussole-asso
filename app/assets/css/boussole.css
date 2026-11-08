@@ -787,3 +787,7 @@ details.crayon-flottant > .crayon-bouton { padding: 0; }
 .rdv-frise a { min-width: 0; }
 .rdv-frise > li { min-width: 0; }
 @media (max-width: 40rem) { .rdv-frise { padding-left: 1.4rem; } .rdv-frise > li::before { left: calc(-1.4rem + .35rem - 5px); } .rdv-frise a { gap: .75rem; padding: .7rem .8rem; } }
+
+/* Repère « Aujourd'hui » : sur sa propre ligne, sans chevaucher le premier mois */
+.frise-aujourdhui { display: block; width: fit-content; margin-bottom: .25rem; }
+.frise-agenda > .frise-aujourdhui:first-child + .frise-mois { margin-top: 1rem; }
