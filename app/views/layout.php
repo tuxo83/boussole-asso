@@ -90,7 +90,7 @@ $sur_compte = str_starts_with(request_path(), '/compte'); ?>
   <?php if (!$sur_compte): ?><form method="post" action="<?= e(url('/compte/rappel-cotisation/masquer')) ?>"><?= csrf_field() ?><input type="hidden" name="retour" value="<?= e(request_path()) ?>"><button type="submit" class="bandeau-fermer" aria-label="Masquer ce rappel jusqu'à la prochaine connexion" title="Masquer jusqu'à la prochaine connexion">×</button></form><?php endif ?></div></div>
 <?php endif ?>
 <?php // Proposer l'application : membres connectés, sur téléphone, seulement là où l'installation est possible (le script décide)
-if ($moi !== null && application_active() && setting('application_proposer', '1') === '1'): ?>
+if ($moi !== null && application_active() && setting('application_proposer', '0') === '1'): ?>
 <div class="bandeau-appli" data-proposer-appli hidden><div class="conteneur">
   <span class="bandeau-appli-icone"><?= c_icone('telephone') ?></span>
   <span class="bandeau-appli-texte"><strong>Installez l'application <?= e(application_nom_court()) ?></strong> : une icône, et vous restez connecté.
