@@ -57,13 +57,12 @@ $boutons = '<span class="en-place-boutons"><button type="submit" class="bouton b
   <?php endif ?>
   <?php if ($peut_gerer): ?>
   <span class="en-place en-place-ligne" data-en-place>
-    <span class="en-place-vue discret" tabindex="0" role="button" aria-label="Modifier qui peut voir l'espace"><?= e(ESPACE_VISIBILITES[$espace['visibilite']]) ?><span class="en-place-crayon"><?= c_icone('crayon') ?></span></span>
+    <span class="en-place-vue discret" tabindex="0" role="button" aria-label="Modifier qui peut voir l'espace"><?= c_icone(['public' => 'reseau', 'adherents' => 'personnes', 'equipe' => 'cadenas'][$espace['visibilite']] ?? 'personnes') ?><?= e(ESPACE_VISIBILITES[$espace['visibilite']]) ?><span class="en-place-crayon"><?= c_icone('crayon') ?></span></span>
     <form method="post" action="<?= $action('/modifier') ?>" class="en-place-form"><?= $garder(['visibilite']) ?>
-      <label for="sur-place-visibilite" class="visuellement-cache">Qui peut voir l'espace ?</label>
-      <select id="sur-place-visibilite" name="visibilite"><?php foreach (ESPACE_VISIBILITES as $cle => $libelle): ?><option value="<?= e($cle) ?>"<?= $espace['visibilite'] === $cle ? ' selected' : '' ?>><?= e($libelle) ?></option><?php endforeach ?></select><?= $boutons ?></form>
+      <?= c_visibilite_choix($espace['visibilite'], ESPACE_VISIBILITES, $espace['type'] === 'evenement' && $parent ? $parent['titre'] : null, 'sur-place-visibilite') ?><?= $boutons ?></form>
   </span>
   <?php else: ?>
-  <span class="discret"><?= e(ESPACE_VISIBILITES[$espace['visibilite']]) ?></span>
+  <span class="discret visibilite-mention"><?= c_icone(['public' => 'reseau', 'adherents' => 'personnes', 'equipe' => 'cadenas'][$espace['visibilite']] ?? 'personnes') ?><?= e(ESPACE_VISIBILITES[$espace['visibilite']]) ?></span>
   <?php endif ?>
 </div>
 
@@ -195,7 +194,7 @@ $boutons = '<span class="en-place-boutons"><button type="submit" class="bouton b
       <input type="email" id="champ-email" name="email" list="liste-membres" required autocomplete="off" placeholder="Tapez un nom ou une adresse">
       <small>La liste se filtre pendant la saisie.</small></div>
     <datalist id="liste-membres"><?php foreach ($membres_actifs as $m): ?><option value="<?= e($m['email']) ?>"><?= e(trim($m['prenom'] . ' ' . $m['nom']) ?: $m['email']) ?></option><?php endforeach ?></datalist>
-    <?= c_champ('niveau', 'Niveau', ['type' => 'select', 'valeur' => 'membre', 'choix' => ESPACE_NIVEAUX]) ?>
+    <div class="champ-avec-aide"><?= c_champ('niveau', 'Niveau', ['type' => 'select', 'valeur' => 'membre', 'choix' => ESPACE_NIVEAUX]) ?><?= aide_niveaux_equipe() ?></div>
     <?= c_champ('libelle', 'Libellé affiché (facultatif)', ['aide' => 'Ex. « Bureau : Président » ; plusieurs rôles séparés par « ; ». Repris tel quel dans les pages qui affichent cette équipe.', 'max' => 100]) ?>
     <button type="submit" class="bouton bouton-secondaire">Enregistrer</button>
   </form>
