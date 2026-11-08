@@ -763,3 +763,14 @@ details.crayon-flottant > .crayon-bouton { padding: 0; }
   .frise-mois::before { left: calc(-1.6rem + .35rem - 4px); }
   .frise-aujourdhui { margin-left: 0; }
 }
+
+/* Frise : la date est dans la marge (jour, heure, mois) ; la carte ne la répète pas */
+.frise-item .carte-evenement .evenement-tete > .date-tuile, .frise-item .carte-evenement .evenement-quand { display: none; }
+.frise-item .carte-evenement .evenement-tete { min-height: 0; }
+/* Les mois dans la marge, à gauche de la ligne, alignés sur les dates */
+.frise-mois { width: 8rem; margin: 1.75rem 0 1rem; text-align: right; font-size: 1rem; }
+.frise-mois::before { left: calc(8.75rem - 4px); }
+@media (max-width: 40rem) {
+  .frise-mois { width: auto; margin-left: 1.6rem; text-align: left; }
+  .frise-mois::before { left: calc(-1.6rem + .35rem - 4px); }
+}
