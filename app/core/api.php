@@ -265,7 +265,7 @@ function api_espace_modifier(string $slug, array $args): array
         if (!in_array($args['meteo'], ['soleil', 'eclaircie', 'pluie', 'orage'], true)) {
             throw new ApiErreur('Météo : soleil, eclaircie, pluie ou orage');
         }
-        db_query('UPDATE espace SET meteo = ? WHERE id = ?', [$args['meteo'], $espace['id']]);
+        db_query('UPDATE espace SET meteo = ?, meteo_auto = 0, meteo_raison = "" WHERE id = ?', [$args['meteo'], $espace['id']]);
         journal($espace['id'], $member, 'Météo : ' . $args['meteo']);
     }
     if (isset($args['description'])) {
@@ -274,6 +274,12 @@ function api_espace_modifier(string $slug, array $args): array
         }
         db_query('UPDATE espace SET description = ? WHERE id = ?', [mb_substr((string) $args['description'], 0, 20000), $espace['id']]);
         journal($espace['id'], $member, 'Description modifiée');
+    }
+    // Météo automatique : d'après le responsable et les dates clés (un choix de météo à la main la coupe)
+    if (isset($args['meteo_auto'])) {
+        db_query('UPDATE espace SET meteo_auto = ? WHERE id = ?', [$args['meteo_auto'] ? 1 : 0, $espace['id']]);
+        journal($espace['id'], $member, $args['meteo_auto'] ? 'Météo automatique activée' : 'Météo automatique coupée');
+        espace_meteo_actualiser(espace_par_slug($espace['slug']));
     }
     if (isset($args['archive'])) {
         if (!espace_peut_gerer($member, $espace)) {
