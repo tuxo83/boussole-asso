@@ -298,3 +298,13 @@ document.addEventListener('toggle', function (e) {
   r = c.getBoundingClientRect();
   if (r.left < marge) c.style.left = (parseFloat(getComputedStyle(c).left) + (marge - r.left)) + 'px';
 }, true);
+
+// Création : les champs de date et de lieu ne s'affichent que pour un événement
+document.querySelectorAll('[data-creation]').forEach(function (form) {
+  var bloc = form.querySelector('[data-si-evenement]');
+  var types = form.querySelectorAll('input[name="type"][type="radio"]');
+  if (!bloc || !types.length) return;
+  function maj() { var t = form.querySelector('input[name="type"]:checked'); bloc.hidden = !(t && t.value === 'evenement'); }
+  types.forEach(function (r) { r.addEventListener('change', maj); });
+  maj();
+});

@@ -15,9 +15,9 @@ sql "REPLACE INTO parametre (cle, valeur) VALUES ('inscription_cotisants', '0')"
 for p in alice bruno chloe david emma farid; do post "$U/admin/membres" "$U/admin/membres" -d "email=$p@example.org&prenom=${p^}" >/dev/null; done
 # Historique sur 12 mois : alice 3 participations, bruno 1, emma 1, chloé et david 0 (moyenne 5/7 ≈ 0,7)
 for n in 1 2 3; do
-  sql "INSERT INTO espace (type, titre, slug, description) VALUES ('evenement', 'Passé $n', 'passe-$n', '')"
-  sql "INSERT INTO evenement (espace_id, debut, mode, etat) SELECT id, NOW() - INTERVAL $n MONTH, 'auto', 'attribuee' FROM espace WHERE slug = 'passe-$n'"
-  sql "INSERT INTO inscription (evenement_id, membre_id, statut) SELECT s.id, $(id alice), 'retenu' FROM espace s WHERE slug = 'passe-$n'"
+    sql "INSERT INTO espace (type, titre, slug, description) VALUES ('evenement', 'Passé $n', 'passe-$n', '')"
+    sql "INSERT INTO evenement (espace_id, debut, mode, etat) SELECT id, NOW() - INTERVAL $n MONTH, 'auto', 'attribuee' FROM espace WHERE slug = 'passe-$n'"
+    sql "INSERT INTO inscription (evenement_id, membre_id, statut) SELECT s.id, $(id alice), 'retenu' FROM espace s WHERE slug = 'passe-$n'"
 done
 sql "INSERT INTO inscription (evenement_id, membre_id, statut) SELECT s.id, m.id, 'retenu' FROM espace s, membre m WHERE s.slug = 'passe-1' AND m.email IN ('bruno@example.org', 'emma@example.org')"
 # Un événement ouvert à tous (AG) ne compte pas : david y était, il reste « jamais venu »
@@ -125,6 +125,11 @@ check "émargement : la liste des inscrits, imprimable" "$(c "$U/espace/sortie/e
 check "pointage au téléphone : réponse JSON, sans recharger" "$(T=$(c "$U/espace/sortie" >/dev/null; tok); curl -s -b "$J" -c "$J" -H 'Accept: application/json' --data-urlencode "_csrf=$T" -d "membre_id=$(id bruno)&present=1" "$U/espace/sortie/presence")" '{"present":1,"presents":1}'
 as visiteur
 check "agenda .ics d'un événement réservé : refusé à un visiteur" "$(c "$U/espace/sortie/agenda.ics" | cut -c1-3)" "404"
+
+# Réservé aux membres, puis public une fois passé (tâche planifiée)
+sql "UPDATE espace SET visibilite = 'adherents' WHERE slug = 'sortie'"
+sql "UPDATE evenement SET public_apres = 1, debut = NOW() - INTERVAL 2 DAY WHERE espace_id = (SELECT id FROM espace WHERE slug = 'sortie')"
+check "événement passé « public après » : devient public" "$(php "$ROOT/app/bin/cli.php" cron >/dev/null; sql "SELECT visibilite FROM espace WHERE slug = 'sortie'")" "public"
 
 # MCP : s'inscrire pour soi-même
 as emma; post "$U/compte/cles" "$U/compte/cles" -d 'libelle=IA&portee=ecriture&duree=7' >/dev/null; c "$U/compte/cles" >/dev/null; KEY=$(grep -o 'bsl_[a-f0-9]\{8\}_[a-f0-9]\{40\}' "$B" | head -1)

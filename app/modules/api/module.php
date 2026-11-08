@@ -77,7 +77,7 @@ function mcp_outils(): array
             'inputSchema' => $objet(['slug' => $texte("Identifiant de l'espace"), 'email' => $texte('E-mail du membre'), 'niveau' => ['type' => 'string', 'enum' => array_keys(ESPACE_NIVEAUX)],
                 'libelle' => $texte('Libellé affiché (président, secrétaire…), facultatif')], ['slug', 'email', 'niveau'])],
         ['name' => 'regler_evenement', 'description' => "Régler un événement : date, lieu, inscriptions (ouvert, auto, valide), places, clôture des vœux, paiement ou confirmation. Dates : AAAA-MM-JJ HH:MM.",
-            'inputSchema' => $objet(['slug' => $texte("Identifiant de l'événement"), 'debut' => $texte('Date et heure'), 'fin' => $texte('Fin (facultatif)'), 'lieu' => $texte('Lieu'),
+            'inputSchema' => $objet(['slug' => $texte("Identifiant de l'événement"), 'debut' => $texte('Date et heure'), 'fin' => $texte('Fin (facultatif)'), 'public_apres' => ['type' => 'boolean', 'description' => 'Réservé avant, public une fois passé'], 'lieu' => $texte('Lieu'),
                 'mode' => ['type' => 'string', 'enum' => array_keys(EVENEMENT_MODES)], 'places' => ['type' => 'integer'], 'cloture' => $texte('Clôture des vœux'),
                 'reglement' => ['type' => 'string', 'enum' => array_keys(EVENEMENT_REGLEMENTS)], 'lien_paiement' => $texte('Lien HelloAsso (événement payant)'),
                 'delai_jours' => ['type' => 'integer'], 'dernieres_jours' => ['type' => 'integer']], ['slug'])],
