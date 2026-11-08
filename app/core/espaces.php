@@ -5,6 +5,12 @@ declare(strict_types=1);
 const ESPACE_TYPES = ['comite' => 'Comité', 'commission' => 'Commission', 'projet' => 'Projet', 'evenement' => 'Événement'];
 const ESPACE_NIVEAUX = ['n1' => 'N°1 (responsable)', 'n2' => 'N°2 (suppléant)', 'membre' => 'Membre', 'associe' => 'Associé'];
 const ESPACE_VISIBILITES = ['equipe' => "L'équipe de l'espace", 'adherents' => 'Tous les membres connectés', 'public' => 'Tout le monde (public)'];
+// Une phrase sous chaque choix de visibilité (avis du panel : visible sans clic, mots simples)
+const ESPACE_VISIBILITES_AIDE = [
+    'public' => 'Visible par tous, même sans compte.',
+    'adherents' => 'Visible par les membres une fois connectés.',
+    'equipe' => 'Visible seulement par l\'équipe et les administrateurs.',
+];
 const ESPACE_INACTIVITE_JOURS = 30;
 
 function espace_niveau(?array $member, array $espace): ?string
@@ -164,4 +170,33 @@ function espace_equipe_groupes(array $personnes): array
     // « Membres » et « Associés » en dernier, les autres groupes dans leur ordre d'apparition
     uksort($groupes, fn($a, $b) => in_array($a, ['Membres', 'Associés'], true) <=> in_array($b, ['Membres', 'Associés'], true));
     return $groupes;
+}
+
+// Aide « qui fait quoi dans l'équipe » : un « ? » repliable, le même partout (visibilité, ajout à l'équipe)
+function aide_niveaux_equipe(): string
+{
+    return c_aide('qui voit et qui fait quoi', '<p>Qui voit l\'espace voit tout : description, dates, fichiers, équipe. Les adresses e-mail ne sont jamais montrées.</p>'
+        . '<div class="tableau"><table><thead><tr><th>Niveau</th><th>Voir</th><th>Ajouter fichiers, dates, météo</th><th>Gérer l\'équipe, les réglages</th></tr></thead><tbody>'
+        . '<tr><td>N°1 et N°2</td><td>oui</td><td>oui</td><td>oui</td></tr>'
+        . '<tr><td>Membre</td><td>oui</td><td>oui</td><td>non</td></tr>'
+        . '<tr><td>Associé</td><td>oui</td><td>non</td><td>non</td></tr>'
+        . '</tbody></table></div><p>Les administrateurs du site peuvent tout faire.</p>');
+}
+
+// « Qui peut voir cet espace ? » : trois boutons radio, une phrase sous chacun, et le « ? » des niveaux (création et modification sur place)
+function c_visibilite_choix(string $valeur, array $libelles, ?string $parent = null, string $prefixe = 'visibilite'): string
+{
+    $html = '<fieldset class="choix-visibilite"><legend>' . ($parent !== null ? 'Qui peut voir cet événement ?' : 'Qui peut voir cet espace ?') . ' ' . aide_niveaux_equipe() . '</legend>';
+    foreach ($libelles as $cle => $libelle) {
+        $id = $prefixe . '-' . $cle;
+        $aide = ESPACE_VISIBILITES_AIDE[$cle] ?? '';
+        if ($cle === 'equipe' && $parent !== null) {
+            $aide = 'Visible seulement par l\'équipe, l\'équipe de « ' . $parent . ' » et les administrateurs. Dans leur agenda seulement.';
+        } elseif ($parent !== null && $cle !== 'equipe') {
+            $aide .= ' Dans l\'agenda de tous.';
+        }
+        $html .= '<label class="choix" for="' . e($id) . '"><input type="radio" name="visibilite" id="' . e($id) . '" value="' . e($cle) . '"' . ($valeur === $cle ? ' checked' : '')
+            . ' aria-describedby="' . e($id) . '-aide"><span><strong>' . e($libelle) . '</strong><small id="' . e($id) . '-aide">' . e($aide) . '</small></span></label>';
+    }
+    return $html . '</fieldset>';
 }

@@ -945,3 +945,20 @@ details.crayon-flottant > .crayon-bouton { padding: 0; }
 .equipe-cartes .qui span { font-size: .9rem; color: var(--texte-doux); }
 .groupe-equipe { margin: .9rem 0 .4rem; font-size: .8rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: var(--texte-doux); }
 .version-site { margin-top: 2rem; font-size: .85rem; }
+
+/* « Qui peut voir cet espace ? » : trois choix lisibles, une phrase sous chacun */
+.choix-visibilite { border: 0; padding: 0; margin: 0 0 1rem; }
+.choix-visibilite legend { font-weight: 700; margin-bottom: .4rem; display: flex; align-items: center; gap: .4rem; }
+.choix-visibilite .choix { display: flex; align-items: flex-start; gap: .65rem; padding: .65rem .8rem; border: 1px solid var(--bordure); border-radius: var(--rayon-petit); margin-bottom: .4rem; cursor: pointer; background: var(--fond); }
+.choix-visibilite .choix:has(input:checked) { border-color: var(--couleur-principale); background: var(--principale-doux); }
+.choix-visibilite input { margin-top: .3rem; width: 1.1rem; height: 1.1rem; flex: none; }
+.choix-visibilite span { display: flex; flex-direction: column; }
+.choix-visibilite small { color: var(--texte-doux); font-size: .88rem; }
+.en-place-form .choix-visibilite { min-width: min(30rem, 100%); }
+.en-place-vue svg, .visibilite-mention svg { width: 1em; height: 1em; vertical-align: -.125em; margin-right: .3rem; }
+.champ-avec-aide { display: flex; align-items: flex-end; gap: .5rem; }
+.champ-avec-aide .champ { flex: 1; }
+.champ-avec-aide .aide { margin-bottom: 1.1rem; }
+.en-place-form .choix-visibilite input[type=radio] { flex: none; padding: 0; border: 0; width: 1.1rem; height: 1.1rem; }
+.en-place-ligne { flex-wrap: wrap; }
+.en-place-ligne .en-place-form .choix-visibilite { flex-basis: 100%; }
