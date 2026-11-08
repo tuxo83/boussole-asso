@@ -944,3 +944,4 @@ details.crayon-flottant > .crayon-bouton { padding: 0; }
 .equipe-cartes .qui { display: flex; flex-direction: column; min-width: 0; }
 .equipe-cartes .qui span { font-size: .9rem; color: var(--texte-doux); }
 .groupe-equipe { margin: .9rem 0 .4rem; font-size: .8rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: var(--texte-doux); }
+.version-site { margin-top: 2rem; font-size: .85rem; }

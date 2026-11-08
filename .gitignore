@@ -8,3 +8,4 @@
 !/app/stockage/.gitkeep
 /deploiement-ftp.conf
 /dist/
+/app/config/VERSION.txt
