@@ -191,7 +191,7 @@ $boutons = '<span class="en-place-boutons"><button type="submit" class="bouton b
       <small>La liste se filtre pendant la saisie.</small></div>
     <datalist id="liste-membres"><?php foreach ($membres_actifs as $m): ?><option value="<?= e($m['email']) ?>"><?= e(trim($m['prenom'] . ' ' . $m['nom']) ?: $m['email']) ?></option><?php endforeach ?></datalist>
     <?= c_champ('niveau', 'Niveau', ['type' => 'select', 'valeur' => 'membre', 'choix' => ESPACE_NIVEAUX]) ?>
-    <?= c_champ('libelle', 'Libellé affiché (facultatif)', ['aide' => 'Ex. président, secrétaire, sage.', 'max' => 100]) ?>
+    <?= c_champ('libelle', 'Libellé affiché (facultatif)', ['aide' => 'Ex. « Bureau : Président » ; plusieurs rôles séparés par « ; ». Repris tel quel dans les pages qui affichent cette équipe.', 'max' => 100]) ?>
     <button type="submit" class="bouton bouton-secondaire">Enregistrer</button>
   </form>
   <?php if ($equipe): ?>
