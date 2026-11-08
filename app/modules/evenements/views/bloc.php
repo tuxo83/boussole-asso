@@ -26,12 +26,17 @@ $bouton_payer = $paiement && $ev['lien_paiement'] ? '<a class="bouton bouton-pri
 ?>
 <section class="evenement" aria-labelledby="titre-inscription">
   <ul class="infos">
-    <li><?= c_icone('calendrier') ?><?= e(evenement_date($ev['debut'])) ?></li>
-    <?php if ($ev['lieu'] !== ''): ?><li><?= c_icone('lieu') ?><?= e($ev['lieu']) ?></li><?php endif ?>
+    <li><?= c_icone('calendrier') ?><?= e(evenement_horaire($ev)) ?></li>
+    <?php if ($ev['lieu'] !== ''): ?><li><?= c_icone('lieu') ?><span><?= e($ev['lieu']) ?> <a class="lien-discret" href="<?= e(evenement_lien_itineraire($ev['lieu'])) ?>" target="_blank" rel="noopener noreferrer">Itinéraire</a></span></li><?php endif ?>
     <li><?= c_icone('personnes') ?><?= $limite ? (int) $ev['places'] . ' places' . ($ev['etat'] === 'attribuee' ? ' · ' . $inscrits . ' inscrits' : '') : 'Places sans limite' ?></li>
     <?php if ($limite && $ev['cloture'] !== null && $ev['etat'] === 'ouvert'): ?><li><?= c_icone('horloge') ?>Vœux jusqu'au <?= e(evenement_date($ev['cloture'])) ?></li><?php endif ?>
   </ul>
 
+  <?php if ($ev['debut'] !== null && !$commence): ?>
+  <details class="ajout-agenda"><summary class="bouton bouton-secondaire"><?= c_icone('calendrier') ?>Ajouter à mon agenda</summary>
+    <div class="ajout-agenda-choix"><a href="<?= $lien('/agenda.ics') ?>">Agenda du téléphone ou de l'ordinateur (fichier .ics)</a><a href="<?= e(evenement_lien_google($espace, $ev)) ?>" target="_blank" rel="noopener noreferrer">Google Agenda</a></div>
+  </details>
+  <?php endif ?>
   <?php if ($limite): ?><?= partial('evenements/frise', ['ev' => $ev, 'phase' => $phase, 'exige' => $exige]) ?><?php endif ?>
   <h2 id="titre-inscription">Inscription <?php if ($limite): ?><?= $aide ?><?php endif ?></h2>
   <?php if ($membre === null): ?>
@@ -88,42 +93,89 @@ $bouton_payer = $paiement && $ev['lien_paiement'] ? '<a class="bouton bouton-pri
     <?php endforeach ?>
     <p><button type="submit" class="bouton bouton-principal">Valider la liste</button></p>
   </form>
-  <?php elseif ($jour_j && $inscrits > 0): ?>
-  <h3 id="pointage">Pointage <span class="discret">(facultatif, sans effet sur les priorités)</span></h3>
-  <ul class="liste">
-    <?php foreach ($liste as $l): if ($l['statut'] !== 'retenu') { continue; } ?>
-    <li class="en-ligne candidat case"><span class="qui"><?= e(membre_nom($l)) ?></span>
-      <span class="en-ligne">
-      <?php foreach (['1' => 'Présent', '0' => 'Absent'] as $valeur => $texte): $actif = $l['present'] !== null && (string) $l['present'] === $valeur; ?>
-      <form method="post" action="<?= $lien('/presence') ?>"><?= csrf_field() ?><input type="hidden" name="membre_id" value="<?= (int) $l['membre_id'] ?>"><input type="hidden" name="present" value="<?= $actif ? '' : $valeur ?>">
-        <button type="submit" class="bouton bouton-<?= $actif ? 'principal' : 'secondaire' ?>" aria-pressed="<?= $actif ? 'true' : 'false' ?>"><?= $texte ?></button></form>
+  <?php elseif ($liste): // Gestion : quatre chiffres, trois outils, puis Inscrits / Attente / Pointage
+    $retenus = array_values(array_filter($liste, fn($l) => $l['statut'] === 'retenu'));
+    $attente = array_values(array_filter($liste, fn($l) => in_array($l['statut'], ['attente', 'voeu', 'invite'], true)));
+    $a_regler = $exige ? count(array_filter($retenus, fn($l) => !inscription_reglee($l, $ev))) : 0;
+    $presents = count(array_filter($retenus, fn($l) => (string) $l['present'] === '1'));
+    $emails = implode(',', array_map(fn($l) => $l['email'], $retenus));
+    $onglet = $jour_j ? 'pointage' : 'inscrits'; ?>
+  <div class="gestion-evenement" data-onglets>
+  <h3 class="visuellement-cache">Gestion de l'événement</h3>
+  <ul class="chiffres-gestion">
+    <li><a href="#inscrits" data-vers="inscrits"><strong><?= count($retenus) ?><?= $limite ? '/' . (int) $ev['places'] : '' ?></strong><span>inscrits</span></a></li>
+    <?php if ($exige): ?><li><a href="#inscrits" data-vers="inscrits"><strong><?= $a_regler ?></strong><span>à <?= $verbe ?></span></a></li><?php endif ?>
+    <li><a href="#attente" data-vers="attente"><strong><?= count($attente) ?></strong><span>en attente</span></a></li>
+    <li><a href="#pointage" data-vers="pointage"><strong data-presents><?= $presents ?></strong><span>présents</span></a></li>
+  </ul>
+  <p class="outils-gestion">
+    <?php if ($emails !== ''): ?><a class="bouton bouton-secondaire" href="mailto:?bcc=<?= e($emails) ?>&amp;subject=<?= e(rawurlencode($espace['titre'])) ?>"><?= c_icone('enveloppe') ?>Écrire à tous</a><?php endif ?>
+    <a class="bouton bouton-secondaire" href="<?= $lien('/emargement') ?>"><?= c_icone('liste') ?>Émargement</a>
+    <a class="bouton bouton-secondaire" href="#reglages-evenement" data-ouvrir="reglages-evenement"><?= c_icone('reglages') ?>Réglages</a>
+  </p>
+  <div class="onglets" role="tablist" hidden>
+    <?php foreach (['inscrits' => 'Inscrits · ' . count($retenus), 'attente' => 'Attente · ' . count($attente), 'pointage' => 'Pointage'] as $id => $texte): ?>
+    <button type="button" role="tab" id="onglet-<?= $id ?>" aria-controls="<?= $id ?>" aria-selected="<?= $id === $onglet ? 'true' : 'false' ?>" data-onglet="<?= $id ?>"><?= e($texte) ?></button>
+    <?php endforeach ?>
+  </div>
+  <?php $ligne = function (array $l, string $actions) use ($groupe): string {
+      return '<li class="personne"><span class="avatar" aria-hidden="true">' . e(mb_strtoupper(mb_substr(membre_nom_affiche($l), 0, 1))) . '</span><span class="qui"><strong>' . e(membre_nom($l)) . '</strong>' . $actions . '</span></li>';
+  }; ?>
+  <section id="inscrits" role="tabpanel" aria-labelledby="onglet-inscrits" class="panneau-onglet">
+    <h4 class="titre-onglet">Inscrits</h4>
+    <?php if (!$retenus): ?><p class="discret">Personne pour l'instant.</p><?php else: ?>
+    <ul class="personnes">
+      <?php foreach ($retenus as $l):
+          $etat = '';
+          if ($l['paye_le'] !== null) { $etat .= '<span class="badge badge-ok">payé le ' . e(date('d/m', strtotime($l['paye_le']))) . '</span>'; }
+          if ($l['echeance'] !== null && !inscription_reglee($l, $ev)) { $etat .= '<span class="badge badge-attention">à ' . $verbe . ' avant le ' . e(date('d/m H\hi', strtotime($l['echeance']))) . '</span>'; }
+          if ($l['confirme_le'] !== null) { $etat .= '<span class="badge badge-ok">venue confirmée</span>'; }
+          $act = '';
+          if ($paiement && $l['paye_le'] === null) { $act .= '<form method="post" action="' . $lien('/paye') . '">' . csrf_field() . '<input type="hidden" name="membre_id" value="' . (int) $l['membre_id'] . '"><button type="submit" class="lien-bouton" data-confirmer="Noter que ' . e(membre_nom($l)) . ' a payé ?">noter payé</button></form>'; }
+          if (!$commence) { $act .= '<form method="post" action="' . $lien('/annuler') . '">' . csrf_field() . '<input type="hidden" name="membre_id" value="' . (int) $l['membre_id'] . '"><button type="submit" class="lien-bouton" data-confirmer="Annuler l\'inscription de ' . e(membre_nom($l)) . ' ? Sa place ira au suivant de la liste d\'attente.">annuler</button></form>'; }
+          $act = '<a class="lien-bouton" href="mailto:' . e($l['email']) . '">écrire</a>' . $act; ?>
+      <?= $ligne($l, ($etat !== '' ? '<span class="etat">' . $etat . '</span>' : '') . '<span class="actions">' . $act . '</span>') ?>
       <?php endforeach ?>
-      </span></li>
-    <?php endforeach ?>
-  </ul>
-  <?php elseif ($liste): ?>
-  <h3>Inscrits et candidats <?php if ($limite): ?><?= $aide ?><?php endif ?></h3>
-  <ul class="liste">
-    <?php foreach ($liste as $l): ?>
-    <li class="en-ligne candidat case"><span class="qui"><?= $groupe($l['groupe'] !== null ? (int) $l['groupe'] : null) ?> <?= e(membre_nom($l)) ?></span>
-      <span class="en-ligne"><span class="badge"><?= e(INSCRIPTION_STATUTS[$l['statut']] . ($l['statut'] === 'attente' ? ' n°' . (int) $l['rang'] : '')) ?></span>
-      <?php if ($l['paye_le'] !== null): ?><span class="badge <?= $l['statut'] === 'attente' && $ev['etat'] === 'attribuee' ? 'badge-alerte' : 'badge-ok' ?>">payé le <?= e(date('d/m', strtotime($l['paye_le']))) ?><?= $l['statut'] === 'attente' && $ev['etat'] === 'attribuee' ? ' · sans place' : '' ?></span><?php endif ?>
-      <?php if ($l['statut'] === 'retenu' && $l['echeance'] !== null): ?><span class="badge">à <?= $verbe ?> avant le <?= e(date('d/m H\hi', strtotime($l['echeance']))) ?></span><?php endif ?>
-      <?php if ($l['confirme_le'] !== null && $l['statut'] === 'retenu'): ?><span class="badge badge-ok">venue confirmée</span><?php endif ?>
-      <?php if ($paiement && $l['paye_le'] === null && in_array($l['statut'], ['retenu', 'attente'], true)): ?>
-      <form method="post" action="<?= $lien('/paye') ?>"><?= csrf_field() ?><input type="hidden" name="membre_id" value="<?= (int) $l['membre_id'] ?>"><button type="submit" class="lien-bouton" data-confirmer="Noter que <?= e(membre_nom($l)) ?> a payé ?">noter payé</button></form>
-      <?php endif ?>
-      <?php if ($l['statut'] === 'retenu' && !$commence): ?>
-      <form method="post" action="<?= $lien('/annuler') ?>"><?= csrf_field() ?><input type="hidden" name="membre_id" value="<?= (int) $l['membre_id'] ?>"><button type="submit" class="lien-bouton" data-confirmer="Annuler l'inscription de <?= e(membre_nom($l)) ?> ? Sa place ira au suivant de la liste d'attente.">annuler</button></form>
-      <?php endif ?></span></li>
-    <?php endforeach ?>
-  </ul>
+    </ul>
+    <?php endif ?>
+  </section>
+  <section id="attente" role="tabpanel" aria-labelledby="onglet-attente" class="panneau-onglet">
+    <h4 class="titre-onglet">Liste d'attente et vœux <?php if ($limite): ?><?= $aide ?><?php endif ?></h4>
+    <?php if (!$attente): ?><p class="discret">Personne en attente.</p><?php else: ?>
+    <ul class="personnes">
+      <?php foreach ($attente as $l): ?>
+      <?= $ligne($l, '<span class="etat">' . ($l['groupe'] !== null ? $groupe((int) $l['groupe']) . ' ' : '') . '<span class="badge">' . e(INSCRIPTION_STATUTS[$l['statut']] . ($l['statut'] === 'attente' ? ' n°' . (int) $l['rang'] : '')) . '</span>'
+          . ($l['paye_le'] !== null ? '<span class="badge badge-alerte">payé le ' . e(date('d/m', strtotime($l['paye_le']))) . ' · sans place</span>' : '') . '</span><span class="actions"><a class="lien-bouton" href="mailto:' . e($l['email']) . '">écrire</a></span>') ?>
+      <?php endforeach ?>
+    </ul>
+    <?php endif ?>
+  </section>
+  <section id="pointage" role="tabpanel" aria-labelledby="onglet-pointage" class="panneau-onglet">
+    <h4 class="titre-onglet">Pointage</h4>
+    <?php if (!$jour_j): ?><p class="discret">Le pointage s'ouvre le jour de l'événement. En cas de réseau faible sur place, imprimez la feuille d'émargement.</p>
+    <?php elseif (!$retenus): ?><p class="discret">Personne à pointer.</p>
+    <?php else: ?>
+    <div class="compteur-pointage" role="status"><strong><span data-presents><?= $presents ?></span> présent(s) sur <?= count($retenus) ?></strong><span class="barre"><span style="width: <?= count($retenus) ? round(100 * $presents / count($retenus)) : 0 ?>%" data-barre></span></span></div>
+    <p class="filtres-pointage" hidden><input type="search" placeholder="Chercher un nom" aria-label="Chercher un nom" data-chercher>
+      <span class="segments"><button type="button" data-filtre="a-pointer" aria-pressed="true">À pointer</button><button type="button" data-filtre="presents" aria-pressed="false">Présents</button><button type="button" data-filtre="tous" aria-pressed="false">Tous</button></span></p>
+    <ul class="personnes pointage-liste" data-total="<?= count($retenus) ?>">
+      <?php foreach ($retenus as $l): $ok = (string) $l['present'] === '1'; ?>
+      <li class="personne" data-present="<?= $ok ? '1' : '0' ?>" data-nom="<?= e(mb_strtolower(membre_nom($l))) ?>"><span class="avatar" aria-hidden="true"><?= e(mb_strtoupper(mb_substr(membre_nom_affiche($l), 0, 1))) ?></span><span class="qui"><strong><?= e(membre_nom($l)) ?></strong></span>
+        <form method="post" action="<?= $lien('/presence') ?>" data-pointer><?= csrf_field() ?><input type="hidden" name="membre_id" value="<?= (int) $l['membre_id'] ?>"><input type="hidden" name="present" value="<?= $ok ? '' : '1' ?>">
+          <button type="submit" class="bouton-present" aria-pressed="<?= $ok ? 'true' : 'false' ?>"><?= $ok ? '✓ Présent' : 'Présent' ?></button></form></li>
+      <?php endforeach ?>
+    </ul>
+    <p class="petit">Pointage facultatif, sans effet sur les priorités. Une personne non pointée compte simplement comme « non renseigné ».</p>
+    <?php endif ?>
+  </section>
+  </div>
   <?php endif ?>
 
-  <details class="separe"<?= $ev['debut'] === null ? ' open' : '' ?>><summary>Réglages de l'événement</summary>
+  <details class="separe" id="reglages-evenement"<?= $ev['debut'] === null ? ' open' : '' ?>><summary>Réglages de l'événement</summary>
   <form method="post" action="<?= $lien('/evenement') ?>" class="formulaire">
     <?= csrf_field() ?>
     <?= c_champ('debut', 'Date et heure', ['type' => 'datetime-local', 'valeur' => $ev['debut'] ? date('Y-m-d\TH:i', strtotime($ev['debut'])) : '']) ?>
+    <?= c_champ('fin', 'Fin (facultatif)', ['type' => 'datetime-local', 'valeur' => !empty($ev['fin']) ? date('Y-m-d\TH:i', strtotime($ev['fin'])) : '', 'aide' => 'Pour afficher « 9 h 30 – 12 h » et un agenda exact.']) ?>
     <?= c_champ('lieu', 'Lieu', ['valeur' => $ev['lieu'], 'max' => 200]) ?>
     <?= c_champ('mode', 'Inscriptions', ['type' => 'select', 'valeur' => $ev['mode'], 'choix' => EVENEMENT_MODES]) ?>
     <?= c_champ('places', 'Nombre de places (places limitées)', ['type' => 'number', 'valeur' => (string) ($ev['places'] ?? '')]) ?>
