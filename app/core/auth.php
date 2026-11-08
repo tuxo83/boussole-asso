@@ -98,7 +98,8 @@ function login_first_step(array $member, string $facteur): void
     session_regenerate_id(true);
     $_SESSION['membre_id'] = (int) $member['id'];
     $_SESSION['facteurs'] = [$facteur];
-    if (member_exige_2fa($member)) {
+    // Choix de chacun : second facteur à chaque connexion, ou seulement en entrant dans la gestion (require_right le demande alors)
+    if (member_exige_2fa($member) && !empty($member['mfa_connexion'])) {
         $_SESSION['connecte'] = false;
         redirect('/connexion/double-authentification');
     }

@@ -156,6 +156,16 @@ return [
             flash('succes', 'Application d\'authentification activée.');
             redirect('/compte/parametres');
         }],
+        // Quand demander la double authentification : à chaque connexion, ou seulement pour la gestion
+        ['POST', '/compte/double-authentification/moment', function () {
+            $member = require_member();
+            compte_demo_refuser($member);
+            $chaque = ($_POST['mfa_connexion'] ?? '') === '1' ? 1 : 0;
+            db_query('UPDATE membre SET mfa_connexion = ? WHERE id = ?', [$chaque, $member['id']]);
+            journal_compte((int) $member['id'], $member, $chaque ? 'Double authentification : à chaque connexion' : 'Double authentification : seulement pour la gestion');
+            flash('succes', 'Réglage enregistré.');
+            redirect('/compte/double-authentification');
+        }],
         ['GET', '/compte/cles-securite/options', function () {
             $member = securite_membre();
             header('Content-Type: application/json');
