@@ -345,7 +345,7 @@ function carte_evenement(array $ev, string $titre, string $lien, string $contenu
     return '<article class="carte carte-evenement acces-' . ($equipe ? 'equipe' : ($ev['visibilite'] === 'public' ? 'public' : 'membres')) . ($verrouille ? ' carte-reservee' : '') . '">'
         . '<span class="ruban">' . e($bandeau) . '</span>'
         . '<div class="evenement-tete"><span class="date-tuile">' . $date . '</span><div class="evenement-titre"><h3><a href="' . e(url($lien)) . '">' . e($titre) . '</a></h3>' . $organise . '</div></div>'
-        . ($ev['debut'] !== null ? '<p class="discret">' . e(evenement_date($ev['debut'])) . '</p>' : '') . $contenu . '</article>';
+        . ($ev['debut'] !== null ? '<p class="discret evenement-quand">' . e(evenement_date($ev['debut'])) . '</p>' : '') . $contenu . '</article>';
 }
 
 // Événements montrés dans l'agenda : publics et réservés aux membres (jamais ceux d'une équipe)
