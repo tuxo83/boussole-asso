@@ -176,12 +176,17 @@ $boutons = '<span class="en-place-boutons"><button type="submit" class="bouton b
 <section id="equipe">
   <div class="titre-avec-lien"><h2>Équipe</h2></div>
   <?php if (!$equipe): ?><p class="discret">Personne pour l'instant.</p><?php endif ?>
+  <?php // Rangée par groupes comme dans les pages (« Bureau : Président ») ; le niveau (n°1, n°2) reste indiqué, il donne les droits
+  $groupes_equipe = espace_equipe_groupes($equipe); $plusieurs = count($groupes_equipe) > 1; ?>
+  <?php foreach ($groupes_equipe as $groupe => $liste): ?>
+  <?php if ($plusieurs): ?><h3 class="groupe-equipe"><?= e($groupe) ?></h3><?php endif ?>
   <ul class="equipe-liste">
-    <?php foreach ($equipe as $personne): ?>
+    <?php foreach ($liste as ['personne' => $personne, 'role' => $role]): $niv = ['n1' => 'N°1', 'n2' => 'N°2', 'associe' => 'Associé'][$personne['niveau']] ?? ''; ?>
     <li><span class="avatar" aria-hidden="true"><?= e(mb_strtoupper(mb_substr($nom_court($personne), 0, 1))) ?></span><span class="qui"><strong title="<?= e($personne['email']) ?>"><?= e($nom_court($personne)) ?></strong>
-      <span class="discret"><?= e(in_array($personne['niveau'], ['n1', 'n2'], true) ? ($personne['niveau'] === 'n1' ? 'N°1' : 'N°2') . ($personne['libelle'] !== '' ? ' · ' . $personne['libelle'] : '') : ($personne['libelle'] !== '' ? $personne['libelle'] : ESPACE_NIVEAUX[$personne['niveau']])) ?></span></span></li>
+      <span class="discret"><?= e(implode(' · ', array_filter([$niv, $role !== '' ? $role : ($niv === '' ? 'Membre' : '')]))) ?></span></span></li>
     <?php endforeach ?>
   </ul>
+  <?php endforeach ?>
   <?php if ($peut_gerer): ?>
   <details id="ajout-equipe"><summary>+ Ajouter ou modifier</summary>
   <form method="post" action="<?= $action('/equipe') ?>" class="formulaire">
