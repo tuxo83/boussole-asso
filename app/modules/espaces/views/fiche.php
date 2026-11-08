@@ -24,7 +24,9 @@ $garder = function (array $sauf) use ($espace): string {
 };
 $boutons = '<span class="en-place-boutons"><button type="submit" class="bouton bouton-principal">Enregistrer</button> <button type="button" class="lien-bouton" data-en-place-annuler>Annuler</button></span>';
 ?>
-<?php if ($peut_gerer): ?><p class="bouton-gerer"><?= c_bouton('⚙ Gérer', '/espace/' . $espace['slug'] . '/gerer', 'secondaire') ?></p><?php endif ?>
+<?php if ($organise): ?><p class="bouton-gerer">
+  <span class="vue-choix" role="group" aria-label="Affichage"><a href="?vue=membre"<?= !$vue_orga ? ' aria-current="true"' : '' ?>>Vue membre</a><a href="?vue=orga"<?= $vue_orga ? ' aria-current="true"' : '' ?>>Vue organisateur</a></span>
+  <?php if ($gere_vraiment): ?><?= c_bouton('⚙ Gérer', '/espace/' . $espace['slug'] . '/gerer', 'secondaire') ?><?php endif ?></p><?php endif ?>
 <nav class="ariane" aria-label="Fil d'Ariane"><a href="<?= e(url('/espaces')) ?>">Espaces</a><?php if ($parent): ?> › <a href="<?= e(url('/espace/' . $parent['slug'])) ?>"><?= e($parent['titre']) ?></a><?php endif ?></nav>
 <p class="surtitre surtitre-espace"><?= e(ESPACE_TYPES[$espace['type']]) ?></p>
 <?php if ($peut_gerer): ?>
@@ -94,7 +96,7 @@ $boutons = '<span class="en-place-boutons"><button type="submit" class="bouton b
 <?php else: ?>
 <?= c_texte($espace['description']) ?>
 <?php endif ?>
-<?php if ($espace['type'] === 'evenement'): ?><?= partial('evenements/bloc', evenement_vue($espace, $membre)) ?><?php endif ?>
+<?php if ($espace['type'] === 'evenement'): ?><?= partial('evenements/bloc', evenement_vue($espace, $membre, $vue_orga)) ?><?php endif ?>
 
 <?php if ($espace['type'] !== 'evenement'): ?>
 <nav class="ancres" aria-label="Dans cet espace"><?php foreach (['agenda' => 'Agenda', 'dates' => 'Dates', 'fichiers' => 'Fichiers', 'equipe' => 'Équipe'] as $id => $libelle): ?><a href="#<?= $id ?>"><?= $libelle ?></a><?php endforeach ?></nav>
