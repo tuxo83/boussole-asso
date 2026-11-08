@@ -90,6 +90,20 @@ return [
                 'peut_contribuer' => espace_peut_contribuer($member, $espace),
             ]);
         }],
+        // Page « Gérer » : réglages, organisation, journal, archiver ou supprimer
+        ['GET', '/espace/{slug}/gerer', function (array $p) {
+            [$espace, $member] = espace_action($p['slug'], 'gerer');
+            render('espaces/gerer', [
+                'titre' => 'Gérer · ' . $espace['titre'],
+                'espace' => $espace,
+                'membre' => $member,
+                'parent' => $espace['parent_id'] ? db_one('SELECT * FROM espace WHERE id = ?', [$espace['parent_id']]) : null,
+                'journal' => db_all('SELECT j.*, m.prenom, m.nom, m.email FROM journal j LEFT JOIN membre m ON m.id = j.membre_id WHERE j.espace_id = ? ORDER BY j.le DESC LIMIT 100', [$espace['id']]),
+                'parents_possibles' => is_admin($member)
+                    ? array_column(array_filter(db_all('SELECT slug, titre, id FROM espace WHERE archive = 0 AND type <> "evenement" ORDER BY titre'), fn($e) => !in_array((int) $e['id'], espace_descendants((int) $espace['id']), true)), 'titre', 'slug')
+                    : [],
+            ]);
+        }],
         ['POST', '/espace/{slug}/modifier', function (array $p) {
             [$espace, $member] = espace_action($p['slug'], 'gerer');
             [$v, $erreurs] = espace_valider($_POST + ['type' => $espace['type']]);
@@ -105,11 +119,11 @@ return [
             }
             if ($erreurs) {
                 flash('erreur', implode(' ', $erreurs));
-                redirect('/espace/' . $espace['slug']);
+                redirect('/espace/' . $espace['slug'] . (($_POST['retour'] ?? '') === 'gerer' ? '/gerer#organisation' : ''));
             }
             db_query('UPDATE espace SET titre = ?, description = ?, visibilite = ?, type = ?, parent_id = ? WHERE id = ?', [$v['titre'], $v['description'], $v['visibilite'], $v['type'], $parent, $espace['id']]);
             journal($espace['id'], $member, 'Espace modifié');
-            redirect('/espace/' . $espace['slug']);
+            redirect('/espace/' . $espace['slug'] . (($_POST['retour'] ?? '') === 'gerer' ? '/gerer#organisation' : ''));
         }],
         // Archiver : l'espace sort des listes et de l'agenda, sans rien perdre ; désarchiver le fait revenir
         ['POST', '/espace/{slug}/archiver', function (array $p) {

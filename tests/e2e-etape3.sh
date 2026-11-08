@@ -158,4 +158,10 @@ sql "UPDATE jalon SET date_jalon = CURDATE() - INTERVAL 40 DAY WHERE libelle = '
 check "météo auto : dépassée depuis longtemps = bloqué (tâche planifiée)" "$(php "$ROOT/app/bin/cli.php" cron >/dev/null; sql "SELECT meteo FROM espace WHERE slug = 'cyber'")" "orage"
 post "$U/espace/cyber" "$U/espace/cyber/meteo" -d 'meteo=soleil' >/dev/null
 check "météo choisie à la main : le mode automatique se coupe" "$(c "$U/espace/cyber" >/dev/null; sql "SELECT CONCAT(meteo, ' ', meteo_auto) FROM espace WHERE slug = 'cyber'")" "soleil 0"
+# Page « Gérer » : réservée à qui gère ; la page de l'espace ne garde que le contenu
+as admin
+check "page Gérer : onglets Organisation, Journal, Archiver" "$(c "$U/espace/cyber/gerer" | cut -c1-3) $(grep -c 'id="organisation"' "$B") $(grep -c 'id="journal"' "$B") $(grep -c 'id="archiver"' "$B")" "200 1 1 1"
+check "la page de l'espace n'a plus la zone de gestion, mais un bouton Gérer" "$(c "$U/espace/cyber" >/dev/null; grep -c 'Supprimer définitivement' "$B") $(grep -c '/espace/cyber/gerer' "$B")" "0 1"
+as alice
+check "page Gérer refusée à qui ne gère pas" "$(c "$U/espace/cyber/gerer" | cut -c1-3)" "403"
 bilan
