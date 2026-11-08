@@ -962,3 +962,15 @@ details.crayon-flottant > .crayon-bouton { padding: 0; }
 .en-place-form .choix-visibilite input[type=radio] { flex: none; padding: 0; border: 0; width: 1.1rem; height: 1.1rem; }
 .en-place-ligne { flex-wrap: wrap; }
 .en-place-ligne .en-place-form .choix-visibilite { flex-basis: 100%; }
+
+/* Météo automatique : marque « auto », raison, case dans le menu */
+.meteo-auto-marque { margin-left: .3rem; padding: 0 .4rem; border-radius: 999px; background: var(--fond-doux); color: var(--texte-doux); font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+.meteo-raison { font-size: .85rem; }
+.meteo-auto-choix { margin: 0 0 .5rem; padding-bottom: .5rem; border-bottom: 1px solid var(--bordure); }
+.meteo-auto-choix button { display: flex; align-items: center; gap: .6rem; width: 100%; min-height: var(--cible); padding: .4rem .5rem; border: 0; border-radius: var(--rayon-petit); background: none; font: inherit; text-align: left; cursor: pointer; }
+.meteo-auto-choix button:hover { background: var(--principale-doux); }
+.meteo-auto-choix span:last-child { display: flex; flex-direction: column; }
+.meteo-auto-choix small { color: var(--texte-doux); font-size: .8rem; }
+.case-auto { flex: none; width: 1.15rem; height: 1.15rem; border: 2px solid var(--couleur-principale); border-radius: 4px; }
+.meteo-auto-choix button[aria-pressed="true"] .case-auto { background: var(--couleur-principale) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.5' stroke-linecap='round'%3E%3Cpath d='m6 12 4 4 8-8'/%3E%3C/svg%3E") center / 80% no-repeat; }
+.meteo-options .petit { margin: .25rem .5rem; }

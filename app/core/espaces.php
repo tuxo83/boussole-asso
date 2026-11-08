@@ -200,3 +200,63 @@ function c_visibilite_choix(string $valeur, array $libelles, ?string $parent = n
     }
     return $html . '</fieldset>';
 }
+
+// Météo automatique (case « Météo automatique ») : calculée d'après le responsable et les dates clés ; durées réglables.
+// Bloqué : pas de n°1, une date dépassée depuis longtemps, ou trop de dates dépassées. En retard : une date dépassée.
+// En cours : une date proche ou de l'activité récente. À jour : rien en retard et un responsable.
+function espace_meteo_calculee(array $espace): array
+{
+    $longtemps = max(1, (int) setting('meteo_auto_retard_jours', '15'));
+    $trop = max(2, (int) setting('meteo_auto_dates_bloque', '3'));
+    $horizon = max(1, (int) setting('meteo_auto_horizon_jours', '30'));
+    $n1 = db_value('SELECT COUNT(*) FROM espace_membre WHERE espace_id = ? AND niveau = "n1"', [$espace['id']]) > 0;
+    $depassees = db_all('SELECT date_jalon FROM jalon WHERE espace_id = ? AND fait = 0 AND date_jalon < CURDATE() ORDER BY date_jalon', [$espace['id']]);
+    $pluriel = fn(int $n) => $n === 1 ? '1 date clé dépassée' : "$n dates clés dépassées";
+    if (!$n1) {
+        return ['orage', 'pas de responsable (n°1)'];
+    }
+    if ($depassees) {
+        $plus_vieille = (int) floor((time() - strtotime($depassees[0]['date_jalon'])) / 86400);
+        if (count($depassees) >= $trop) {
+            return ['orage', $pluriel(count($depassees))];
+        }
+        if ($plus_vieille > $longtemps) {
+            return ['orage', 'date clé dépassée depuis ' . $plus_vieille . ' jours'];
+        }
+        return ['pluie', $pluriel(count($depassees))];
+    }
+    $proche = db_one('SELECT date_jalon, libelle FROM jalon WHERE espace_id = ? AND fait = 0 AND date_jalon >= CURDATE() AND date_jalon <= CURDATE() + INTERVAL ? DAY ORDER BY date_jalon LIMIT 1', [$espace['id'], $horizon]);
+    if ($proche) {
+        return ['eclaircie', 'prochaine date le ' . date('d/m', strtotime($proche['date_jalon']))];
+    }
+    if (strtotime((string) $espace['modifie_le']) > time() - $horizon * 86400) {
+        return ['eclaircie', 'activité récente'];
+    }
+    return ['soleil', 'rien en retard'];
+}
+
+// Recalcule et enregistre la météo d'un espace en mode automatique (sans toucher à la date de modification) ; renvoie l'espace à jour
+function espace_meteo_actualiser(array $espace): array
+{
+    if (empty($espace['meteo_auto'])) {
+        return $espace;
+    }
+    [$meteo, $raison] = espace_meteo_calculee($espace);
+    if ($meteo !== $espace['meteo'] || $raison !== $espace['meteo_raison']) {
+        db_query('UPDATE espace SET meteo = ?, meteo_raison = ?, modifie_le = modifie_le WHERE id = ?', [$meteo, $raison, $espace['id']]);
+        $espace['meteo'] = $meteo;
+        $espace['meteo_raison'] = $raison;
+    }
+    return $espace;
+}
+
+// Tâche planifiée : toutes les météos automatiques (les dates passent même quand personne ne visite l'espace)
+function espaces_meteo_auto_actualiser(): int
+{
+    $n = 0;
+    foreach (db_all('SELECT * FROM espace WHERE meteo_auto = 1 AND archive = 0') as $espace) {
+        $avant = $espace['meteo'];
+        $n += espace_meteo_actualiser($espace)['meteo'] !== $avant ? 1 : 0;
+    }
+    return $n;
+}
