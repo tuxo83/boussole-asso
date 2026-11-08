@@ -229,3 +229,12 @@ document.querySelectorAll('.pointage-liste').forEach(function (liste) {
   });
   appliquer();
 });
+
+// Menu de compte (initiales) : sur ordinateur, il s'ouvre au survol de la souris (le clic marche toujours, et au doigt)
+if (window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+  document.querySelectorAll('.compte-menu').forEach(function (menu) {
+    var minuterie = null;
+    menu.addEventListener('mouseenter', function () { clearTimeout(minuterie); menu.open = true; });
+    menu.addEventListener('mouseleave', function () { minuterie = setTimeout(function () { menu.open = false; }, 250); });
+  });
+}

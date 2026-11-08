@@ -55,6 +55,7 @@ return [
         }],
         ['GET', '/espace/{slug}', function (array $p) {
             $espace = espace_ou_404($p['slug']);
+            $espace = espace_meteo_actualiser($espace);
             $member = current_member();
             if (!espace_peut_voir($member, $espace)) {
                 $member === null ? require_member() : espace_refus();
@@ -141,9 +142,18 @@ return [
             [$espace, $member] = espace_action($p['slug'], 'contribuer');
             $meteo = (string) ($_POST['meteo'] ?? '');
             if (in_array($meteo, ['soleil', 'eclaircie', 'pluie', 'orage'], true)) {
-                db_query('UPDATE espace SET meteo = ? WHERE id = ?', [$meteo, $espace['id']]);
+                // Un choix à la main l'emporte : la météo automatique se coupe
+                db_query('UPDATE espace SET meteo = ?, meteo_auto = 0, meteo_raison = "" WHERE id = ?', [$meteo, $espace['id']]);
                 journal($espace['id'], $member, 'Météo : ' . strip_tags(c_meteo($meteo)));
             }
+            redirect('/espace/' . $espace['slug']);
+        }],
+        // Météo automatique : on coche ou décoche (qui contribue)
+        ['POST', '/espace/{slug}/meteo-auto', function (array $p) {
+            [$espace, $member] = espace_action($p['slug'], 'contribuer');
+            $auto = empty($_POST['meteo_auto']) ? 0 : 1;
+            db_query('UPDATE espace SET meteo_auto = ? WHERE id = ?', [$auto, $espace['id']]);
+            journal($espace['id'], $member, $auto ? 'Météo automatique activée' : 'Météo automatique coupée');
             redirect('/espace/' . $espace['slug']);
         }],
         ['POST', '/espace/{slug}/equipe', function (array $p) {

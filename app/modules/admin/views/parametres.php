@@ -30,6 +30,13 @@
     <?= c_champ('journal_conservation_ans', 'Garder le journal des actions pendant (années)', ['type' => 'number', 'valeur' => $v['journal_conservation_ans'] ?? '3', 'aide' => 'De 1 à 10 ans. Les lignes plus anciennes sont effacées automatiquement. À indiquer dans la page de confidentialité.']) ?>
   </fieldset>
   <fieldset>
+    <legend>Météo automatique des espaces</legend>
+    <p class="petit">Pour les espaces où la case « Météo automatique » est cochée. Sans responsable (n°1) : bloqué.</p>
+    <?= c_champ('meteo_auto_retard_jours', 'Bloqué si une date clé est dépassée depuis plus de (jours)', ['type' => 'number', 'valeur' => $v['meteo_auto_retard_jours'] ?? '15']) ?>
+    <?= c_champ('meteo_auto_dates_bloque', 'Bloqué à partir de combien de dates dépassées', ['type' => 'number', 'valeur' => $v['meteo_auto_dates_bloque'] ?? '3']) ?>
+    <?= c_champ('meteo_auto_horizon_jours', '« En cours » si une date clé arrive dans les (jours)', ['type' => 'number', 'valeur' => $v['meteo_auto_horizon_jours'] ?? '30', 'aide' => 'Ou s\'il y a eu de l\'activité pendant cette durée. Sinon, et sans retard : à jour.']) ?>
+  </fieldset>
+  <fieldset>
     <legend>Après la connexion</legend>
     <p class="petit">Page où arrive un membre qui se connecte depuis « Connexion » (s'il voulait voir une page précise, il y retourne).</p>
     <?php $arrivees = connexion_arrivees_possibles(); ?>
