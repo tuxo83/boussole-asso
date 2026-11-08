@@ -44,6 +44,14 @@ return [
             render('compte/parametres', ['titre' => 'Paramètres', 'membre' => $member, 'erreur' => null,
                 'historique' => historique_compte((int) $member['id'], 15), 'tuiles' => administration_tuiles($member)]);
         }],
+        // Aide « Qui peut faire quoi » : pour qui a un droit de gestion (lien depuis Administration du site)
+        ['GET', '/compte/aide-droits', function () {
+            $member = require_member();
+            if (!member_rights($member['id'])) {
+                redirect('/compte/parametres');
+            }
+            render('compte/aide-droits', ['titre' => 'Qui peut faire quoi']);
+        }],
         ['GET', '/administration', function () {
             require_member();
             redirect('/compte/parametres#administration');
@@ -222,6 +230,7 @@ function administration_tuiles(array $member): array
     if (has_right($member, 'membres')) {
         $tuiles[] = ['personnes', 'Membres', 'Ajouter, modifier, droits', '/admin/membres', ''];
     }
+    $tuiles[] = ['bouclier', 'Qui peut faire quoi', 'Les droits, espace par espace', '/compte/aide-droits', ''];
     if (is_admin($member)) {
         $nouveaux = (int) db_value('SELECT COUNT(*) FROM message_contact WHERE lu = 0');
         $tuiles[] = ['enveloppe', 'Messages reçus', 'Formulaire de contact', '/admin/messages', $nouveaux ? $nouveaux . ($nouveaux > 1 ? ' nouveaux' : ' nouveau') : ''];

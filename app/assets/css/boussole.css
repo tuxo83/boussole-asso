@@ -988,3 +988,9 @@ details.crayon-flottant > .crayon-bouton { padding: 0; }
 .aide-contenu th { text-transform: none; letter-spacing: 0; font-size: .82rem; vertical-align: bottom; }
 .aide-contenu td:not(:first-child), .aide-contenu th:not(:first-child) { text-align: center; }
 .aide-contenu td:first-child { white-space: nowrap; }
+
+/* Page d'aide « Qui peut faire quoi » */
+.aide-section { margin-top: 2rem; scroll-margin-top: 1rem; max-width: 60rem; }
+.aide-section h3 { font-size: 1.05rem; margin: 1.25rem 0 .5rem; }
+.aide-section td:first-child { white-space: nowrap; }
+@media (max-width: 40rem) { .aide-section td:first-child { white-space: normal; } }
