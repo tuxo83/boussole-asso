@@ -124,6 +124,8 @@ function bloc_normaliser(array $block): ?array
         'chiffres' => bloc_chiffres($d),
         'frise' => bloc_frise($d),
         'bouton' => bloc_bouton($d),
+        // Équipe d'un espace : la page lit l'équipe dans l'espace (une seule source), on n'enregistre que l'espace choisi
+        'equipe' => preg_match('/^[a-z0-9-]{1,190}$/', (string) ($d['espace'] ?? '')) ? ['type' => 'equipe', 'data' => ['espace' => $d['espace']]] : null,
         default => null,
     };
 }
@@ -235,6 +237,7 @@ function blocs_rendre(?string $json, ?string $edition = null): string
             }, $d['items'])) . '</div>',
             'frise' => '<ol class="chronologie">' . implode('', array_map(fn($f) => '<li><strong class="chrono-date">' . e($f['date']) . '</strong><p>' . $f['texte'] . '</p></li>', $d['items'])) . '</ol>',
             'chiffres' => '<div class="chiffres">' . implode('', array_map(fn($c) => '<div><strong>' . e($c['valeur']) . '</strong><span>' . e($c['libelle']) . '</span></div>', $d['items'])) . '</div>',
+            'equipe' => bloc_equipe((string) $d['espace']),
             'bouton' => ($lien = bloc_lien_resolu($d['lien'])) !== '' ? '<p class="bloc-bouton"><a class="bouton bouton-' . $d['style'] . '" href="' . e(str_starts_with($lien, '/') ? url($lien) : $lien) . '"' . (preg_match('#^https?://#', $lien) ? ' target="_blank" rel="noopener noreferrer"' : '') . '>' . e($d['texte']) . '</a></p>' : '',
             default => '',
         };
@@ -448,4 +451,43 @@ function agenda_frise(array $evenements, bool $passes, bool $aujourdhui = true):
             . '</div>' . carte_evenement_agenda($ev, $passes) . '</li>';
     }
     return $html . ($courant !== null ? '</ol>' : '') . '</div>';
+}
+
+// Bloc « Équipe d'un espace » : les personnes de l'espace et leur rôle, regroupées. Le libellé de chacun dans l'espace
+// donne le groupe et le rôle : « Bureau : Président » (groupe Bureau) ; plusieurs, séparés par « ; » ; sans groupe : « Membres ».
+// Seuls le nom et le rôle sont montrés, jamais l'adresse.
+function bloc_equipe(string $slug): string
+{
+    $espace = espace_par_slug($slug);
+    if ($espace === null || $espace['archive']) {
+        return '';
+    }
+    $personnes = db_all('SELECT m.prenom, m.nom, m.email, em.niveau, em.libelle FROM espace_membre em JOIN membre m ON m.id = em.membre_id
+        WHERE em.espace_id = ? AND m.actif = 1 ORDER BY FIELD(em.niveau, "n1", "n2", "membre", "associe"), m.nom, m.prenom', [$espace['id']]);
+    $groupes = [];
+    foreach ($personnes as $p) {
+        $roles = array_filter(array_map('trim', explode(';', (string) $p['libelle'])), fn($r) => $r !== '');
+        if (!$roles) {
+            $roles = [$p['niveau'] === 'associe' ? 'Associés : ' : 'Membres : '];
+        }
+        foreach ($roles as $role) {
+            [$groupe, $intitule] = str_contains($role, ':') ? array_map('trim', explode(':', $role, 2)) : ['Membres', $role];
+            $groupes[$groupe !== '' ? $groupe : 'Membres'][] = ['nom' => membre_nom_affiche($p), 'role' => $intitule];
+        }
+    }
+    if (!$groupes) {
+        return '';
+    }
+    // « Membres » et « Associés » en dernier, les autres groupes dans leur ordre d'apparition
+    uksort($groupes, fn($a, $b) => (in_array($a, ['Membres', 'Associés'], true) <=> in_array($b, ['Membres', 'Associés'], true)));
+    $html = '<div class="bloc-equipe">';
+    foreach ($groupes as $groupe => $liste) {
+        $html .= (count($groupes) > 1 ? '<h3>' . e($groupe) . '</h3>' : '') . '<ul class="equipe-cartes">';
+        foreach ($liste as $l) {
+            $html .= '<li><span class="avatar" aria-hidden="true">' . e(mb_strtoupper(mb_substr($l['nom'], 0, 1))) . '</span><span class="qui"><strong>' . e($l['nom']) . '</strong>'
+                . ($l['role'] !== '' ? '<span>' . e($l['role']) . '</span>' : '') . '</span></li>';
+        }
+        $html .= '</ul>';
+    }
+    return $html . '</div>';
 }

@@ -935,3 +935,11 @@ details.crayon-flottant > .crayon-bouton { padding: 0; }
 .espace-cote .titre-avec-lien { margin-bottom: .5rem; }
 .espace-cote .titre-avec-lien h2 { margin: 0; }
 @media (max-width: 40rem) { .dates-cles time { min-width: 0; } .dates-cles .libelle-date { flex-basis: 100%; padding-left: 3.5rem; margin-top: -.5rem; } }
+
+/* Bloc « Équipe d'un espace » (pages) */
+.bloc-equipe h3 { margin: 1.5rem 0 .6rem; font-size: 1.1rem; }
+.equipe-cartes { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: .6rem; }
+.equipe-cartes li { display: flex; align-items: center; gap: .75rem; padding: .7rem .9rem; border: 1px solid var(--bordure); border-radius: var(--rayon); background: var(--fond); }
+.equipe-cartes .avatar { flex: none; display: grid; place-items: center; width: 2.4rem; height: 2.4rem; border-radius: 50%; background: var(--couleur-principale); color: #fff; font-weight: 700; }
+.equipe-cartes .qui { display: flex; flex-direction: column; min-width: 0; }
+.equipe-cartes .qui span { font-size: .9rem; color: var(--texte-doux); }
