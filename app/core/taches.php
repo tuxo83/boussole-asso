@@ -22,6 +22,7 @@ function taches_planifiees(): array
             messages_contact_purger() . ' message(s) de contact effacé(s)',
             espaces_meteo_auto_actualiser() . ' météo(s) automatique(s) changée(s)',
             evenements_publier_passes() . ' événement(s) passé(s) devenu(s) public(s)',
+            appareils_nettoyer() . ' appareil(s) expiré(s) oublié(s)',
         ];
     } finally {
         db_value("SELECT RELEASE_LOCK('boussole_taches')");

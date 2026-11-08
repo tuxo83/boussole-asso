@@ -1069,3 +1069,11 @@ dialog.dialogue:not([open]) { display: block; position: static; width: auto; box
 .vue-choix { display: inline-flex; padding: .2rem; border: 1px solid var(--bordure); border-radius: 999px; background: var(--fond-doux); }
 .vue-choix a { display: inline-flex; align-items: center; min-height: 2.3rem; padding: 0 .85rem; border-radius: 999px; text-decoration: none; font-weight: 600; font-size: .9rem; color: var(--texte-doux); }
 .vue-choix a[aria-current] { background: var(--fond); color: var(--couleur-principale); box-shadow: var(--ombre); }
+
+/* Paramètres : appareils restés connectés */
+.appareils-liste { list-style: none; margin: .75rem 0; padding: 0; border: 1px solid var(--bordure); border-radius: var(--rayon); }
+.appareils-liste li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .4rem 1rem; padding: .6rem .9rem; }
+.appareils-liste li + li { border-top: 1px solid var(--bordure); }
+.appareils-liste li > span { display: flex; flex-direction: column; }
+.reglages [hidden] { display: none; }
+.formulaire .case-bloc + .bouton { margin-top: 1rem; }

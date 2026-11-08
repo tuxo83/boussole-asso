@@ -11,7 +11,7 @@ statut=0
 php "$D/unit-blocs.php" | tail -1 || statut=1
 php "$D/unit-webauthn.php" | tail -1 || statut=1
 php "$D/unit-migrations.php" | tail -1 || statut=1
-for t in 2 3 5 6 7 8 9 11 12; do
+for t in 2 3 5 6 7 8 9 11 12 13; do
     printf 'étape %s : ' "$t"; bash "$D/e2e-etape$t.sh" "$2" "$3" "$4" "$5/e2e$t" | grep -E '^KO|Bilan' || statut=1
 done
 printf 'installateur : '; bash "$D/e2e-installateur.sh" "$2" "$3" "$4" "$5/installateur" | grep -E '^KO|Bilan' || statut=1

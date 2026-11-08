@@ -11,6 +11,7 @@ return [
                 redirect('/compte');
             }
             $email = mb_substr(trim((string) ($_GET['email'] ?? '')), 0, 190);
+            unset($_SESSION['rester_connecte']); // choix d'une connexion abandonnée : rien de coché d'avance
             render('connexion/connexion', ['titre' => 'Connexion', 'email' => filter_var($email, FILTER_VALIDATE_EMAIL) ? $email : '', 'erreur' => null]);
         }],
         ['POST', '/connexion', function () {
@@ -25,6 +26,7 @@ return [
                 return;
             }
             $member = db_one('SELECT * FROM membre WHERE email = ?', [$email]);
+            $_SESSION['rester_connecte'] = appareil_choix_post();
             if ($password !== '') {
                 if ($member !== null && $member['mot_de_passe'] !== null && password_verify($password, $member['mot_de_passe'])) {
                     login_first_step($member, 'mdp');
@@ -42,7 +44,8 @@ return [
                 $site = (string) setting('nom_association', 'Boussole');
                 mail_send($member['email'], "Connexion à $site",
                     "Bonjour,\n\nPour vous connecter, ouvrez ce lien (valable " . LIEN_DUREE_MINUTES . " minutes, une seule fois) :\n"
-                    . absolute_url('/connexion/lien/' . $link) . "\n\nOu saisissez ce code sur la page de connexion : $code\n\n"
+                    . absolute_url('/connexion/lien/' . $link) . "\n\nOu saisissez ce code sur la page de connexion : $code\n"
+                    . "(Dans l'application installée sur votre téléphone, saisissez plutôt le code.)\n\n"
                     . "Si vous n'avez rien demandé, ignorez ce message.\n");
             }
             $_SESSION['connexion_email'] = $email;
@@ -63,6 +66,9 @@ return [
                 return;
             }
             unset($_SESSION['connexion_email']);
+            if (isset($_POST['rester'])) {
+                $_SESSION['rester_connecte'] = appareil_choix_post();
+            }
             login_first_step($member, 'email');
         }],
         // Le lien ouvre une page de confirmation : un logiciel qui « prévisualise » le lien ne consomme pas la connexion
@@ -75,6 +81,8 @@ return [
                 flash('erreur', 'Ce lien a expiré ou a déjà servi. Demandez-en un nouveau.');
                 redirect('/connexion');
             }
+            // Case de la page du lien (pré-cochée si elle l'était au début, avec « appli » si c'était dans l'application)
+            $_SESSION['rester_connecte'] = appareil_choix_post();
             login_first_step($member, 'email');
         }],
         // Second facteur (à la connexion, ou pour confirmer avant une action de gestion) : clé, application,
@@ -157,10 +165,11 @@ function second_facteur_membre(): array
         redirect('/connexion');
     }
     // Session ouverte avant cette version (facteurs non notés) : elle compte pour une seule preuve
-    if (!facteurs() && !empty($_SESSION['connecte'])) {
+    if (!facteurs() && !empty($_SESSION['connecte']) && !session_par_appareil()) {
         $_SESSION['facteurs'] = ['session'];
     }
-    if (!facteurs()) {
+    // Session rouverte par un appareil retenu : aucune preuve encore, toutes sont proposées
+    if (!facteurs() && !session_par_appareil()) {
         redirect('/connexion');
     }
     return $member;
