@@ -612,13 +612,7 @@ details.crayon-flottant > .crayon-bouton { padding: 0; }
 .menu a[aria-current="page"] { background: none; }
 .menu a[aria-current="page"]::after { content: ""; position: absolute; left: .7rem; right: .7rem; bottom: .35rem; height: 2px; border-radius: 2px; background: #fff; }
 .menu-membre { border-left-color: rgba(255, 255, 255, .25); }
-@media (max-width: 72rem) {
-  .entete-interne { flex-wrap: wrap; row-gap: 0; padding-top: .5rem; }
-  .entete-interne > .marque { flex: 1 1 0; }
-  .entete-interne > .compte-menu { order: 2; }
-  .entete-interne > .navigation { order: 3; flex: 0 0 calc(100% + 2rem); margin: 0 -1rem; padding: 0 .5rem .25rem; overflow-x: auto; scrollbar-width: none; }
-  .entete-interne > .navigation::-webkit-scrollbar { display: none; }
-}
+/* Plus de menu sur deux lignes : en dessous de 64rem (tablette, téléphone), le menu burger prend le relais */
 
 /* Bandeau photo : le texte reste lisible quelle que soit la photo (voile plus marqué du côté du texte, ombre portée) */
 .bandeau-photo { background:
@@ -632,9 +626,9 @@ details.crayon-flottant > .crayon-bouton { padding: 0; }
     var(--bandeau) 30% center / cover no-repeat; }
 }
 
-/* Téléphone : menu burger (le bandeau de liens est masqué) ; ailleurs, le bouton n'existe pas */
+/* Tablette et téléphone : menu burger (le bandeau de liens est masqué) ; sur grand écran, le bouton n'existe pas */
 .menu-burger { display: none; }
-@media (max-width: 40rem) {
+@media (max-width: 64rem) {
   .entete-interne { flex-wrap: nowrap; padding-top: 0; min-height: 3.75rem; gap: .5rem; }
   .entete-interne > .navigation { display: none; }
   .entete-interne > .compte-menu { order: 2; }
@@ -656,7 +650,7 @@ details.crayon-flottant > .crayon-bouton { padding: 0; }
   .burger-panneau svg { width: 1rem; height: 1rem; }
   .entete { position: relative; }
 }
-@media (max-width: 40rem) {
+@media (max-width: 64rem) {
   .entete nav.burger-panneau { margin: 0; padding: .25rem 1.25rem 1rem; overflow: visible; -webkit-mask-image: none; mask-image: none; }
 }
 
