@@ -740,3 +740,10 @@ details.crayon-flottant > .crayon-bouton { padding: 0; }
   .frise-liste::before { left: .35rem; }
   .frise-item::before { left: -1px; }
 }
+
+/* Frise = les cartes de la liste sur une ligne du temps */
+.frise-item > .carte { margin-left: .75rem; }
+.frise-item.frise-membres::before { border-color: var(--acces-membres); }
+.frise-item.frise-equipe::before { border-color: #2f6f5e; }
+.frise-item.frise-public::before { border-color: var(--couleur-principale); }
+@media (max-width: 40rem) { .frise-item > .carte { margin-left: 0; } }
