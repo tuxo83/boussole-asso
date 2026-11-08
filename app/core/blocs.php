@@ -444,7 +444,7 @@ function agenda_frise(array $evenements, bool $passes, bool $aujourdhui = true):
         }
         $acces = $ev['visibilite'] === 'public' ? 'public' : ($ev['visibilite'] === 'equipe' ? 'equipe' : 'membres');
         $html .= '<li class="frise-item frise-' . $acces . '"><div class="frise-date">'
-            . ($t ? '<span class="frise-jour">' . (int) date('j', $t) . '</span><span class="frise-heure">' . e(str_replace(' · ', "\u{00A0}· ", agenda_jour_heure($ev['debut']))) . '</span>' : '<span class="frise-heure">Date à venir</span>')
+            . ($t ? '<span class="frise-jour">' . (int) date('j', $t) . '</span><span class="frise-heure">' . e(str_replace(' · ', "\u{00A0}· ", agenda_jour_heure($ev['debut']))) . '</span>' : '')
             . '</div>' . carte_evenement_agenda($ev, $passes) . '</li>';
     }
     return $html . ($courant !== null ? '</ol>' : '') . '</div>';
