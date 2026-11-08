@@ -659,3 +659,12 @@ details.crayon-flottant > .crayon-bouton { padding: 0; }
 @media (max-width: 40rem) {
   .entete nav.burger-panneau { margin: 0; padding: .25rem 1.25rem 1rem; overflow: visible; -webkit-mask-image: none; mask-image: none; }
 }
+
+/* Légende du bandeau photo : un petit « i » en bas à droite, qui déplie le texte */
+.bandeau-legende { position: absolute; right: .9rem; bottom: .9rem; display: flex; flex-direction: column-reverse; align-items: flex-end; max-width: min(22rem, calc(100% - 1.8rem)); }
+.bandeau-legende > summary { list-style: none; cursor: pointer; display: grid; place-items: center; width: var(--cible); height: var(--cible); }
+.bandeau-legende > summary::-webkit-details-marker, .bandeau-legende > summary::before { display: none; content: none; }
+.bandeau-legende > summary span { display: grid; place-items: center; width: 1.6rem; height: 1.6rem; border-radius: 50%; border: 1.5px solid rgba(255, 255, 255, .8); color: #fff; font: italic 700 .9rem/1 Georgia, serif; background: rgba(10, 25, 45, .35); transition: background .15s; }
+.bandeau-legende > summary:hover span, .bandeau-legende[open] > summary span { background: rgba(10, 25, 45, .7); }
+.bandeau-legende p { margin: 0 0 .25rem; padding: .6rem .8rem; border-radius: var(--rayon-petit); background: rgba(10, 25, 45, .82); color: #fff; font-size: .88rem; line-height: 1.45; }
+.bandeau-photo { position: relative; }
