@@ -13,6 +13,7 @@ return [
         }],
         ['POST', '/compte/mot-de-passe', function () {
             $member = require_member();
+            compte_demo_refuser($member);
             // Changer ou retirer un mot de passe existant d'un compte qui gère : deux preuves (le premier mot de passe peut être choisi après un lien e-mail)
             if ($member['mot_de_passe'] !== null && (member_rights($member['id']) || member_exige_2fa($member)) && count(facteurs()) < 2) {
                 $_SESSION['apres_connexion'] = '/compte';
@@ -81,6 +82,7 @@ return [
         }],
         ['POST', '/compte/cles', function () {
             $member = require_member();
+            compte_demo_refuser($member);
             $libelle = mb_substr(trim((string) ($_POST['libelle'] ?? '')), 0, 100);
             $jours = (int) ($_POST['duree'] ?? 0);
             if ($libelle === '' || !isset(CLE_DUREES[$jours])) {
@@ -120,6 +122,7 @@ return [
         }],
         ['POST', '/compte/double-authentification', function () {
             $member = securite_membre();
+            compte_demo_refuser($member);
             $secret = (string) ($_SESSION['totp_en_attente'] ?? '');
             if ($secret === '' || !totp_verify($secret, (string) ($_POST['code'] ?? ''))) {
                 http_response_code(422);
@@ -141,6 +144,7 @@ return [
         }],
         ['POST', '/compte/cles-securite', function () {
             $member = securite_membre();
+            compte_demo_refuser($member);
             try {
                 webauthn_enregistrer($member, json_decode((string) ($_POST['reponse'] ?? ''), true) ?: [], (string) ($_POST['libelle'] ?? ''));
             } catch (WebauthnErreur $erreur) {
@@ -156,6 +160,7 @@ return [
         }],
         ['POST', '/compte/cles-securite/{id}/supprimer', function (array $p) {
             $member = securite_membre();
+            compte_demo_refuser($member);
             if (db_query('DELETE FROM cle_securite WHERE id = ? AND membre_id = ?', [(int) $p['id'], $member['id']])->rowCount() === 1) {
                 journal_compte((int) $member['id'], $member, 'Clé de sécurité retirée');
             }
@@ -181,4 +186,13 @@ function securite_page(array $member, ?string $erreur): void
 {
     render('compte/totp', ['titre' => 'Sécurité du compte', 'membre' => $member, 'secret' => (string) ($_SESSION['totp_en_attente'] ?? totp_new_secret()),
         'cles' => db_all('SELECT * FROM cle_securite WHERE membre_id = ? ORDER BY cree_le', [$member['id']]), 'erreur' => $erreur]);
+}
+
+// Compte de démonstration : ses utilisateurs ne changent ni son mot de passe ni sa sécurité (seul un administrateur le peut)
+function compte_demo_refuser(array $member): void
+{
+    if (!empty($member['compte_demo'])) {
+        flash('erreur', 'Compte de démonstration : son mot de passe et sa sécurité ne se changent pas ici.');
+        redirect('/compte');
+    }
 }

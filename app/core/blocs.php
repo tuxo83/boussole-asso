@@ -287,7 +287,20 @@ function bloc_dynamique(string $bloc): string
             // Visiteur seulement : comment s'inscrire (un membre connecté n'a pas besoin de ce rappel)
             $aide = current_member() === null ? '<p class="agenda-visiteur">' . c_icone('cadenas') . ' Membres : <a href="' . e(url('/connexion')) . '">connectez-vous</a> pour voir les événements réservés et vous inscrire.'
                 . (setting('lien_adhesion', '') !== '' ? ' Pas encore membre ? <a href="' . e(url('/page/adherer')) . '">Adhérer</a>.' : '') . '</p>' : '';
-            return $aide . ($prochains ? '<h2 class="titre-bloc">À venir</h2>' . cartes_evenements($prochains) : '<p>Aucun événement annoncé pour l\'instant.</p>')
+            // Membre connecté : ses inscriptions à venir d'abord, pour voir tout de suite ce qui le concerne (surtout au téléphone)
+            $miens = [];
+            if (($moi = current_member()) !== null) {
+                $statuts = array_column(db_all('SELECT evenement_id, statut, rang FROM inscription WHERE membre_id = ? AND statut IN ("invite", "voeu", "retenu", "attente")', [$moi['id']]), null, 'evenement_id');
+                foreach ($prochains as $k => $ev) {
+                    if (isset($statuts[$ev['id']])) {
+                        $miens[] = $ev + ['mon_statut' => $statuts[$ev['id']]];
+                        unset($prochains[$k]);
+                    }
+                }
+                $prochains = array_values($prochains);
+            }
+            return $aide . ($miens ? '<section class="agenda-miens"><h2 class="titre-bloc">Mes inscriptions</h2>' . cartes_evenements($miens) . '</section>' : '')
+                . ($prochains ? '<h2 class="titre-bloc">' . ($miens ? 'Autres événements à venir' : 'À venir') . '</h2>' . cartes_evenements($prochains) : ($miens ? '' : '<p>Aucun événement annoncé pour l\'instant.</p>'))
                 . ($passes ? '<h2 class="titre-bloc">Événements passés</h2>' . cartes_evenements($passes, true) : '');
         case 'espaces-publics':
             $espaces = db_all('SELECT * FROM espace WHERE visibilite = "public" AND archive = 0 AND type <> "evenement" ORDER BY titre');
@@ -343,6 +356,7 @@ function cartes_evenements(array $evenements, bool $passes = false): string
             $html .= carte_evenement($ev, 'Événement des membres', '/evenement/' . (int) $ev['id'], '<p class="petit">' . c_icone('cadenas') . ($passes ? ' Réservé aux membres.' : ' Connectez-vous pour le découvrir et vous inscrire.') . '</p>', true);
         } else {
             $html .= carte_evenement($ev, $ev['titre'], '/espace/' . $ev['slug'], ($ev['lieu'] ? '<p class="lieu">' . c_icone('lieu') . ' ' . e($ev['lieu']) . '</p>' : '')
+                . (isset($ev['mon_statut']) ? '<p><span class="badge' . ($ev['mon_statut']['statut'] === 'retenu' ? ' badge-ok' : ' badge-attention') . '">' . e(ucfirst(INSCRIPTION_STATUTS[$ev['mon_statut']['statut']])) . ($ev['mon_statut']['statut'] === 'attente' ? ' n°' . (int) $ev['mon_statut']['rang'] : '') . '</span></p>' : '')
                 . '<p class="resume">' . e($ev['description']) . '</p>', false);
         }
     }

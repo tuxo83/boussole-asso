@@ -50,7 +50,7 @@ $titre_complet = isset($titre) ? $titre . ' · ' . $nom : ($slogan !== '' && mb_
 <?php $moi = installation_done() ? current_member() : null; ?>
 <?php // Rappel de cotisation (avis d'Élise) : discret mais lisible, masquable pour la session, sauf sur « Mon compte »
 $sur_compte = str_starts_with(request_path(), '/compte'); ?>
-<?php if ($moi !== null && cotisation_a_jour($moi) === null && ($sur_compte || empty($_SESSION['rappel_cotisation_masque']))): ?>
+<?php if ($moi !== null && cotisation_a_jour($moi) === null && request_path() !== '/compte' && ($sur_compte || empty($_SESSION['rappel_cotisation_masque']))): ?>
 <div class="bandeau-cotisation" role="note"><div class="conteneur"><span>Votre cotisation <?= e(cotisation_periode_libelle(cotisation_periode())) ?> n'est pas encore enregistrée.
   <?php $adhesion = (string) setting('lien_adhesion', ''); ?><a href="<?= e($adhesion !== '' ? $adhesion : url('/compte')) ?>"<?= $adhesion !== '' ? ' target="_blank" rel="noopener noreferrer"' : '' ?>>Régler ma cotisation</a></span>
   <?php if (!$sur_compte): ?><form method="post" action="<?= e(url('/compte/rappel-cotisation/masquer')) ?>"><?= csrf_field() ?><input type="hidden" name="retour" value="<?= e(request_path()) ?>"><button type="submit" class="bandeau-fermer" aria-label="Masquer ce rappel jusqu'à la prochaine connexion" title="Masquer jusqu'à la prochaine connexion">×</button></form><?php endif ?></div></div>
