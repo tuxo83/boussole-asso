@@ -37,6 +37,15 @@ return [
             flash('succes', 'Mot de passe enregistré.');
             redirect('/compte');
         }],
+        // Administration : les raccourcis de gestion selon les droits (depuis le menu de compte)
+        ['GET', '/administration', function () {
+            $member = require_member();
+            $tuiles = administration_tuiles($member);
+            if (!$tuiles) {
+                redirect('/compte');
+            }
+            render('compte/administration', ['titre' => 'Administration', 'tuiles' => $tuiles]);
+        }],
         // Rappel de cotisation masqué jusqu'à la prochaine connexion
         ['POST', '/compte/rappel-cotisation/masquer', function () {
             require_member();
@@ -195,4 +204,40 @@ function compte_demo_refuser(array $member): void
         flash('erreur', 'Compte de démonstration : son mot de passe et sa sécurité ne se changent pas ici.');
         redirect('/compte');
     }
+}
+
+// Raccourcis d'administration selon les droits : [icône, titre, aide, lien, pastille (ce qui attend)]
+function administration_tuiles(array $member): array
+{
+    $tuiles = [];
+    if (has_right($member, 'publications')) {
+        $tuiles[] = ['crayon', 'Pages du site', 'Créer et modifier les pages', '/admin/pages', ''];
+    }
+    if (has_right($member, 'cotisations')) {
+        $effacer = count(cotisation_a_effacer());
+        $tuiles[] = ['medaille', 'Cotisations', 'À jour, chèques, relances', '/cotisations', $effacer ? $effacer . ' à effacer' : ''];
+    }
+    if (has_right($member, 'membres')) {
+        $tuiles[] = ['personnes', 'Membres', 'Ajouter, modifier, droits', '/admin/membres', ''];
+    }
+    if (is_admin($member)) {
+        $nouveaux = (int) db_value('SELECT COUNT(*) FROM message_contact WHERE lu = 0');
+        $tuiles[] = ['enveloppe', 'Messages reçus', 'Formulaire de contact', '/admin/messages', $nouveaux ? $nouveaux . ($nouveaux > 1 ? ' nouveaux' : ' nouveau') : ''];
+        $tuiles[] = ['reglages', 'Réglages du site', 'Nom, apparence, e-mails', '/admin/parametres', ''];
+        $tuiles[] = ['cle', 'Toutes les clés', "Clés d'API des membres", '/admin/cles', ''];
+    }
+    return $tuiles;
+}
+
+// Nombre de choses qui attendent dans l'administration (pastille du menu de compte)
+function administration_en_attente(array $member): int
+{
+    $n = 0;
+    if (has_right($member, 'cotisations')) {
+        $n += count(cotisation_a_effacer());
+    }
+    if (is_admin($member)) {
+        $n += (int) db_value('SELECT COUNT(*) FROM message_contact WHERE lu = 0');
+    }
+    return $n;
 }

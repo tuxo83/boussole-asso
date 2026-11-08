@@ -553,3 +553,32 @@ details.crayon-flottant > .crayon-bouton { padding: 0; }
   .reglages > li { align-items: flex-start; }
   .reglages > li > .bouton, .reglages .reglage-action > summary { margin-left: 3.5rem; }
 }
+
+/* Menu de compte (initiales) : Mon compte, Administration, Se déconnecter — à droite de l'en-tête */
+.compte-menu { position: relative; flex: none; }
+.compte-menu > summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: center; position: relative; width: var(--cible); height: var(--cible); border-radius: 50%; }
+.compte-menu > summary::-webkit-details-marker, .compte-menu > summary::before { display: none; content: none; }
+.compte-initiales { display: grid; place-items: center; width: 2.3rem; height: 2.3rem; border-radius: 50%; background: #fff; color: var(--couleur-principale); font-weight: 800; font-size: .88rem; box-shadow: 0 0 0 2px rgba(255,255,255,.35); transition: box-shadow .15s; }
+.compte-menu > summary:hover .compte-initiales, .compte-menu[open] .compte-initiales, .compte-menu > summary[aria-current] .compte-initiales { box-shadow: 0 0 0 3px rgba(255,255,255,.7); }
+.compte-attente { position: absolute; top: 0; right: -2px; min-width: 1.15rem; height: 1.15rem; padding: 0 .3rem; border-radius: 999px; background: var(--couleur-accent); color: #fff; font-size: .7rem; font-weight: 800; display: grid; place-items: center; border: 2px solid var(--couleur-principale); }
+.compte-panneau { position: absolute; right: 0; top: calc(100% + .4rem); width: 16rem; background: var(--fond); color: var(--texte); border: 1px solid var(--bordure); border-radius: var(--rayon); box-shadow: var(--ombre-haute); padding: .4rem; z-index: 30; }
+.compte-qui { margin: 0 0 .3rem; padding: .55rem .75rem .65rem; border-bottom: 1px solid var(--bordure); display: flex; flex-direction: column; }
+.compte-qui span { color: var(--texte-doux); font-size: .85rem; }
+.compte-panneau a, .compte-sortie-menu { display: flex; align-items: center; gap: .65rem; width: 100%; min-height: var(--cible); padding: 0 .75rem; border-radius: var(--rayon-petit); color: var(--texte); text-decoration: none; font: inherit; background: none; border: 0; cursor: pointer; text-align: left; }
+.compte-panneau a:hover, .compte-sortie-menu:hover { background: var(--principale-doux); }
+.compte-panneau svg { width: 1.15rem; height: 1.15rem; color: var(--texte-doux); flex: none; }
+.compte-panneau form { margin: .3rem 0 0; padding-top: .3rem; border-top: 1px solid var(--bordure); }
+.compte-sortie-menu, .compte-sortie-menu svg { color: #8a1d2c; }
+.compte-compteur { margin-left: auto; min-width: 1.4rem; padding: 0 .4rem; border-radius: 999px; background: var(--couleur-principale); color: #fff; font-size: .75rem; font-weight: 700; text-align: center; }
+.activite { flex-basis: 100%; padding-top: .5rem; }
+/* En-tête au téléphone : nom et initiales sur la première ligne, menu en dessous */
+.entete-interne { flex-wrap: wrap; }
+.entete-interne > .marque { margin-right: auto; }
+@media (max-width: 40rem) {
+  .entete-interne { flex-direction: row; align-items: center; }
+  .entete-interne > .navigation { order: 3; flex-basis: 100%; }
+}
+@media (max-width: 40rem) {
+  .entete-interne > .marque { flex: 1 1 0; min-width: 0; }
+  .entete-interne > .compte-menu { order: 2; }
+}

@@ -118,6 +118,13 @@ function journal_purger(): int
     return db()->exec('DELETE FROM journal WHERE le < NOW() - INTERVAL ' . $ans . ' YEAR') ?: 0;
 }
 
+// Nom à afficher aux autres membres : prénom et nom, sinon le début de l'adresse (jamais l'adresse entière)
+function membre_nom_affiche(array $member): string
+{
+    $name = trim($member['prenom'] . ' ' . $member['nom']);
+    return $name !== '' ? $name : (string) strstr($member['email'], '@', true);
+}
+
 function membre_nom(array $member): string
 {
     $name = trim($member['prenom'] . ' ' . $member['nom']);
