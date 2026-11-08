@@ -24,6 +24,7 @@ $garder = function (array $sauf) use ($espace): string {
 };
 $boutons = '<span class="en-place-boutons"><button type="submit" class="bouton bouton-principal">Enregistrer</button> <button type="button" class="lien-bouton" data-en-place-annuler>Annuler</button></span>';
 ?>
+<?php if ($peut_gerer): ?><p class="bouton-gerer"><?= c_bouton('⚙ Gérer', '/espace/' . $espace['slug'] . '/gerer', 'secondaire') ?></p><?php endif ?>
 <nav class="ariane" aria-label="Fil d'Ariane"><a href="<?= e(url('/espaces')) ?>">Espaces</a><?php if ($parent): ?> › <a href="<?= e(url('/espace/' . $parent['slug'])) ?>"><?= e($parent['titre']) ?></a><?php endif ?></nav>
 <p class="surtitre surtitre-espace"><?= e(ESPACE_TYPES[$espace['type']]) ?></p>
 <?php if ($peut_gerer): ?>
@@ -238,44 +239,3 @@ $boutons = '<span class="en-place-boutons"><button type="submit" class="bouton b
 
 </aside>
 </div>
-
-<?php if ($peut_gerer): ?>
-<details class="separe gerer-espace"><summary>Gérer l'espace</summary>
-  <p class="petit">Le titre, la description et la visibilité se modifient d'un clic, directement en haut de la page.</p>
-  <h3>Type et emplacement</h3>
-  <form method="post" action="<?= $action('/modifier') ?>" class="formulaire">
-    <?= $garder(['type']) ?>
-    <?= c_champ('type', 'Type', ['type' => 'select', 'valeur' => $espace['type'], 'choix' => ESPACE_TYPES]) ?>
-    <?php if (is_admin($membre)): ?>
-    <?= c_champ('parent', 'Dans l\'espace', ['type' => 'select', 'valeur' => $parent['slug'] ?? '', 'choix' => ['' => '— Au premier niveau'] + $parents_possibles]) ?>
-    <?php endif ?>
-    <button type="submit" class="bouton bouton-secondaire">Enregistrer</button>
-  </form>
-  <p class="en-ligne">
-    <?= c_bouton('Créer un sous-espace', '/espaces/nouveau?parent=' . $espace['slug'], 'secondaire') ?>
-    <?php if (!$espace['archive']): ?>
-    <form method="post" action="<?= $action('/archiver') ?>" class="en-ligne"><?= csrf_field() ?><button type="submit" class="bouton bouton-secondaire" data-confirmer="Archiver « <?= e($espace['titre']) ?> » ? Il sortira des listes et de l'agenda, sans rien perdre.">Archiver l'espace</button></form>
-    <?php endif ?>
-  </p>
-  <?php if (is_admin($membre)): ?>
-  <div class="zone-sensible">
-    <h3>Zone sensible</h3>
-    <form method="post" action="<?= $action('/supprimer') ?>" class="formulaire">
-      <?= csrf_field() ?>
-      <?= c_champ('confirmation', 'Pour supprimer définitivement l\'espace, ses dates, ses fichiers et ses inscriptions, tapez son nom : ' . $espace['titre'], ['requis' => true, 'max' => 200]) ?>
-      <button type="submit" class="lien-bouton lien-danger">Supprimer définitivement</button>
-    </form>
-  </div>
-  <?php endif ?>
-</details>
-<?php endif ?>
-
-<?php if ($journal): ?>
-<details class="separe"><summary>Journal</summary>
-  <ul class="liste journal">
-    <?php foreach ($journal as $ligne): ?>
-    <li><time datetime="<?= e($ligne['le']) ?>"><?= e(date('d/m/Y H:i', strtotime($ligne['le']))) ?></time> · <?= e($ligne['email'] ? membre_nom($ligne) : 'Système') ?> · <?= e($ligne['action']) ?><?= $ligne['via'] === 'ia' ? ' <span class="badge">via IA</span>' : '' ?></li>
-    <?php endforeach ?>
-  </ul>
-</details>
-<?php endif ?>

@@ -1041,3 +1041,16 @@ dialog.dialogue:not([open]) { display: block; position: static; width: auto; box
 .case-bloc { display: flex; align-items: flex-start; gap: .6rem; }
 .case-bloc input { margin-top: .25rem; flex: none; }
 .case-bloc span { display: flex; flex-direction: column; }
+
+/* Page « Gérer » et bouton d'accès (en haut à droite de la page d'un espace) */
+.bouton-gerer { float: right; margin: 0 0 .5rem 1rem; }
+.bouton-gerer .bouton { margin: 0; }
+.page-gerer { max-width: 50rem; margin-top: 1rem; }
+.page-gerer .titre-onglet { font-size: 1.15rem; }
+.journal-liste { list-style: none; margin: 0; padding: 0; border: 1px solid var(--bordure); border-radius: var(--rayon); overflow: hidden; }
+.journal-liste li { display: grid; grid-template-columns: 9rem 1fr auto; gap: .25rem 1rem; padding: .55rem .9rem; font-size: .92rem; }
+.journal-liste li + li { border-top: 1px solid var(--bordure); }
+.journal-liste time { color: var(--texte-doux); }
+.zone-sensible { border-color: #f2c3c8; background: #fdf7f8; }
+.bouton-danger { background: #b4233a; border-color: #b4233a; color: #fff; }
+@media (max-width: 40rem) { .journal-liste li { grid-template-columns: 1fr; } .bouton-gerer { float: none; } }

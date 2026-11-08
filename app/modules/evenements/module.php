@@ -17,10 +17,10 @@ return [
             $erreurs = evenement_enregistrer($espace, $member, $_POST);
             if ($erreurs) {
                 flash('erreur', implode(' ', $erreurs));
-                redirect('/espace/' . $espace['slug']);
+                redirect('/espace/' . $espace['slug'] . '/gerer#reglages');
             }
             flash('succes', 'Réglages enregistrés.');
-            redirect('/espace/' . $espace['slug']);
+            redirect('/espace/' . $espace['slug'] . '/gerer#reglages');
         }],
         ['POST', '/espace/{slug}/inscription', function (array $p) {
             [$espace, $member] = evenement_action($p['slug'], 'voir');
