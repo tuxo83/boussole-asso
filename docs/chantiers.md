@@ -15,7 +15,8 @@ Un chantier de réflexion d'abord, la technique ensuite.
 
 ## Application installable et notifications
 - **Fait (8 novembre 2026)** : le site s'installe comme une application (Android, iPhone) ; « Rester connecté sur cet appareil » garde la connexion simple, la gestion redemande la double authentification (validité réglable).
-- **Reste** : **envoyer des notifications** en plus des e-mails. Exemple : une place se libère sur un événement où l'on est en liste d'attente.
+- **Fait aussi** : bandeau « Installez l'application » pour les membres connectés, sur téléphone et tablette, seulement là où l'installation est possible (« Plus tard » : 30 jours).
+- **Ensuite, une fois la partie application validée par le webmaster** : **envoyer des notifications** en plus des e-mails. Exemple : une place se libère sur un événement où l'on est en liste d'attente.
 - **Plus tard** : « Partager vers Boussole » depuis le téléphone (utile à la veille).
 
 ## Veille
