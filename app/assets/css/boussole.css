@@ -600,3 +600,22 @@ details.crayon-flottant > .crayon-bouton { padding: 0; }
 .date-tuile.date-equipe { background: #2f6f5e; }
 .evenement-titre { min-width: 0; }
 .evenement-titre .organise { margin: .1rem 0 0; font-size: .82rem; color: var(--texte-doux); font-weight: 600; }
+
+/* En-tête, version finale : une ligne sur grand écran (nom, menu, initiales) ;
+   en dessous de 72rem, nom et initiales en haut, le menu en bandeau dessous, qui défile au doigt.
+   La page en cours est soulignée d'un trait, sans bulle. */
+.entete-interne { flex-wrap: nowrap; gap: 1rem; }
+.entete-interne > .marque { order: 1; margin-right: auto; flex: 0 1 auto; min-width: 0; }
+.entete-interne > .navigation { order: 2; min-width: 0; }
+.entete-interne > .compte-menu { order: 3; }
+.menu a { border-radius: var(--rayon-petit); position: relative; padding: 0 .7rem; }
+.menu a[aria-current="page"] { background: none; }
+.menu a[aria-current="page"]::after { content: ""; position: absolute; left: .7rem; right: .7rem; bottom: .35rem; height: 2px; border-radius: 2px; background: #fff; }
+.menu-membre { border-left-color: rgba(255, 255, 255, .25); }
+@media (max-width: 72rem) {
+  .entete-interne { flex-wrap: wrap; row-gap: 0; padding-top: .5rem; }
+  .entete-interne > .marque { flex: 1 1 0; }
+  .entete-interne > .compte-menu { order: 2; }
+  .entete-interne > .navigation { order: 3; flex: 0 0 100%; margin: 0 -1rem; padding: 0 .5rem .25rem; overflow-x: auto; scrollbar-width: none; }
+  .entete-interne > .navigation::-webkit-scrollbar { display: none; }
+}
