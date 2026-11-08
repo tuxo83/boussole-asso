@@ -40,8 +40,9 @@ return [
                 return;
             }
             $slug = slug_unique($v['titre']);
-            db_query('INSERT INTO espace (type, titre, slug, description, visibilite, meteo, parent_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
-                [$v['type'], $v['titre'], $slug, $v['description'], $v['visibilite'], $v['meteo'], $parent['id'] ?? null]);
+            // Météo automatique par défaut, sauf pour un événement
+            db_query('INSERT INTO espace (type, titre, slug, description, visibilite, meteo, parent_id, meteo_auto) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+                [$v['type'], $v['titre'], $slug, $v['description'], $v['visibilite'], $v['meteo'], $parent['id'] ?? null, $v['type'] !== 'evenement' ? 1 : 0]);
             $id = (int) db()->lastInsertId();
             if ($v['type'] === 'evenement') {
                 db_query('INSERT INTO evenement (espace_id, debut, lieu) VALUES (?, ?, ?)', [$id, $debut, mb_substr(trim((string) ($_POST['lieu'] ?? '')), 0, 200)]);
