@@ -187,7 +187,7 @@ $boutons = '<span class="en-place-boutons"><button type="submit" class="bouton b
     <?php foreach ($evenements_espace as $ev): $passe = $ev['debut'] !== null && strtotime($ev['debut']) < strtotime('today'); ?>
     <li<?= $passe ? ' class="rdv-passe"' : '' ?>><a href="<?= e(url('/espace/' . $ev['slug'])) ?>">
       <span class="date-tuile<?= ['public' => '', 'equipe' => ' date-equipe'][$ev['visibilite']] ?? ' date-membres' ?>"><?php if ($ev['debut']): ?><span class="jour"><?= (int) date('j', strtotime($ev['debut'])) ?></span><span class="mois"><?= $mois_courts[(int) date('n', strtotime($ev['debut']))] ?></span><?php else: ?><span class="date-icone"><?= c_icone('calendrier') ?></span><?php endif ?></span>
-      <span class="rdv-texte"><strong><?= e($ev['titre']) ?></strong><span class="rdv-ligne"><span class="discret"><?= $ev['debut'] ? e(date('H\hi', strtotime($ev['debut']))) : 'Date à fixer' ?><?= $ev['lieu'] ? ' · ' . e($ev['lieu']) : '' ?></span>
+      <span class="rdv-texte"><strong><?= e($ev['titre']) ?></strong><span class="rdv-ligne"><span class="discret"><?= $ev['debut'] ? e(date('H\hi', strtotime($ev['debut']))) : 'Date à préciser' ?><?= $ev['lieu'] ? ' · ' . e($ev['lieu']) : '' ?></span>
         <?php [$classe, $texte] = ['equipe' => ['badge-equipe', 'Équipe'], 'public' => ['', 'Ouvert à tous']][$ev['visibilite']] ?? ['badge-membres', 'Membres']; ?><span class="badge <?= $classe ?>"><?= $texte ?></span></span></span>
     </a></li>
     <?php endforeach ?>

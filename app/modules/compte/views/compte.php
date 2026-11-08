@@ -59,7 +59,7 @@ $mini_frise = function (array $items, bool $passe = false) use ($mois): string {
         $html .= '<li class="rdv-' . e($r['genre']) . '"><a href="' . e(url($r['lien'])) . '"><span class="date-tuile">'
             . ($r['date'] ? '<span class="jour">' . (int) date('j', strtotime($r['date'])) . '</span><span class="mois">' . $mois[(int) date('n', strtotime($r['date']))] . '</span>' : '<span class="date-icone">' . c_icone('calendrier') . '</span>')
             . '</span><span class="rdv-texte"><strong>' . e($r['titre']) . '</strong><span class="rdv-ligne">';
-        $quand = trim(($r['heure'] ? ($r['date'] ? ($passe ? date('d/m/Y', strtotime($r['date'])) : date('H\\hi', strtotime($r['date']))) : 'Date à venir') : '') . ($r['ligne'] ? ' · ' . $r['ligne'] : ''), ' ·');
+        $quand = trim(($r['heure'] ? ($r['date'] ? ($passe ? date('d/m/Y', strtotime($r['date'])) : date('H\\hi', strtotime($r['date']))) : 'Date à préciser') : '') . ($r['ligne'] ? ' · ' . $r['ligne'] : ''), ' ·');
         $html .= ($quand !== '' ? '<span class="discret">' . e($quand) . '</span>' : '') . ($r['badge'] ? '<span class="badge ' . e($r['badge'][0]) . '">' . e($r['badge'][1]) . '</span>' : '') . '</span></span></a></li>';
     }
     return $html . '</ul>';
