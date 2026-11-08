@@ -1014,3 +1014,18 @@ dialog.dialogue:not([open]) { display: block; position: static; width: auto; box
 .dialogue .aide[open] { flex-basis: 100%; order: 3; display: block; width: 100%; }
 .dialogue .aide[open] > summary { margin: 0 0 .25rem; }
 .dialogue .aide-contenu { position: static; transform: none; width: 100% !important; box-sizing: border-box; padding: .75rem .85rem; left: auto !important; box-shadow: none; margin: -.5rem 0 .75rem; background: var(--fond-doux); }
+
+/* Création : le type en grandes cartes cliquables */
+.choix-type { border: 0; padding: 0; margin: 0 0 1.25rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: .6rem; }
+.choix-type legend { font-weight: 700; margin-bottom: .5rem; }
+.carte-choix { display: flex; align-items: flex-start; gap: .75rem; padding: .85rem 1rem; border: 1.5px solid var(--bordure); border-radius: var(--rayon); background: var(--fond); cursor: pointer; position: relative; }
+.carte-choix:hover { border-color: var(--principale-moyen); }
+.carte-choix:has(input:checked) { border-color: var(--couleur-principale); background: var(--principale-doux); box-shadow: inset 0 0 0 1px var(--couleur-principale); }
+.carte-choix:has(input:focus-visible) { outline: 3px solid var(--couleur-principale); outline-offset: 2px; }
+.carte-choix input { position: absolute; opacity: 0; pointer-events: none; }
+.carte-choix-icone { flex: none; display: grid; place-items: center; width: 2.4rem; height: 2.4rem; border-radius: var(--rayon-petit); background: var(--principale-doux); color: var(--couleur-principale); }
+.carte-choix:has(input:checked) .carte-choix-icone { background: var(--couleur-principale); color: #fff; }
+.carte-choix-icone svg { width: 1.25rem; height: 1.25rem; }
+.carte-choix-texte { display: flex; flex-direction: column; }
+.carte-choix-texte small { color: var(--texte-doux); font-size: .85rem; line-height: 1.4; }
+.formulaire-creation { max-width: 46rem; }

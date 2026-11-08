@@ -287,10 +287,10 @@ function evenement_enregistrer(array $espace, array $member, array $in): array
     $lien = preg_match('#^https://[^\s"<>]+$#', $lien) ? mb_substr($lien, 0, 300) : null;
     $billetterie = $lien !== null && str_contains($lien, 'helloasso.com') ? strtolower(preg_replace('#^.*/#', '', rtrim(strtok($lien, '?'), '/'))) : null;
     $reglement = isset(EVENEMENT_REGLEMENTS[$in['reglement'] ?? '']) ? $in['reglement'] : 'aucun';
-    db_query('INSERT INTO evenement (espace_id, debut, fin, lieu, mode, places, cloture, helloasso_formulaire, reglement, lien_paiement, delai_jours, dernieres_jours) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ON DUPLICATE KEY UPDATE debut = VALUES(debut), fin = VALUES(fin), lieu = VALUES(lieu), mode = VALUES(mode), places = VALUES(places), cloture = VALUES(cloture), helloasso_formulaire = VALUES(helloasso_formulaire),
+    db_query('INSERT INTO evenement (espace_id, debut, fin, public_apres, lieu, mode, places, cloture, helloasso_formulaire, reglement, lien_paiement, delai_jours, dernieres_jours) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE debut = VALUES(debut), fin = VALUES(fin), public_apres = VALUES(public_apres), lieu = VALUES(lieu), mode = VALUES(mode), places = VALUES(places), cloture = VALUES(cloture), helloasso_formulaire = VALUES(helloasso_formulaire),
         reglement = VALUES(reglement), lien_paiement = VALUES(lien_paiement), delai_jours = VALUES(delai_jours), dernieres_jours = VALUES(dernieres_jours)',
-        [$espace['id'], $debut, $debut !== null ? $fin : null, mb_substr(trim((string) ($in['lieu'] ?? '')), 0, 200), $mode, $places ?: null, $cloture, $billetterie ? mb_substr($billetterie, 0, 150) : null,
+        [$espace['id'], $debut, $debut !== null ? $fin : null, array_key_exists('public_apres', $in) ? (empty($in['public_apres']) ? 0 : 1) : (int) ($ev['public_apres'] ?? 0), mb_substr(trim((string) ($in['lieu'] ?? '')), 0, 200), $mode, $places ?: null, $cloture, $billetterie ? mb_substr($billetterie, 0, 150) : null,
             $reglement, $lien, max(1, min(60, (int) ($in['delai_jours'] ?? 5))), max(0, min(90, (int) ($in['dernieres_jours'] ?? 7)))]);
     journal($espace['id'], $member, "Réglages de l'événement modifiés");
     // Plus de places après attribution : la liste d'attente en profite
@@ -361,4 +361,17 @@ function evenement_lien_google(array $espace, array $ev): string
 function evenement_lien_itineraire(string $lieu): string
 {
     return 'https://www.openstreetmap.org/search?query=' . rawurlencode($lieu);
+}
+
+// Événements « réservés aux membres, puis publics une fois passés » : la visibilité s'ouvre au lendemain de l'événement
+function evenements_publier_passes(): int
+{
+    $n = 0;
+    foreach (db_all('SELECT s.id, s.titre FROM espace s JOIN evenement e ON e.espace_id = s.id
+        WHERE e.public_apres = 1 AND s.visibilite <> "public" AND COALESCE(e.fin, e.debut) < CURDATE()') as $s) {
+        db_query('UPDATE espace SET visibilite = "public" WHERE id = ?', [$s['id']]);
+        journal((int) $s['id'], null, 'Événement passé : devenu public', 'web');
+        $n++;
+    }
+    return $n;
 }

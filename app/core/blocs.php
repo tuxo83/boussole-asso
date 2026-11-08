@@ -309,7 +309,9 @@ function bloc_dynamique(string $bloc): string
                 . ($passes ? '<details class="agenda-passes"><summary>Événements passés</summary>' . agenda_frise($passes, true) . '</details>' : '');
             $liste = $mes_liste . ($prochains ? '<h2 class="titre-bloc">À venir</h2>' . cartes_evenements($prochains) : '<p>Aucun événement annoncé pour l\'instant.</p>')
                 . ($passes ? '<h2 class="titre-bloc">Événements passés</h2>' . cartes_evenements($passes, true) : '');
-            return $aide
+            // Administrateur : créer un événement directement depuis l'agenda (sans espace)
+            $creer = $moi !== null && is_admin($moi) ? '<p class="agenda-creer">' . c_bouton('+ Nouvel événement', '/espaces/nouveau?type=evenement', 'secondaire') . '</p>' : '';
+            return $aide . $creer
                 . '<div class="agenda-vues" data-vues>'
                 . '<p class="agenda-choix" role="group" aria-label="Affichage de l\'agenda" hidden><button type="button" data-vue="frise" aria-pressed="true">Frise</button><button type="button" data-vue="liste" aria-pressed="false">Liste</button></p>'
                 . '<div class="agenda-vue" data-vue-contenu="frise">' . $frise . '</div>'
