@@ -850,3 +850,40 @@ details.crayon-flottant > .crayon-bouton { padding: 0; }
   body { font-size: 11pt; }
 }
 @media (max-width: 40rem) { .onglets button { padding: 0 .6rem; } .chiffres-gestion strong { font-size: 1.35rem; } }
+
+/* Page Espaces : vue d'ensemble météo, filtre, mes espaces en cartes, les autres en lignes */
+.titre-avec-action { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: .75rem 1.5rem; }
+.titre-avec-action .bouton { margin-top: 1rem; }
+.chapeau { max-width: 40rem; margin-top: -.25rem; }
+.surtitre { margin: 1.25rem 0 .5rem; font-size: .78rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--texte-doux); }
+.ensemble-meteo { list-style: none; margin: 0 0 1rem; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 9rem)); gap: .5rem; }
+.meteo-compteur { display: flex; flex-direction: column; align-items: center; gap: .15rem; min-height: 4.6rem; padding: .5rem; border: 1px solid var(--bordure); border-radius: var(--rayon); background: var(--fond); text-decoration: none; font-size: .82rem; font-weight: 700; }
+.meteo-compteur strong { font-size: 1.3rem; line-height: 1; }
+.meteo-compteur svg { width: 1.1rem; height: 1.1rem; }
+.meteo-compteur.meteo-orage { color: #8a1d2c; } .meteo-compteur.meteo-pluie { color: #7a4b00; } .meteo-compteur.meteo-eclaircie { color: var(--couleur-principale); } .meteo-compteur.meteo-soleil { color: #6b5300; }
+.meteo-compteur.actif { border-color: currentColor; box-shadow: inset 0 0 0 1px currentColor; background: var(--fond-doux); }
+.segments-filtre { display: inline-flex; margin: 0 0 1.5rem; }
+.segments-filtre a { display: inline-flex; align-items: center; min-height: 2.5rem; padding: 0 1rem; border-radius: 999px; text-decoration: none; font-weight: 600; color: var(--texte-doux); }
+.segments-filtre a[aria-current] { background: var(--fond); color: var(--couleur-principale); box-shadow: var(--ombre); }
+.espaces-miens > h2 { margin-top: .9rem; }
+.cartes-espaces { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr)); gap: .75rem; }
+.carte-espace { display: flex; gap: .85rem; height: 100%; padding: 1rem; border: 1px solid var(--bordure); border-radius: var(--rayon); background: var(--fond); box-shadow: var(--ombre); color: var(--texte); text-decoration: none; }
+.carte-espace:hover { border-color: var(--principale-moyen); }
+.carte-espace-corps, .ligne-espace-corps { display: flex; flex-direction: column; align-items: flex-start; gap: .3rem; min-width: 0; flex: 1; }
+.carte-espace-corps strong, .ligne-espace-corps strong { font-size: 1.05rem; }
+.carte-espace-corps .petit { display: flex; align-items: center; gap: .35rem; }
+.carte-espace-corps svg, .lien-archives svg { width: 1rem; height: 1rem; flex: none; }
+.tuile-type { flex: none; display: grid; place-items: center; width: 2.6rem; height: 2.6rem; border-radius: var(--rayon-petit); background: var(--principale-doux); color: var(--couleur-principale); }
+.tuile-type svg { width: 1.3rem; height: 1.3rem; }
+.tuile-type.type-comite { background: var(--couleur-principale); color: #fff; }
+.espaces-groupes { display: grid; grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr)); gap: 0 2rem; }
+.lignes-espaces { list-style: none; margin: 0; padding: 0; border: 1px solid var(--bordure); border-radius: var(--rayon); overflow: hidden; background: var(--fond); }
+.lignes-espaces li + li { border-top: 1px solid var(--bordure); }
+.lignes-espaces a { display: flex; align-items: center; gap: .85rem; padding: .8rem 1rem; color: var(--texte); text-decoration: none; min-height: 3.5rem; }
+.lignes-espaces a:hover { background: var(--principale-doux); }
+.sans-responsable { color: #8a1d2c; font-weight: 600; font-size: .9rem; }
+.ligne-espace-corps .discret { font-size: .9rem; }
+.chevron { flex: none; font-size: 1.6rem; color: var(--texte-doux); line-height: 1; }
+.lien-archives { margin-top: 2rem; }
+.lien-archives a { display: inline-flex; align-items: center; gap: .4rem; }
+@media (max-width: 40rem) { .ensemble-meteo { grid-template-columns: repeat(4, minmax(0, 1fr)); } .meteo-compteur { font-size: .72rem; } }
