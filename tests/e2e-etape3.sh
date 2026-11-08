@@ -32,6 +32,17 @@ check "bob dépose un fichier" "$(c -F "_csrf=$T" -F "fichier=@$W/odj.txt" "$U/e
 check "un fichier .php est stocké hors du site, jamais exécuté" "$(c -F "_csrf=$T" -F "fichier=@$W/pirate.php" "$U/espace/comite-de-direction/fichiers" >/dev/null; find "$ROOT/app/stockage" -name '*.php' | wc -l)" "0"
 FID=$(sql "SELECT id FROM fichier WHERE nom = 'odj.txt'")
 check "bob télécharge le fichier (pièce jointe)" "$(curl -s -b "$J" -D - -o /dev/null "$U/fichier/$FID" | grep -i -c 'content-disposition: attachment')" "1"
+check "aperçu refusé pour un .txt : reste en pièce jointe" "$(curl -s -b "$J" -D - -o /dev/null "$U/fichier/$FID?apercu=1" | grep -i -c 'content-disposition: attachment')" "1"
+printf '%%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%%%EOF\n' > "$W/cr.pdf"
+printf '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>' > "$W/x.svg"
+c -F "_csrf=$T" -F "fichier=@$W/cr.pdf" "$U/espace/comite-de-direction/fichiers" >/dev/null
+c -F "_csrf=$T" -F "fichier=@$W/x.svg" "$U/espace/comite-de-direction/fichiers" >/dev/null
+PID=$(sql "SELECT id FROM fichier WHERE nom = 'cr.pdf'"); SID=$(sql "SELECT id FROM fichier WHERE nom = 'x.svg'")
+check "aperçu d'un PDF : affiché dans le navigateur" "$(curl -s -b "$J" -D - -o /dev/null "$U/fichier/$PID?apercu=1" | grep -i -c 'content-disposition: inline\|content-type: application/pdf')" "2"
+check "PDF sans ?apercu : pièce jointe" "$(curl -s -b "$J" -D - -o /dev/null "$U/fichier/$PID" | grep -i -c 'content-disposition: attachment')" "1"
+check "aperçu refusé pour un SVG (peut porter du code)" "$(curl -s -b "$J" -D - -o /dev/null "$U/fichier/$SID?apercu=1" | grep -i -c 'content-type: application/octet-stream')" "1"
+c "$U/espace/comite-de-direction" >/dev/null
+check "fiche : fenêtre d'aperçu et lien du PDF marqué" "$(grep -c 'id="dialogue-fichier"\|data-fichier="pdf"' "$B")" "2"
 check "bob change la météo" "$(post "$U/espace/comite-de-direction" "$U/espace/comite-de-direction/meteo" -d 'meteo=pluie')" "303 $U/espace/comite-de-direction"
 check "météo enregistrée" "$(sql "SELECT meteo FROM espace WHERE slug = 'comite-de-direction'")" "pluie"
 
@@ -55,7 +66,8 @@ check "visiteur : fichier introuvable" "$(c "$U/fichier/$FID")" "404 "
 as admin
 check "espace public : visible sans connexion" "$(post "$U/espaces/nouveau" "$U/espaces/nouveau" -d 'type=evenement&titre=Journée portes ouvertes&visibilite=public' >/dev/null; as visiteur; c "$U/espace/journee-portes-ouvertes")" "200 "
 as admin
-check "journal : actions tracées" "$(sql "SELECT COUNT(*) FROM journal j JOIN espace e ON e.id = j.espace_id WHERE e.slug = 'comite-de-direction'")" "[7-9]"
+N_JOURNAL=$(sql "SELECT COUNT(*) FROM journal j JOIN espace e ON e.id = j.espace_id WHERE e.slug = 'comite-de-direction'")
+check "journal : actions tracées (9 à 11)" "$( [ "$N_JOURNAL" -ge 9 ] && [ "$N_JOURNAL" -le 11 ] && echo "$N_JOURNAL")" "$N_JOURNAL"
 ALICE=$(sql "SELECT id FROM membre WHERE email = 'alice@example.org'")
 post "$U/admin/membres" "$U/admin/membres/$ALICE" -d 'prenom=Alice&actif=1&droits[]=membres' >/dev/null
 check "délégation « membres » donnée à alice" "$(sql "SELECT droit FROM droit_plateforme WHERE membre_id = $ALICE")" "membres"
