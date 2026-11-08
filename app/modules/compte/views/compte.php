@@ -48,21 +48,32 @@ foreach (db_all('SELECT j.*, s.titre AS espace_titre, s.slug FROM jalon j JOIN e
         'badge' => ['badge-echeance', 'Échéance · ' . $j['espace_titre']]];
 }
 usort($rdv, fn($x, $y) => strcmp((string) $x['date'], (string) $y['date']));
+// Mes rendez-vous passés (12 derniers mois) : les événements où j'étais inscrit, repliés par défaut
+$passes = array_map(fn($i) => ['date' => $i['debut'], 'heure' => true, 'titre' => $i['titre'], 'lien' => '/espace/' . $i['slug'], 'ligne' => $i['lieu'], 'genre' => $i['visibilite'] === 'equipe' ? 'reunion' : 'evenement', 'badge' => null],
+    db_all('SELECT s.titre, s.slug, s.visibilite, e.debut, e.lieu FROM inscription i JOIN evenement e ON e.espace_id = i.evenement_id JOIN espace s ON s.id = e.espace_id
+        WHERE i.membre_id = ? AND i.statut = "retenu" AND e.debut < CURDATE() AND e.debut >= CURDATE() - INTERVAL 12 MONTH ORDER BY e.debut DESC', [$membre['id']]));
+// Une mini-frise : des lignes compactes posées sur la ligne du temps de l'agenda
+$mini_frise = function (array $items, bool $passe = false) use ($mois): string {
+    $html = '<ul class="rdv rdv-frise' . ($passe ? ' rdv-frise-passee' : '') . '">';
+    foreach ($items as $r) {
+        $html .= '<li class="rdv-' . e($r['genre']) . '"><a href="' . e(url($r['lien'])) . '"><span class="date-tuile">'
+            . ($r['date'] ? '<span class="jour">' . (int) date('j', strtotime($r['date'])) . '</span><span class="mois">' . $mois[(int) date('n', strtotime($r['date']))] . '</span>' : '<span class="date-icone">' . c_icone('calendrier') . '</span>')
+            . '</span><span class="rdv-texte"><strong>' . e($r['titre']) . '</strong><span class="rdv-ligne">';
+        $quand = trim(($r['heure'] ? ($r['date'] ? ($passe ? date('d/m/Y', strtotime($r['date'])) : date('H\\hi', strtotime($r['date']))) : 'Date à venir') : '') . ($r['ligne'] ? ' · ' . $r['ligne'] : ''), ' ·');
+        $html .= ($quand !== '' ? '<span class="discret">' . e($quand) . '</span>' : '') . ($r['badge'] ? '<span class="badge ' . e($r['badge'][0]) . '">' . e($r['badge'][1]) . '</span>' : '') . '</span></span></a></li>';
+    }
+    return $html . '</ul>';
+};
 ?>
 <section class="compte-section">
   <div class="titre-avec-lien"><h2>Mes prochains rendez-vous</h2><?php if ($agenda && $rdv): ?><a href="<?= e(url('/page/' . $agenda)) ?>">Tout l'agenda →</a><?php endif ?></div>
   <?php if ($rdv): ?>
-  <ul class="rdv">
-    <?php foreach ($rdv as $r): ?>
-    <li class="rdv-<?= e($r['genre']) ?>"><a href="<?= e(url($r['lien'])) ?>">
-      <span class="date-tuile"><?php if ($r['date']): ?><span class="jour"><?= (int) date('j', strtotime($r['date'])) ?></span><span class="mois"><?= $mois[(int) date('n', strtotime($r['date']))] ?></span><?php else: ?><span class="date-icone"><?= c_icone('calendrier') ?></span><?php endif ?></span>
-      <span class="rdv-texte"><strong><?= e($r['titre']) ?></strong><span class="rdv-ligne"><?php if ($r['heure'] || $r['ligne']): ?><span class="discret"><?= e(trim(($r['heure'] ? ($r['date'] ? date('H\hi', strtotime($r['date'])) : 'Date à venir') : '') . ($r['ligne'] ? ' · ' . $r['ligne'] : ''), ' ·')) ?></span><?php endif ?>
-      <span class="badge <?= e($r['badge'][0]) ?>"><?= e($r['badge'][1]) ?></span></span></span>
-    </a></li>
-    <?php endforeach ?>
-  </ul>
+  <?= $mini_frise($rdv) ?>
   <?php else: ?>
   <p class="vide"><?= c_icone('calendrier') ?><span>Rien de prévu pour l'instant.<?php if ($agenda): ?> <a href="<?= e(url('/page/' . $agenda)) ?>">Voir les prochains événements</a><?php endif ?></span></p>
+  <?php endif ?>
+  <?php if ($passes): ?>
+  <details class="rdv-passes"><summary>Mes rendez-vous passés (<?= count($passes) ?>)</summary><?= $mini_frise($passes, true) ?></details>
   <?php endif ?>
 </section>
 <section class="compte-section">
