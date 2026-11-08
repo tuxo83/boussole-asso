@@ -1,18 +1,14 @@
 <h1>Mon compte</h1>
 <?php if ($erreur): ?><?= c_alerte('erreur', $erreur) ?><?php endif ?>
-<p><?= e($membre['email']) ?></p>
-<div class="grille">
-  <?php $nb_cles = (int) db_value('SELECT COUNT(*) FROM cle_securite WHERE membre_id = ?', [$membre['id']]); ?>
-  <?= c_carte('Sécurité du compte', '<p>' . ($nb_cles ? $nb_cles . ' clé(s) de sécurité' : 'Aucune clé de sécurité') . ((int) $membre['totp_actif'] === 1 ? ' · application active' : '') . '</p>'
-      . (member_rights($membre['id']) && !$nb_cles && !(int) $membre['totp_actif'] ? '<p class="petit">Conseillé pour la gestion : ajoutez une clé (sinon un code par e-mail vous sera demandé).</p>' : '')
-      . c_bouton('Gérer', '/compte/double-authentification', 'secondaire')) ?>
+<?php $nom = trim($membre['prenom'] . ' ' . $membre['nom']); ?>
+<p class="compte-identite"><?php if ($nom !== ''): ?><strong><?= e($nom) ?></strong> · <?php endif ?><span class="discret"><?= e($membre['email']) ?></span></p>
+<div class="grille grille-2">
   <?php $ma = cotisation_a_jour($membre); $depuis = cotisation_depuis($membre); ?>
   <?= c_carte('Ma cotisation ' . cotisation_periode_libelle(cotisation_periode()), $ma
       ? '<p><span class="badge badge-ok">À jour</span></p><p class="petit">Payée le ' . e(date('d/m/Y', strtotime($ma['paye_le']))) . ($depuis !== null && $depuis < cotisation_periode() ? ' · fidèle depuis ' . e(cotisation_periode_libelle($depuis)) : '') . '</p>'
-      : '<p><span class="badge">Pas encore à jour</span></p>' . (setting('lien_adhesion', '') !== '' ? c_bouton('Payer ma cotisation', (string) setting('lien_adhesion'), 'principal') . '<p class="petit">Utilisez la même adresse e-mail que votre compte.</p>' : '<p class="petit">Si vous avez déjà payé, l\'enregistrement peut prendre quelques jours.</p>')) ?>
+      : '<p><span class="badge badge-attention">Pas encore réglée</span></p>' . (setting('lien_adhesion', '') !== '' ? c_bouton('Payer ma cotisation', (string) setting('lien_adhesion'), 'principal') . '<p class="petit">Avec la même adresse e-mail que votre compte.</p>' : '<p class="petit">Si vous avez déjà payé, l\'enregistrement peut prendre quelques jours.</p>')) ?>
   <?php $inscriptions = evenement_mes_inscriptions($membre); ?>
-  <?= c_carte('Mes inscriptions', $inscriptions ? '<ul class="liste">' . implode('', array_map(fn($i) => '<li><a href="' . e(url('/espace/' . $i['slug'])) . '">' . e($i['titre']) . '</a> <span class="discret">· ' . e(evenement_date($i['debut'])) . ' · ' . e(INSCRIPTION_STATUTS[$i['statut']]) . ($i['statut'] === 'attente' ? ' n°' . (int) $i['rang'] : '') . '</span></li>', $inscriptions)) . '</ul>' : '<p>Aucune inscription à venir.</p>') ?>
-  <?= c_carte("Clés d'API (IA, MCP)", '<p>Donner à un outil ou à une IA un accès avec vos droits.</p>' . c_bouton('Mes clés', '/compte/cles', 'secondaire')) ?>
+  <?= c_carte('Mes inscriptions', $inscriptions ? '<ul class="liste">' . implode('', array_map(fn($i) => '<li><a href="' . e(url('/espace/' . $i['slug'])) . '">' . e($i['titre']) . '</a> <span class="discret">· ' . e(evenement_date($i['debut'])) . ' · ' . e(INSCRIPTION_STATUTS[$i['statut']]) . ($i['statut'] === 'attente' ? ' n°' . (int) $i['rang'] : '') . '</span></li>', $inscriptions)) . '</ul>' : '<p>Aucune inscription à venir.</p>' . c_bouton("Voir l'agenda", '/agenda', 'secondaire')) ?>
 </div>
 <?php if (member_rights($membre['id'])): ?>
 <h2>Gestion de l'association</h2>
@@ -36,18 +32,39 @@
   <?php endif ?>
 </div>
 <?php endif ?>
-<h2>Mot de passe</h2>
-<form method="post" action="<?= e(url('/compte/mot-de-passe')) ?>" class="formulaire">
-  <?= csrf_field() ?>
-  <?= c_champ('mot_de_passe', 'Nouveau mot de passe', ['type' => 'password', 'aide' => 'Facultatif. Laisser vide pour se connecter uniquement par lien envoyé par e-mail.']) ?>
-  <?= c_champ('confirmation', 'Confirmation', ['type' => 'password']) ?>
-  <button type="submit" class="bouton bouton-secondaire">Enregistrer</button>
-</form>
+<h2>Connexion et sécurité</h2>
+<?php $nb_cles = (int) db_value('SELECT COUNT(*) FROM cle_securite WHERE membre_id = ?', [$membre['id']]); $demo = !empty($membre['compte_demo']); ?>
+<ul class="reglages">
+  <li>
+    <div><strong>Mot de passe</strong><span class="discret"><?= $demo ? 'Compte de démonstration : fixé par un administrateur' : ($membre['mot_de_passe'] !== null ? 'Défini' : 'Aucun : connexion par lien envoyé par e-mail') ?></span></div>
+    <?php if (!$demo): ?>
+    <details class="reglage-action"<?= $erreur ? ' open' : '' ?>><summary class="bouton bouton-secondaire"><?= $membre['mot_de_passe'] !== null ? 'Changer' : 'Choisir' ?></summary>
+      <form method="post" action="<?= e(url('/compte/mot-de-passe')) ?>" class="formulaire">
+        <?= csrf_field() ?>
+        <?= c_champ('mot_de_passe', 'Nouveau mot de passe', ['type' => 'password', 'aide' => 'Au moins ' . MOT_DE_PASSE_MIN . ' caractères. Laisser vide pour se connecter seulement par lien envoyé par e-mail.']) ?>
+        <?= c_champ('confirmation', 'Confirmation', ['type' => 'password']) ?>
+        <button type="submit" class="bouton bouton-principal">Enregistrer</button>
+      </form>
+    </details>
+    <?php endif ?>
+  </li>
+  <li>
+    <div><strong>Double authentification</strong><span class="discret"><?= ($nb_cles ? $nb_cles . ' clé(s) de sécurité' : 'Aucune clé de sécurité') . ((int) $membre['totp_actif'] === 1 ? ' · application active' : '') ?></span>
+      <?php if (member_rights($membre['id']) && !$nb_cles && !(int) $membre['totp_actif']): ?><span class="petit">Conseillé pour la gestion : sinon un code par e-mail vous sera demandé.</span><?php endif ?></div>
+    <?php if (!$demo): ?><?= c_bouton('Gérer', '/compte/double-authentification', 'secondaire') ?><?php endif ?>
+  </li>
+  <?php if (!$demo): ?>
+  <li>
+    <div><strong>Clés d'API</strong><span class="discret">Donner à un outil ou à une IA un accès avec vos droits</span></div>
+    <?= c_bouton('Gérer', '/compte/cles', 'secondaire') ?>
+  </li>
+  <?php endif ?>
+</ul>
 <details class="separe"><summary>Mon historique</summary>
   <p class="petit">Les dernières connexions et modifications de votre compte. Une ligne que vous ne reconnaissez pas ? Changez votre mot de passe et prévenez l'association.</p>
   <?= partial('historique', ['historique' => $historique ?? [], 'cible_id' => $membre['id']]) ?>
 </details>
-<form method="post" action="<?= e(url('/deconnexion')) ?>" class="separe">
+<form method="post" action="<?= e(url('/deconnexion')) ?>" class="compte-sortie">
   <?= csrf_field() ?>
-  <button type="submit" class="bouton bouton-secondaire">Se déconnecter</button>
+  <button type="submit" class="lien-bouton"><?= c_icone('sortie') ?>Se déconnecter</button>
 </form>
