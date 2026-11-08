@@ -170,7 +170,7 @@ return [
                 db_query('UPDATE espace_membre SET niveau = "membre" WHERE espace_id = ? AND niveau = ?', [$espace['id'], $niveau]);
             }
             db_query('INSERT INTO espace_membre (espace_id, membre_id, niveau, libelle) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE niveau = VALUES(niveau), libelle = VALUES(libelle)',
-                [$espace['id'], $cible['id'], $niveau, mb_substr(trim((string) ($_POST['libelle'] ?? '')), 0, 100)]);
+                [$espace['id'], $cible['id'], $niveau, mb_substr(espace_libelle_compose($_POST), 0, 100)]);
             journal($espace['id'], $member, membre_nom($cible) . ' : ' . ESPACE_NIVEAUX[$niveau]);
             redirect('/espace/' . $espace['slug']);
         }],

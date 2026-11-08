@@ -17,7 +17,7 @@ post "$U/espace/comite-de-direction" "$U/espace/comite-de-direction/equipe" -d '
 post "$U/espace/comite-de-direction" "$U/espace/comite-de-direction/equipe" -d 'email=bob@example.org&niveau=n2&libelle=Secrétaire' >/dev/null
 c "$U/espace/comite-de-direction" >/dev/null
 check "n°1 et n°2 en place : plus d'alerte" "$(grep -o 'Pas de n°[12]' "$B" | wc -l)" "0"
-check "libellé libre affiché" "$(grep -c 'Présidente' "$B")" "1"
+check "libellé libre affiché" "$(grep -c '>Présidente\|· Présidente' "$B")" "1"
 check "membre inconnu refusé dans l'équipe" "$(post "$U/espace/comite-de-direction" "$U/espace/comite-de-direction/equipe" -d 'email=inconnu@example.org&niveau=membre' >/dev/null; c "$U/espace/comite-de-direction" >/dev/null; grep -c 'Membre inconnu' "$B")" "1"
 
 login_link bob bob@example.org
@@ -148,6 +148,7 @@ sql "INSERT INTO page (slug, titre, contenu, blocs, publiee) VALUES ('qui-fait-q
 check "bloc équipe : groupes et rôles venus de l'espace, sans adresse" "$(c "$U/page/qui-fait-quoi" >/dev/null; grep -c '<h3>Bureau</h3>' "$B") $(grep -c '<h3>Délégations</h3>' "$B") $(grep -c 'Présidente' "$B") $(grep -c 'carole@example.org' "$B")" "1 1 1 0"
 post "$U/espace/cyber" "$U/espace/cyber/equipe" -d 'email=carole@example.org&niveau=n1&libelle=Bureau : Trésorière' >/dev/null
 check "bloc équipe : un changement dans l'espace se voit aussitôt sur la page" "$(c "$U/page/qui-fait-quoi" >/dev/null; grep -c 'Trésorière' "$B") $(grep -c 'Présidente' "$B")" "1 0"
+check "équipe : groupe et rôle saisis séparément" "$(post "$U/espace/cyber" "$U/espace/cyber/equipe" -d 'email=carole@example.org&niveau=n1&groupe=Bureau&role=Secrétaire' >/dev/null; sql "SELECT em.libelle FROM espace_membre em JOIN espace s ON s.id = em.espace_id JOIN membre m ON m.id = em.membre_id WHERE s.slug = 'cyber' AND m.email = 'carole@example.org'")" "Bureau : Secrétaire"
 # Météo automatique : d'après le responsable et les dates clés ; un choix à la main la coupe
 as carole
 post "$U/espace/cyber" "$U/espace/cyber/meteo-auto" -d 'meteo_auto=1' >/dev/null
