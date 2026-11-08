@@ -774,3 +774,22 @@ details.crayon-flottant > .crayon-bouton { padding: 0; }
   .frise-mois { width: auto; margin-left: 1.6rem; text-align: left; }
   .frise-mois::before { left: calc(-1.6rem + .35rem - 4px); }
 }
+
+/* Mon compte : mini-frise (lignes compactes sur la ligne du temps de l'agenda) */
+.rdv-frise { position: relative; border: 0; background: none; overflow: visible; padding-left: 1.6rem; }
+.rdv-frise::before { content: ""; position: absolute; left: .35rem; top: .6rem; bottom: .6rem; width: 2px; background: var(--principale-moyen); }
+.rdv-frise > li { position: relative; }
+.rdv-frise > li + li { border-top: 0; }
+.rdv-frise > li::before { content: ""; position: absolute; left: calc(-1.6rem + .35rem - 5px); top: 50%; margin-top: -6px; width: 12px; height: 12px; border-radius: 50%; background: var(--fond); border: 3px solid var(--couleur-principale); }
+.rdv-frise > li.rdv-reunion::before { border-color: #2f6f5e; }
+.rdv-frise > li.rdv-echeance::before { border-color: var(--bordure-forte); }
+.rdv-frise a { border: 1px solid var(--bordure); border-radius: var(--rayon); background: var(--fond); margin-bottom: .5rem; }
+.rdv-passes { margin-top: 1rem; }
+.rdv-passes > summary { cursor: pointer; font-weight: 600; color: var(--couleur-principale); min-height: var(--cible); display: flex; align-items: center; }
+.rdv-frise-passee .date-tuile { background: var(--texte-doux); }
+.rdv-frise-passee > li::before { border-color: var(--texte-doux); }
+.rdv-frise-passee strong { color: var(--texte-doux); }
+.rdv-ligne .badge { white-space: normal; max-width: 100%; }
+.rdv-frise a { min-width: 0; }
+.rdv-frise > li { min-width: 0; }
+@media (max-width: 40rem) { .rdv-frise { padding-left: 1.4rem; } .rdv-frise > li::before { left: calc(-1.4rem + .35rem - 5px); } .rdv-frise a { gap: .75rem; padding: .7rem .8rem; } }
