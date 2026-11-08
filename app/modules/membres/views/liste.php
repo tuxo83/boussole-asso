@@ -44,6 +44,10 @@
     <?= c_champ('nom', 'Nom', ['valeur' => $m['nom'], 'max' => 100]) ?>
     <?= c_champ('type_membre_id', 'Type de membre', ['type' => 'select', 'valeur' => (string) $m['type_membre_id'], 'choix' => ['' => '—'] + array_column($types, 'libelle', 'id')]) ?>
     <label class="case"><input type="checkbox" name="actif" value="1"<?= $m['actif'] ? ' checked' : '' ?>> Compte actif</label>
+    <?php if (is_admin($gestionnaire) && (int) $m['id'] !== (int) $gestionnaire['id']): ?>
+    <label class="case"><input type="checkbox" name="compte_demo" value="1"<?= !empty($m['compte_demo']) ? ' checked' : '' ?>> Compte de démonstration : mot de passe fixé ici, que ses utilisateurs ne peuvent pas changer</label>
+    <?= c_champ('mot_de_passe_demo', 'Mot de passe de démonstration', ['type' => 'text', 'aide' => 'Seulement si la case ci-dessus est cochée. Laisser vide pour garder l\'actuel ; 8 caractères au moins.']) ?>
+    <?php endif ?>
     <?php if (is_admin($gestionnaire)): ?>
     <fieldset><legend>Droits de plateforme (double authentification obligatoire)</legend>
       <?php foreach (DROITS as $cle => $libelle): ?>
@@ -59,8 +63,8 @@
   <?php endif ?>
   <?php if (is_admin($gestionnaire)): ?><p><a href="<?= e(url('/admin/membres/' . (int) $m['id'] . '/historique')) ?>">Historique du compte</a></p><?php endif ?>
   <?php if (is_admin($gestionnaire) && (int) $m['id'] !== (int) $gestionnaire['id']): ?>
-  <form method="post" action="<?= e(url('/admin/membres/' . (int) $m['id'] . '/mot-de-passe-provisoire')) ?>"><?= csrf_field() ?>
-    <button type="submit" class="lien-bouton" data-confirmer="Donner un mot de passe provisoire à <?= e(membre_nom($m)) ?> ? Son mot de passe actuel ne marchera plus ; il devra en choisir un à sa prochaine connexion.">Mot de passe provisoire<?= $m['mot_de_passe_provisoire'] ? ' (déjà donné, pas encore changé)' : '' ?></button></form>
+  <?php if (empty($m['compte_demo'])): ?><form method="post" action="<?= e(url('/admin/membres/' . (int) $m['id'] . '/mot-de-passe-provisoire')) ?>"><?= csrf_field() ?>
+    <button type="submit" class="lien-bouton" data-confirmer="Donner un mot de passe provisoire à <?= e(membre_nom($m)) ?> ? Son mot de passe actuel ne marchera plus ; il devra en choisir un à sa prochaine connexion.">Mot de passe provisoire<?= $m['mot_de_passe_provisoire'] ? ' (déjà donné, pas encore changé)' : '' ?></button></form><?php endif ?>
   <form method="post" action="<?= e(url('/admin/membres/' . (int) $m['id'] . '/effacer')) ?>"><?= csrf_field() ?>
     <button type="submit" class="lien-bouton lien-danger" data-confirmer="Effacer définitivement <?= e(membre_nom($m)) ?> ? Son compte, ses cotisations, ses inscriptions et ses clés disparaissent, et son nom est retiré du journal. Pour suspendre seulement l'accès, décochez « Compte actif ».">Effacer définitivement ce membre</button></form>
   <?php endif ?>
