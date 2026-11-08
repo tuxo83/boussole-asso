@@ -108,7 +108,7 @@ function api_administration(string $droit = 'admin'): array
     return $member;
 }
 
-const REGLAGES_API = ['nom_association' => 150, 'slogan' => 200, 'pied_de_page' => 500, 'lien_adhesion' => 300, 'bandeau_image' => 80, 'logo' => 80,
+const REGLAGES_API = ['nom_association' => 150, 'slogan' => 200, 'pied_de_page' => 500, 'lien_adhesion' => 300, 'bandeau_image' => 80, 'bandeau_legende' => 300, 'logo' => 80,
     'couleur_principale' => 7, 'couleur_accent' => 7, 'couleur_membres' => 7, 'arrivee_cotisant' => 120, 'arrivee_non_cotisant' => 120];
 
 // Réglages du site (administration) : texte, lien d'adhésion (https), image du bandeau (image déjà envoyée)

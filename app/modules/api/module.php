@@ -99,7 +99,7 @@ function mcp_outils(): array
             'inputSchema' => $objet(['base64' => $texte('Contenu de l\'image en base64')], ['base64'])],
         ['name' => 'regler_site', 'description' => "Réglages du site (clé « administration », administrateur) : nom, accroche (slogan), pied de page, lien d'adhésion HelloAsso, image du bandeau d'accueil et logo (chemins renvoyés par ajouter_image).",
             'inputSchema' => $objet(['nom_association' => $texte("Nom de l'association"), 'slogan' => $texte("Phrase d'accroche"), 'pied_de_page' => $texte('Pied de page'),
-                'lien_adhesion' => $texte("Lien d'adhésion HelloAsso (https)"), 'bandeau_image' => $texte('Chemin uploads/img-… de l\'image du bandeau'), 'logo' => $texte('Chemin uploads/img-… du logo (vide : aucun logo)'),
+                'lien_adhesion' => $texte("Lien d'adhésion HelloAsso (https)"), 'bandeau_image' => $texte('Chemin uploads/img-… de l\'image du bandeau'), 'bandeau_legende' => $texte("Légende de l'image du bandeau : ce qu'elle montre, pourquoi ce choix (vide : aucune)"), 'logo' => $texte('Chemin uploads/img-… du logo (vide : aucun logo)'),
                 'site_en_construction' => ['type' => 'boolean', 'description' => "Bandeau « en construction » et code d'accès pour les visiteurs"],
                 'couleur_principale' => $texte('#rrggbb'), 'couleur_accent' => $texte('#rrggbb'), 'couleur_membres' => $texte('#rrggbb (agenda : réservé aux membres)'),
                 'arrivee_cotisant' => $texte('Page d\'arrivée après connexion, membre à jour : /page/… , /espaces ou /compte (vide : Mon compte)'),

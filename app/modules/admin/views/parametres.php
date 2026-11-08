@@ -11,6 +11,7 @@
   </fieldset>
   <fieldset>
     <legend>Apparence</legend>
+    <?= c_champ('bandeau_legende', "Légende de l'image d'accueil", ['valeur' => $v['bandeau_legende'] ?? '', 'max' => 300, 'aide' => "Facultatif : ce que montre la photo et pourquoi elle a été choisie. Affichée discrètement, au clic sur le « i » du bandeau."]) ?>
     <?= c_champ('logo', 'Logo', ['type' => 'file', 'aide' => 'PNG, JPEG ou WebP, 1 Mo maximum.', 'erreur' => $erreurs['logo'] ?? null]) ?>
     <?= c_champ('couleur_principale', 'Couleur principale', ['type' => 'color', 'valeur' => $v['couleur_principale'] ?? '#1f4e79', 'erreur' => $erreurs['couleur_principale'] ?? null]) ?>
     <?= c_champ('couleur_accent', "Couleur d'accent", ['type' => 'color', 'valeur' => $v['couleur_accent'] ?? '#c8102e', 'erreur' => $erreurs['couleur_accent'] ?? null]) ?>
