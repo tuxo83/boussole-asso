@@ -148,4 +148,13 @@ sql "INSERT INTO page (slug, titre, contenu, blocs, publiee) VALUES ('qui-fait-q
 check "bloc équipe : groupes et rôles venus de l'espace, sans adresse" "$(c "$U/page/qui-fait-quoi" >/dev/null; grep -c '<h3>Bureau</h3>' "$B") $(grep -c '<h3>Délégations</h3>' "$B") $(grep -c 'Présidente' "$B") $(grep -c 'carole@example.org' "$B")" "1 1 1 0"
 post "$U/espace/cyber" "$U/espace/cyber/equipe" -d 'email=carole@example.org&niveau=n1&libelle=Bureau : Trésorière' >/dev/null
 check "bloc équipe : un changement dans l'espace se voit aussitôt sur la page" "$(c "$U/page/qui-fait-quoi" >/dev/null; grep -c 'Trésorière' "$B") $(grep -c 'Présidente' "$B")" "1 0"
+# Météo automatique : d'après le responsable et les dates clés ; un choix à la main la coupe
+as carole
+post "$U/espace/cyber" "$U/espace/cyber/meteo-auto" -d 'meteo_auto=1' >/dev/null
+sql "INSERT INTO jalon (espace_id, libelle, date_jalon) SELECT id, 'Rapport', CURDATE() - INTERVAL 3 DAY FROM espace WHERE slug = 'cyber'"
+check "météo auto : une date clé dépassée = en retard, avec la raison" "$(c "$U/espace/cyber" >/dev/null; sql "SELECT CONCAT(meteo, ' ', meteo_auto) FROM espace WHERE slug = 'cyber'") $(grep -c 'meteo-raison discret">1 date clé dépassée' "$B")" "pluie 1 1"
+sql "UPDATE jalon SET date_jalon = CURDATE() - INTERVAL 40 DAY WHERE libelle = 'Rapport'"
+check "météo auto : dépassée depuis longtemps = bloqué (tâche planifiée)" "$(php "$ROOT/app/bin/cli.php" cron >/dev/null; sql "SELECT meteo FROM espace WHERE slug = 'cyber'")" "orage"
+post "$U/espace/cyber" "$U/espace/cyber/meteo" -d 'meteo=soleil' >/dev/null
+check "météo choisie à la main : le mode automatique se coupe" "$(c "$U/espace/cyber" >/dev/null; sql "SELECT CONCAT(meteo, ' ', meteo_auto) FROM espace WHERE slug = 'cyber'")" "soleil 0"
 bilan

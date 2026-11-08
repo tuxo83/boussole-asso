@@ -43,17 +43,26 @@ $boutons = '<span class="en-place-boutons"><button type="submit" class="bouton b
 
 <div class="espace-etat">
   <?php if ($peut_contribuer): ?>
+  <?php $auto = !empty($espace['meteo_auto']); $raison = $auto && $espace['meteo_raison'] !== '' ? $espace['meteo_raison'] : ''; ?>
   <details class="meteo-menu">
-    <summary aria-label="Changer la météo"><?= c_meteo($espace['meteo']) ?><span class="meteo-fleche" aria-hidden="true">▾</span></summary>
-    <form method="post" action="<?= $action('/meteo') ?>" class="meteo-options">
-      <?= csrf_field() ?>
-      <?php foreach (['soleil', 'eclaircie', 'pluie', 'orage'] as $cle): ?>
-      <button type="submit" name="meteo" value="<?= $cle ?>" aria-pressed="<?= $espace['meteo'] === $cle ? 'true' : 'false' ?>"><?= c_meteo($cle) ?></button>
-      <?php endforeach ?>
-    </form>
+    <summary aria-label="Changer la météo"><?= c_meteo($espace['meteo']) ?><?php if ($auto): ?><span class="meteo-auto-marque">auto</span><?php endif ?><span class="meteo-fleche" aria-hidden="true">▾</span></summary>
+    <div class="meteo-options">
+      <form method="post" action="<?= $action('/meteo-auto') ?>" class="meteo-auto-choix"><?= csrf_field() ?>
+        <input type="hidden" name="meteo_auto" value="<?= $auto ? '' : '1' ?>">
+        <button type="submit" aria-pressed="<?= $auto ? 'true' : 'false' ?>"><span class="case-auto" aria-hidden="true"></span><span><strong>Météo automatique</strong><small>D'après le responsable et les dates clés</small></span></button>
+      </form>
+      <form method="post" action="<?= $action('/meteo') ?>">
+        <?= csrf_field() ?>
+        <p class="petit"><?= $auto ? 'Ou choisir à la main (coupe le mode automatique) :' : 'Choisir à la main :' ?></p>
+        <?php foreach (['soleil', 'eclaircie', 'pluie', 'orage'] as $cle): ?>
+        <button type="submit" name="meteo" value="<?= $cle ?>" aria-pressed="<?= $espace['meteo'] === $cle && !$auto ? 'true' : 'false' ?>"><?= c_meteo($cle) ?></button>
+        <?php endforeach ?>
+      </form>
+    </div>
   </details>
+  <?php if ($raison !== ''): ?><span class="meteo-raison discret"><?= e(ucfirst($raison)) ?></span><?php endif ?>
   <?php else: ?>
-  <?= c_meteo($espace['meteo']) ?>
+  <?= c_meteo($espace['meteo']) ?><?php if (!empty($espace['meteo_auto']) && $espace['meteo_raison'] !== ''): ?><span class="meteo-raison discret"><?= e(ucfirst($espace['meteo_raison'])) ?></span><?php endif ?>
   <?php endif ?>
   <?php if ($peut_gerer): ?>
   <span class="en-place en-place-ligne" data-en-place>
