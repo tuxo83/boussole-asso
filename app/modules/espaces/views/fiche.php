@@ -24,7 +24,8 @@ $garder = function (array $sauf) use ($espace): string {
 };
 $boutons = '<span class="en-place-boutons"><button type="submit" class="bouton bouton-principal">Enregistrer</button> <button type="button" class="lien-bouton" data-en-place-annuler>Annuler</button></span>';
 ?>
-<p class="discret"><?= e(ESPACE_TYPES[$espace['type']]) ?><?php if ($parent): ?> · dans <a href="<?= e(url('/espace/' . $parent['slug'])) ?>"><?= e($parent['titre']) ?></a><?php endif ?></p>
+<nav class="ariane" aria-label="Fil d'Ariane"><a href="<?= e(url('/espaces')) ?>">Espaces</a><?php if ($parent): ?> › <a href="<?= e(url('/espace/' . $parent['slug'])) ?>"><?= e($parent['titre']) ?></a><?php endif ?></nav>
+<p class="surtitre surtitre-espace"><?= e(ESPACE_TYPES[$espace['type']]) ?></p>
 <?php if ($peut_gerer): ?>
 <div class="en-place" data-en-place>
   <h1 class="en-place-vue" tabindex="0" role="button" aria-label="Modifier le titre : <?= e($espace['titre']) ?>"><?= e($espace['titre']) ?><span class="en-place-crayon"><?= c_icone('crayon') ?></span></h1>
@@ -67,8 +68,9 @@ $boutons = '<span class="en-place-boutons"><button type="submit" class="bouton b
 </div>
 
 <?php if ($alertes && $peut_contribuer): ?>
-<div class="a-faire" role="status"><strong>À faire</strong>
-  <ul><?php foreach ($alertes as $alerte): $cible = $cible_alerte($alerte); ?><li><?= $cible ? '<a href="' . $cible . '">' . e($alerte) . '</a>' : e($alerte) ?></li><?php endforeach ?></ul>
+<div class="a-faire" role="status"><strong><?= c_icone('attention') ?>À faire</strong>
+  <ul><?php foreach ($alertes as $alerte): $cible = $cible_alerte($alerte); $verbe_alerte = match ($cible) { '#ajout-equipe' => 'Choisir', '#fichiers' => 'Déposer', default => 'Voir' }; ?>
+    <li><span><?= e($alerte) ?></span><?php if ($cible): ?><a class="bouton bouton-secondaire" href="<?= $cible ?>"<?= $cible === '#ajout-equipe' ? ' data-ouvrir="ajout-equipe"' : '' ?>><?= $verbe_alerte ?></a><?php endif ?></li><?php endforeach ?></ul>
   <?php if ($espace['meteo'] === 'soleil' && array_filter($alertes, fn($a) => str_contains($a, 'dépassée'))): ?><p class="petit">Une date clé est dépassée : la météo est-elle toujours « À jour » ?</p><?php endif ?>
 </div>
 <?php endif ?>
@@ -85,16 +87,99 @@ $boutons = '<span class="en-place-boutons"><button type="submit" class="bouton b
 <?php endif ?>
 <?php if ($espace['type'] === 'evenement'): ?><?= partial('evenements/bloc', evenement_vue($espace, $membre)) ?><?php endif ?>
 
-<?php // Une rubrique vide n'est montrée qu'à ceux qui peuvent la remplir ?>
-<div class="espace-blocs">
+<?php if ($espace['type'] !== 'evenement'): ?>
+<nav class="ancres" aria-label="Dans cet espace"><?php foreach (['agenda' => 'Agenda', 'dates' => 'Dates', 'fichiers' => 'Fichiers', 'equipe' => 'Équipe'] as $id => $libelle): ?><a href="#<?= $id ?>"><?= $libelle ?></a><?php endforeach ?></nav>
+<?php endif ?>
+<div class="espace-colonnes">
+<div class="espace-principal">
+<?php if ($espace['type'] !== 'evenement' && ($evenements_espace || $peut_gerer)): ?>
+<section class="espace-evenements" id="agenda">
+  <div class="titre-avec-lien"><h2>Agenda</h2><?php if ($peut_gerer): ?><?= c_bouton('+ Organiser', '/espaces/nouveau?parent=' . $espace['slug'] . '&type=evenement', 'secondaire') ?><?php endif ?></div>
+  <?php if ($evenements_espace): $mois_courts = ['', 'janv.', 'févr.', 'mars', 'avril', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.']; ?>
+  <ul class="rdv">
+    <?php foreach ($evenements_espace as $ev): $passe = $ev['debut'] !== null && strtotime($ev['debut']) < strtotime('today'); ?>
+    <li<?= $passe ? ' class="rdv-passe"' : '' ?>><a href="<?= e(url('/espace/' . $ev['slug'])) ?>">
+      <span class="date-tuile<?= ['public' => '', 'equipe' => ' date-equipe'][$ev['visibilite']] ?? ' date-membres' ?>"><?php if ($ev['debut']): ?><span class="jour"><?= (int) date('j', strtotime($ev['debut'])) ?></span><span class="mois"><?= $mois_courts[(int) date('n', strtotime($ev['debut']))] ?></span><?php else: ?><span class="date-icone"><?= c_icone('calendrier') ?></span><?php endif ?></span>
+      <span class="rdv-texte"><strong><?= e($ev['titre']) ?></strong><span class="rdv-ligne"><span class="discret"><?= $ev['debut'] ? e(date('H\hi', strtotime($ev['debut']))) : 'Date à préciser' ?><?= $ev['lieu'] ? ' · ' . e($ev['lieu']) : '' ?></span>
+        <?php [$classe, $texte] = ['equipe' => ['badge-equipe', 'Équipe'], 'public' => ['', 'Ouvert à tous']][$ev['visibilite']] ?? ['badge-membres', 'Membres']; ?><span class="badge <?= $classe ?>"><?= $texte ?></span></span></span>
+    </a></li>
+    <?php endforeach ?>
+  </ul>
+  <?php else: ?>
+  <p class="vide"><?= c_icone('calendrier') ?><span>Aucun événement. Une réunion d'équipe ou un événement ouvert à tous : il apparaîtra ici et dans l'agenda.</span></p>
+  <?php endif ?>
+</section>
+<?php endif ?>
+
+<?php if ($jalons || $peut_contribuer): ?>
+<section id="dates">
+  <h2>Dates clés</h2>
+  <?php if (!$jalons): ?><p class="discret">Aucune date.</p><?php endif ?>
+  <ul class="dates-cles">
+    <?php foreach ($jalons as $jalon): $depasse = !$jalon['fait'] && $jalon['date_jalon'] < date('Y-m-d'); ?>
+    <li class="<?= $jalon['fait'] ? 'fait' : ($depasse ? 'depasse' : '') ?>">
+      <?php if ($peut_contribuer): ?><form method="post" action="<?= $action('/jalons/' . (int) $jalon['id'] . '/fait') ?>" class="pastille-fait"><?= csrf_field() ?><button type="submit" aria-pressed="<?= $jalon['fait'] ? 'true' : 'false' ?>" title="<?= $jalon['fait'] ? 'Rouvrir' : 'Marquer fait' ?>"><span class="visuellement-cache"><?= $jalon['fait'] ? 'rouvrir' : 'marquer fait' ?> : <?= e($jalon['libelle']) ?></span></button></form>
+      <?php else: ?><span class="pastille-fait"><span class="rond<?= $jalon['fait'] ? ' rond-fait' : '' ?>" aria-hidden="true"></span></span><?php endif ?>
+      <time datetime="<?= e($jalon['date_jalon']) ?>"><?= e(date('d/m/Y', strtotime($jalon['date_jalon']))) ?></time><span class="libelle-date"><?= e($jalon['libelle']) ?></span>
+      <?= $jalon['fait'] ? ' <span class="discret">(fait)</span>' : ($depasse ? ' <span class="badge badge-alerte">dépassée</span>' : '') ?>
+      <?php if ($peut_contribuer): ?>
+      <span class="actions-ligne">
+      <form method="post" action="<?= $action('/jalons/' . (int) $jalon['id'] . '/supprimer') ?>" class="en-ligne"><?= csrf_field() ?><button type="submit" class="lien-bouton" data-confirmer="Supprimer la date « <?= e($jalon['libelle']) ?> » ?">supprimer</button></form>
+      </span>
+      <?php endif ?>
+    </li>
+    <?php endforeach ?>
+  </ul>
+  <?php if ($peut_contribuer): ?>
+  <details><summary>+ Ajouter une date</summary>
+  <form method="post" action="<?= $action('/jalons') ?>" class="formulaire">
+    <?= csrf_field() ?>
+    <?= c_champ('date_jalon', 'Date', ['type' => 'date', 'requis' => true]) ?>
+    <?= c_champ('libelle', 'Libellé', ['requis' => true, 'max' => 200]) ?>
+    <?= c_champ('destinataires', 'Rappel par e-mail à', ['type' => 'select', 'valeur' => 'binome', 'choix' => ['binome' => 'n°1 et n°2', 'equipe' => "toute l'équipe"], 'aide' => 'Délais réglés par l\'administrateur (ex. 14 et 3 jours avant).']) ?>
+    <button type="submit" class="bouton bouton-secondaire">Ajouter</button>
+  </form>
+  </details>
+  <?php endif ?>
+</section>
+<?php endif ?>
+
+<?php if ($fichiers || $peut_contribuer): ?>
+<section id="fichiers">
+  <h2>Fichiers</h2>
+  <?php if (!$fichiers && !$peut_contribuer): ?><p class="discret">Aucun fichier.</p><?php endif ?>
+
+  <?php if ($peut_contribuer): ?>
+  <form method="post" action="<?= $action('/fichiers') ?>" enctype="multipart/form-data" class="depot">
+    <?= csrf_field() ?>
+    <label class="zone-depot"><input type="file" name="fichier" required data-envoi-auto><span>Glissez un fichier ici, ou cliquez pour le choisir</span></label>
+    <button type="submit" class="bouton bouton-secondaire" data-sans-js>Déposer</button>
+  </form>
+  <?php endif ?>
+  <?php if ($fichiers): ?>
+  <ul class="fichiers-liste">
+    <?php foreach ($fichiers as $fichier): ?>
+    <li><a href="<?= e(url('/fichier/' . (int) $fichier['id'])) ?>"><?= e($fichier['nom']) ?></a>
+      <span class="discret">· <?= e(taille_lisible((int) $fichier['taille'])) ?> · <?= e(date('d/m/Y', strtotime($fichier['depose_le']))) ?></span>
+      <?php if ($peut_gerer): ?>
+      <form method="post" action="<?= e(url('/fichier/' . (int) $fichier['id'] . '/supprimer')) ?>" class="en-ligne"><?= csrf_field() ?><button type="submit" class="lien-bouton" data-confirmer="Supprimer le fichier <?= e($fichier['nom']) ?> ?" aria-label="Supprimer <?= e($fichier['nom']) ?>">supprimer</button></form>
+      <?php endif ?>
+    </li>
+    <?php endforeach ?>
+  </ul>
+  <?php endif ?>
+</section>
+<?php endif ?>
+</div>
+<aside class="espace-cote">
 <?php if ($equipe || $peut_gerer): ?>
 <section id="equipe">
-  <h2>Équipe</h2>
+  <div class="titre-avec-lien"><h2>Équipe</h2></div>
   <?php if (!$equipe): ?><p class="discret">Personne pour l'instant.</p><?php endif ?>
-  <ul class="liste equipe">
+  <ul class="equipe-liste">
     <?php foreach ($equipe as $personne): ?>
-    <li><strong title="<?= e($personne['email']) ?>"><?= e($nom_court($personne)) ?></strong>
-      <span class="discret"><?= e($personne['libelle'] !== '' ? $personne['libelle'] : ESPACE_NIVEAUX[$personne['niveau']]) ?></span></li>
+    <li><span class="avatar" aria-hidden="true"><?= e(mb_strtoupper(mb_substr($nom_court($personne), 0, 1))) ?></span><span class="qui"><strong title="<?= e($personne['email']) ?>"><?= e($nom_court($personne)) ?></strong>
+      <span class="discret"><?= e(in_array($personne['niveau'], ['n1', 'n2'], true) ? ($personne['niveau'] === 'n1' ? 'N°1' : 'N°2') . ($personne['libelle'] !== '' ? ' · ' . $personne['libelle'] : '') : ($personne['libelle'] !== '' ? $personne['libelle'] : ESPACE_NIVEAUX[$personne['niveau']])) ?></span></span></li>
     <?php endforeach ?>
   </ul>
   <?php if ($peut_gerer): ?>
@@ -122,88 +207,15 @@ $boutons = '<span class="en-place-boutons"><button type="submit" class="bouton b
 </section>
 <?php endif ?>
 
-<?php if ($jalons || $peut_contribuer): ?>
-<section id="dates">
-  <h2>Dates clés</h2>
-  <?php if (!$jalons): ?><p class="discret">Aucune date.</p><?php endif ?>
-  <ul class="liste">
-    <?php foreach ($jalons as $jalon): $depasse = !$jalon['fait'] && $jalon['date_jalon'] < date('Y-m-d'); ?>
-    <li class="<?= $jalon['fait'] ? 'fait' : ($depasse ? 'depasse' : '') ?>">
-      <time datetime="<?= e($jalon['date_jalon']) ?>"><?= e(date('d/m/Y', strtotime($jalon['date_jalon']))) ?></time> · <?= e($jalon['libelle']) ?>
-      <?= $jalon['fait'] ? ' <span class="discret">(fait)</span>' : ($depasse ? ' <strong>(dépassée)</strong>' : '') ?>
-      <?php if ($peut_contribuer): ?>
-      <span class="actions-ligne">
-      <form method="post" action="<?= $action('/jalons/' . (int) $jalon['id'] . '/fait') ?>" class="en-ligne"><?= csrf_field() ?><button type="submit" class="lien-bouton"><?= $jalon['fait'] ? 'rouvrir' : 'marquer fait' ?></button></form>
-      <form method="post" action="<?= $action('/jalons/' . (int) $jalon['id'] . '/supprimer') ?>" class="en-ligne"><?= csrf_field() ?><button type="submit" class="lien-bouton" data-confirmer="Supprimer la date « <?= e($jalon['libelle']) ?> » ?">supprimer</button></form>
-      </span>
-      <?php endif ?>
-    </li>
-    <?php endforeach ?>
-  </ul>
-  <?php if ($peut_contribuer): ?>
-  <details><summary>+ Ajouter une date</summary>
-  <form method="post" action="<?= $action('/jalons') ?>" class="formulaire">
-    <?= csrf_field() ?>
-    <?= c_champ('date_jalon', 'Date', ['type' => 'date', 'requis' => true]) ?>
-    <?= c_champ('libelle', 'Libellé', ['requis' => true, 'max' => 200]) ?>
-    <?= c_champ('destinataires', 'Rappel par e-mail à', ['type' => 'select', 'valeur' => 'binome', 'choix' => ['binome' => 'n°1 et n°2', 'equipe' => "toute l'équipe"], 'aide' => 'Délais réglés par l\'administrateur (ex. 14 et 3 jours avant).']) ?>
-    <button type="submit" class="bouton bouton-secondaire">Ajouter</button>
-  </form>
-  </details>
-  <?php endif ?>
-</section>
-<?php endif ?>
-
-<?php if ($fichiers || $peut_contribuer): ?>
-<section id="fichiers">
-  <h2>Fichiers</h2>
-  <?php if (!$fichiers && !$peut_contribuer): ?><p class="discret">Aucun fichier.</p><?php endif ?>
-  <ul class="liste">
-    <?php foreach ($fichiers as $fichier): ?>
-    <li><a href="<?= e(url('/fichier/' . (int) $fichier['id'])) ?>"><?= e($fichier['nom']) ?></a>
-      <span class="discret">· <?= e(taille_lisible((int) $fichier['taille'])) ?> · <?= e(date('d/m/Y', strtotime($fichier['depose_le']))) ?></span>
-      <?php if ($peut_gerer): ?>
-      <form method="post" action="<?= e(url('/fichier/' . (int) $fichier['id'] . '/supprimer')) ?>" class="en-ligne"><?= csrf_field() ?><button type="submit" class="lien-bouton" data-confirmer="Supprimer le fichier <?= e($fichier['nom']) ?> ?" aria-label="Supprimer <?= e($fichier['nom']) ?>">supprimer</button></form>
-      <?php endif ?>
-    </li>
-    <?php endforeach ?>
-  </ul>
-  <?php if ($peut_contribuer): ?>
-  <form method="post" action="<?= $action('/fichiers') ?>" enctype="multipart/form-data" class="depot">
-    <?= csrf_field() ?>
-    <label class="zone-depot"><input type="file" name="fichier" required data-envoi-auto><span>Glissez un fichier ici, ou cliquez pour le choisir</span></label>
-    <button type="submit" class="bouton bouton-secondaire" data-sans-js>Déposer</button>
-  </form>
-  <?php endif ?>
-</section>
-<?php endif ?>
-</div>
-
-<?php if ($espace['type'] !== 'evenement' && ($evenements_espace || $peut_gerer)): ?>
-<section class="espace-evenements">
-  <div class="titre-avec-lien"><h2>Événements</h2><?php if ($peut_gerer): ?><?= c_bouton('Organiser un événement', '/espaces/nouveau?parent=' . $espace['slug'] . '&type=evenement', 'secondaire') ?><?php endif ?></div>
-  <?php if ($evenements_espace): $mois_courts = ['', 'janv.', 'févr.', 'mars', 'avril', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.']; ?>
-  <ul class="rdv">
-    <?php foreach ($evenements_espace as $ev): $passe = $ev['debut'] !== null && strtotime($ev['debut']) < strtotime('today'); ?>
-    <li<?= $passe ? ' class="rdv-passe"' : '' ?>><a href="<?= e(url('/espace/' . $ev['slug'])) ?>">
-      <span class="date-tuile<?= ['public' => '', 'equipe' => ' date-equipe'][$ev['visibilite']] ?? ' date-membres' ?>"><?php if ($ev['debut']): ?><span class="jour"><?= (int) date('j', strtotime($ev['debut'])) ?></span><span class="mois"><?= $mois_courts[(int) date('n', strtotime($ev['debut']))] ?></span><?php else: ?><span class="date-icone"><?= c_icone('calendrier') ?></span><?php endif ?></span>
-      <span class="rdv-texte"><strong><?= e($ev['titre']) ?></strong><span class="rdv-ligne"><span class="discret"><?= $ev['debut'] ? e(date('H\hi', strtotime($ev['debut']))) : 'Date à préciser' ?><?= $ev['lieu'] ? ' · ' . e($ev['lieu']) : '' ?></span>
-        <?php [$classe, $texte] = ['equipe' => ['badge-equipe', 'Équipe'], 'public' => ['', 'Ouvert à tous']][$ev['visibilite']] ?? ['badge-membres', 'Membres']; ?><span class="badge <?= $classe ?>"><?= $texte ?></span></span></span>
-    </a></li>
-    <?php endforeach ?>
-  </ul>
-  <?php else: ?>
-  <p class="vide"><?= c_icone('calendrier') ?><span>Aucun événement. Une réunion d'équipe ou un événement ouvert à tous : il apparaîtra ici et dans l'agenda.</span></p>
-  <?php endif ?>
-</section>
-<?php endif ?>
-
 <?php if ($enfants): ?>
-<section>
+<section class="sous-espaces">
   <h2>Sous-espaces</h2>
-  <ul class="liste"><?php foreach ($enfants as $enfant): ?><li><a href="<?= e(url('/espace/' . $enfant['slug'])) ?>"><?= e($enfant['titre']) ?></a> · <?= c_meteo($enfant['meteo']) ?></li><?php endforeach ?></ul>
+  <ul class="lignes-espaces"><?php foreach ($enfants as $enfant): ?><li><a href="<?= e(url('/espace/' . $enfant['slug'])) ?>"><span class="ligne-espace-corps"><strong><?= e($enfant['titre']) ?></strong></span><?= c_meteo($enfant['meteo']) ?></a></li><?php endforeach ?></ul>
 </section>
 <?php endif ?>
+
+</aside>
+</div>
 
 <?php if ($peut_gerer): ?>
 <details class="separe gerer-espace"><summary>Gérer l'espace</summary>

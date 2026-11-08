@@ -136,7 +136,7 @@ post "$U/espaces/nouveau" "$U/espaces/nouveau" -d 'type=commission&titre=Cyber&v
 post "$U/espace/cyber" "$U/espace/cyber/equipe" -d 'email=carole@example.org&niveau=n1' >/dev/null
 JOUR=$(date -d '+10 days' +%Y-%m-%dT18:30)
 as carole
-check "espace : bouton « Organiser un événement » pour qui le gère" "$(c "$U/espace/cyber" >/dev/null; grep -c 'Organiser un événement' "$B")" "1"
+check "espace : bouton « Organiser un événement » pour qui le gère" "$(c "$U/espace/cyber" >/dev/null; grep -c '+ Organiser<' "$B")" "1"
 check "réunion d'équipe créée dans l'espace, avec date et lieu" "$(post "$U/espace/cyber" "$U/espaces/nouveau" -d "type=evenement&parent=cyber&titre=Réunion cyber&debut=$JOUR&lieu=En visio&visibilite=equipe") $(sql "SELECT CONCAT(p.slug, ' ', e.lieu) FROM espace s JOIN espace p ON p.id = s.parent_id JOIN evenement e ON e.espace_id = s.id WHERE s.slug = 'reunion-cyber'")" "303 $U/espace/reunion-cyber cyber En visio"
 check "la réunion apparaît dans l'espace et dans « Mes prochains rendez-vous »" "$(c "$U/espace/cyber" >/dev/null; grep -c 'Réunion cyber' "$B") $(c "$U/compte" >/dev/null; grep -c 'Réunion · Cyber' "$B")" "1 1"
 as alice
