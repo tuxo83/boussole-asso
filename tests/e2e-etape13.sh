@@ -47,7 +47,12 @@ c "$U/compte/parametres" >/dev/null
 check "Paramètres : appareils connectés, « cet appareil », application" "$(grep -c '<strong>Appareils connectés</strong>' "$B") $(grep -c '>cet appareil<' "$B") $(grep -c 'id="application" data-application' "$B")" "1 1 1"
 login_link carole carole@example.org
 check "carole sans la case : rien de retenu" "$(appareil) $(nb carole)" "0 0"
+check "carole connectée sans la case : la page porte de quoi retenir l'appareil dans l'application" "$(c "$U/compte" >/dev/null; grep -c 'name="boussole-retenir"' "$B")" "1"
 sans_session; check "carole après fermeture : déconnectée" "$(c "$U/compte")" "303 $U/connexion"
+login_link carole3 carole@example.org
+check "ouverte dans l'application : l'appareil est retenu (« Application »)" "$(post "$U/compte" "$U/compte/appareils/retenir-appli" | cut -c1-3) $(nb carole) $(sql "SELECT libelle LIKE 'Application%' FROM connexion_appareil a JOIN membre m ON m.id = a.membre_id WHERE m.email = 'carole@example.org'")" "200 1 1"
+check "une fois retenu : plus rien à retenir" "$(c "$U/compte" >/dev/null; grep -c 'name="boussole-retenir"' "$B")" "0"
+sql "DELETE a FROM connexion_appareil a JOIN membre m ON m.id = a.membre_id WHERE m.email = 'carole@example.org'"
 
 # Cookie trafiqué : refusé, la ligne est effacée
 as bob; SEL=$(grep boussole_appareil "$J" | awk '{print $7}' | cut -d. -f1)
