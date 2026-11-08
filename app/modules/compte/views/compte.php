@@ -42,26 +42,6 @@ $mois = ['', 'janv.', 'févr.', 'mars', 'avril', 'mai', 'juin', 'juil.', 'août'
   <p class="vide"><?= c_icone('calendrier') ?><span>Aucune inscription à venir.<?php if ($agenda): ?> <a href="<?= e(url('/page/' . $agenda)) ?>">Voir les prochains événements</a><?php endif ?></span></p>
   <?php endif ?>
 </section>
-<?php if (member_rights($membre['id'])):
-    $tuiles = [];
-    if (has_right($membre, 'publications')) { $tuiles[] = ['crayon', 'Pages du site', 'Créer et modifier les pages', '/admin/pages', '']; }
-    if (has_right($membre, 'cotisations')) { $effacer = cotisation_a_effacer(); $tuiles[] = ['medaille', 'Cotisations', 'À jour, chèques, relances', '/cotisations', $effacer ? count($effacer) . ' à effacer' : '']; }
-    if (has_right($membre, 'membres')) { $tuiles[] = ['personnes', 'Membres', 'Ajouter, modifier, droits', '/admin/membres', '']; }
-    if (is_admin($membre)) {
-        $nouveaux = (int) db_value('SELECT COUNT(*) FROM message_contact WHERE lu = 0');
-        $tuiles[] = ['enveloppe', 'Messages reçus', 'Formulaire de contact', '/admin/messages', $nouveaux ? $nouveaux . ($nouveaux > 1 ? ' nouveaux' : ' nouveau') : ''];
-        $tuiles[] = ['reglages', 'Réglages du site', 'Nom, apparence, e-mails', '/admin/parametres', ''];
-        $tuiles[] = ['cle', 'Toutes les clés', "Clés d'API des membres", '/admin/cles', ''];
-    } ?>
-<section class="compte-section">
-  <h2>Gestion de l'association</h2>
-  <ul class="tuiles">
-    <?php foreach ($tuiles as [$icone, $titre, $aide, $lien, $pastille]): ?>
-    <li><a href="<?= e(url($lien)) ?>"><span class="tuile-icone"><?= c_icone($icone) ?></span><span class="tuile-texte"><strong><?= e($titre) ?></strong><span class="discret"><?= e($aide) ?></span></span><?php if ($pastille !== ''): ?><span class="pastille"><?= e($pastille) ?></span><?php endif ?></a></li>
-    <?php endforeach ?>
-  </ul>
-</section>
-<?php endif ?>
 <section class="compte-section">
 <h2>Connexion et sécurité</h2>
 <?php $nb_cles = (int) db_value('SELECT COUNT(*) FROM cle_securite WHERE membre_id = ?', [$membre['id']]); $demo = !empty($membre['compte_demo']); ?>
@@ -90,13 +70,14 @@ $mois = ['', 'janv.', 'févr.', 'mars', 'avril', 'mai', 'juin', 'juil.', 'août'
     <?= c_bouton('Gérer', '/compte/cles', 'secondaire') ?>
   </li>
   <?php endif ?>
+  <li>
+    <span class="tuile-icone"><?= c_icone('horloge') ?></span><div><strong>Activité du compte</strong><span class="discret"><?= $membre['derniere_connexion'] ? 'Dernière connexion : ' . e(date('d/m/Y à H\\hi', strtotime($membre['derniere_connexion']))) : 'Connexions et modifications du compte' ?></span></div>
+    <details class="reglage-action"><summary class="bouton bouton-secondaire">Voir</summary>
+      <div class="activite">
+        <?= partial('historique', ['historique' => $historique ?? [], 'cible_id' => $membre['id']]) ?>
+        <p class="petit">Une ligne que vous ne reconnaissez pas ? Changez votre mot de passe et prévenez l'association.</p>
+      </div>
+    </details>
+  </li>
 </ul>
 </section>
-<details class="separe"><summary>Mon historique</summary>
-  <p class="petit">Les dernières connexions et modifications de votre compte. Une ligne que vous ne reconnaissez pas ? Changez votre mot de passe et prévenez l'association.</p>
-  <?= partial('historique', ['historique' => $historique ?? [], 'cible_id' => $membre['id']]) ?>
-</details>
-<form method="post" action="<?= e(url('/deconnexion')) ?>" class="compte-sortie">
-  <?= csrf_field() ?>
-  <button type="submit" class="lien-bouton"><?= c_icone('sortie') ?>Se déconnecter</button>
-</form>

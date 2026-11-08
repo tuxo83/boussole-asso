@@ -70,7 +70,7 @@ check "membre pas à jour : invitation à cotiser au lieu de l'inscription" "$(g
 check "membre pas à jour : inscription refusée" "$(post "$U/espace/diner-cotisants" "$U/espace/diner-cotisants/inscription" -d 'action=voeu' >/dev/null; sql "SELECT COUNT(*) FROM inscription i JOIN membre m ON m.id = i.membre_id WHERE m.email = 'lea@example.org'")" "0"
 check "rappel de cotisation affiché, avec « Masquer »" "$(c "$U/page/agenda" >/dev/null; grep -c 'pas encore enregistrée' "$B") $(grep -c 'bandeau-fermer' "$B")" "1 1"
 check "rappel masqué jusqu'à la prochaine connexion" "$(post "$U/page/agenda" "$U/compte/rappel-cotisation/masquer" -d 'retour=/page/agenda') $(c "$U/page/agenda" >/dev/null; grep -c 'pas encore enregistrée' "$B")" "303 $U/page/agenda 0"
-check "sur « Mon compte », pas de bandeau en double : la carte cotisation le dit" "$(c "$U/compte" >/dev/null; grep -c 'pas encore enregistrée' "$B") $(grep -c 'à régler<' "$B")" "0 1"
+check "sur « Mon compte », pas de bandeau en double : la carte cotisation le dit" "$(c "$U/compte" >/dev/null; grep -c 'pas encore enregistrée' "$B") $(grep -c 'badge-attention">Cotisation [0-9]* à régler' "$B")" "0 1"
 check "rappel revenu à la connexion suivante" "$(c "$U/compte" >/dev/null; T=$(tok); c --data-urlencode "_csrf=$T" "$U/deconnexion" >/dev/null; login_link lea lea@example.org; c "$U/page/agenda" >/dev/null; grep -c 'pas encore enregistrée' "$B")" "1"
 # Arrivée après connexion selon la cotisation (réglable)
 sql "INSERT INTO parametre (cle, valeur) VALUES ('arrivee_cotisant', '/page/statuts'), ('arrivee_non_cotisant', '/espaces') ON DUPLICATE KEY UPDATE valeur = VALUES(valeur)"
