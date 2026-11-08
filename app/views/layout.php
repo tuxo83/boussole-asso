@@ -4,6 +4,7 @@ $nom = setting('nom_association', 'Boussole') ?? 'Boussole';
 $logo = setting('logo');
 $menu = installation_done() ? menu_items() : [];
 $chemin = request_path();
+$moi_menu = installation_done() ? current_member() : null;
 ?><!doctype html>
 <html lang="fr">
 <head>
@@ -39,11 +40,24 @@ $titre_complet = isset($titre) ? $titre . ' · ' . $nom : ($slogan !== '' && mb_
         <?php endforeach ?>
       </ul>
       <ul class="menu menu-membre">
-        <?php foreach ($menu as $item): if (!isset($item['zone'])) { continue; } ?>
+        <?php foreach ($menu as $item): if (!isset($item['zone']) || ($item['zone'] === 'compte' && $moi_menu !== null)) { continue; } ?>
         <li><a href="<?= e(url($item['lien'])) ?>"<?= $item['zone'] === 'compte' ? ' class="lien-compte"' : '' ?><?= $item['lien'] === $chemin ? ' aria-current="page"' : '' ?>><?= e($item['libelle']) ?></a></li>
         <?php endforeach ?>
       </ul>
     </nav>
+    <?php endif ?>
+    <?php if ($moi_menu !== null): // Menu de compte : initiales ; Mon compte, Administration (si droits), Se déconnecter
+        $initiales = mb_strtoupper(mb_substr($moi_menu['prenom'] ?: $moi_menu['email'], 0, 1) . mb_substr((string) $moi_menu['nom'], 0, 1));
+        $attente = member_rights($moi_menu['id']) ? administration_en_attente($moi_menu) : 0; ?>
+    <details class="compte-menu">
+      <summary aria-label="Mon compte"<?= str_starts_with($chemin, '/compte') || $chemin === '/administration' ? ' aria-current="page"' : '' ?>><span class="compte-initiales"><?= e($initiales) ?></span><?php if ($attente): ?><span class="compte-attente" aria-label="<?= $attente ?> en attente"><?= $attente ?></span><?php endif ?></summary>
+      <div class="compte-panneau">
+        <p class="compte-qui"><strong><?= e(membre_nom($moi_menu)) ?></strong><span><?= cotisation_a_jour($moi_menu) !== null ? 'Cotisation ' . e(cotisation_periode_libelle(cotisation_periode())) . ' à jour' : 'Cotisation ' . e(cotisation_periode_libelle(cotisation_periode())) . ' à régler' ?></span></p>
+        <a href="<?= e(url('/compte')) ?>"><?= c_icone('personne') ?>Mon compte</a>
+        <?php if (member_rights($moi_menu['id'])): ?><a href="<?= e(url('/administration')) ?>"><?= c_icone('reglages') ?>Administration<?php if ($attente): ?><span class="compte-compteur"><?= $attente ?></span><?php endif ?></a><?php endif ?>
+        <form method="post" action="<?= e(url('/deconnexion')) ?>"><?= csrf_field() ?><button type="submit" class="compte-sortie-menu"><?= c_icone('sortie') ?>Se déconnecter</button></form>
+      </div>
+    </details>
     <?php endif ?>
   </div>
 </header>
