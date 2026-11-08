@@ -141,3 +141,91 @@ document.querySelectorAll('[data-vues]').forEach(function (bloc) {
     try { localStorage.setItem('agenda-vue', b.dataset.vue); } catch (e2) {}
   });
 });
+
+// Gestion d'un événement : onglets Inscrits / Attente / Pointage (sans JavaScript, tout reste visible l'un sous l'autre)
+document.querySelectorAll('[data-onglets]').forEach(function (bloc) {
+  var barre = bloc.querySelector('[role="tablist"]');
+  if (!barre) return;
+  barre.hidden = false;
+  bloc.classList.add('avec-onglets');
+  var boutons = Array.prototype.slice.call(barre.querySelectorAll('[role="tab"]'));
+  function montrer(id, focus) {
+    boutons.forEach(function (b) {
+      var actif = b.dataset.onglet === id;
+      b.setAttribute('aria-selected', actif ? 'true' : 'false');
+      b.tabIndex = actif ? 0 : -1;
+      if (actif && focus) b.focus();
+      var p = document.getElementById(b.dataset.onglet);
+      if (p) p.hidden = !actif;
+    });
+  }
+  var depart = boutons.filter(function (b) { return b.getAttribute('aria-selected') === 'true'; })[0] || boutons[0];
+  var ancre = location.hash.slice(1);
+  montrer(boutons.some(function (b) { return b.dataset.onglet === ancre; }) ? ancre : depart.dataset.onglet);
+  barre.addEventListener('click', function (e) { var b = e.target.closest('[role="tab"]'); if (b) montrer(b.dataset.onglet); });
+  barre.addEventListener('keydown', function (e) {
+    var i = boutons.indexOf(document.activeElement);
+    if (i < 0 || (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft')) return;
+    e.preventDefault();
+    montrer(boutons[(i + (e.key === 'ArrowRight' ? 1 : boutons.length - 1)) % boutons.length].dataset.onglet, true);
+  });
+  bloc.querySelectorAll('[data-vers]').forEach(function (a) {
+    a.addEventListener('click', function (e) { e.preventDefault(); montrer(a.dataset.vers); barre.scrollIntoView({ block: 'start', behavior: 'smooth' }); });
+  });
+});
+// « Réglages » : ouvre le volet des réglages de l'événement
+document.querySelectorAll('[data-ouvrir]').forEach(function (a) {
+  a.addEventListener('click', function () { var d = document.getElementById(a.dataset.ouvrir); if (d) d.open = true; });
+});
+
+// Pointage : un toucher, sans recharger la page ; liste « À pointer » qui se vide, recherche par nom
+document.querySelectorAll('.pointage-liste').forEach(function (liste) {
+  var panneau = liste.closest('.panneau-onglet') || document;
+  var filtres = panneau.querySelector('.filtres-pointage');
+  var filtre = 'a-pointer';
+  var cherche = '';
+  if (filtres) filtres.hidden = false;
+  function appliquer() {
+    liste.querySelectorAll('.personne').forEach(function (li) {
+      var ok = li.dataset.present === '1';
+      var visible = (filtre === 'tous' || (filtre === 'presents' ? ok : !ok)) && (cherche === '' || li.dataset.nom.indexOf(cherche) !== -1);
+      li.hidden = !visible;
+    });
+  }
+  if (filtres) {
+    filtres.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-filtre]');
+      if (!b) return;
+      filtre = b.dataset.filtre;
+      filtres.querySelectorAll('[data-filtre]').forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+      appliquer();
+    });
+    var champ = filtres.querySelector('[data-chercher]');
+    if (champ) champ.addEventListener('input', function () { cherche = champ.value.trim().toLowerCase(); appliquer(); });
+  }
+  liste.addEventListener('submit', function (e) {
+    var form = e.target.closest('[data-pointer]');
+    if (!form || !window.fetch) return;
+    e.preventDefault();
+    var li = form.closest('.personne');
+    var bouton = form.querySelector('button');
+    bouton.disabled = true;
+    fetch(form.action, { method: 'POST', body: new FormData(form), headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+      .then(function (r) { if (!r.ok) throw new Error(); return r.json(); })
+      .then(function (d) {
+        var ok = d.present === 1;
+        li.dataset.present = ok ? '1' : '0';
+        form.querySelector('[name="present"]').value = ok ? '' : '1';
+        bouton.setAttribute('aria-pressed', ok ? 'true' : 'false');
+        bouton.textContent = ok ? '✓ Présent' : 'Présent';
+        document.querySelectorAll('[data-presents]').forEach(function (n) { n.textContent = d.presents; });
+        var total = parseInt(liste.dataset.total, 10) || 1;
+        var barre = panneau.querySelector('[data-barre]');
+        if (barre) barre.style.width = Math.round(100 * d.presents / total) + '%';
+        setTimeout(appliquer, ok ? 400 : 0);
+      })
+      .catch(function () { form.submit(); })
+      .finally(function () { bouton.disabled = false; });
+  });
+  appliquer();
+});
