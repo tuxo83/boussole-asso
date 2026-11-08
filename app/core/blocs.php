@@ -302,7 +302,7 @@ function bloc_dynamique(string $bloc): string
             // « Mes inscriptions » suit la vue choisie, comme le reste de l'agenda
             $mes_frise = $miens ? '<section class="agenda-miens"><h2 class="titre-bloc">Mes inscriptions</h2>' . agenda_frise($miens, false, false) . '</section>' : '';
             $mes_liste = $miens ? '<section class="agenda-miens"><h2 class="titre-bloc">Mes inscriptions</h2>' . cartes_evenements($miens) . '</section>' : '';
-            $frise = $mes_frise . ($prochains ? agenda_frise($prochains, false) : '<p>Aucun événement annoncé pour l\'instant.</p>')
+            $frise = $mes_frise . ($prochains ? '<h2 class="titre-bloc">À venir</h2>' . agenda_frise($prochains, false) : '<p>Aucun événement annoncé pour l\'instant.</p>')
                 . ($passes ? '<details class="agenda-passes"><summary>Événements passés</summary>' . agenda_frise($passes, true) . '</details>' : '');
             $liste = $mes_liste . ($prochains ? '<h2 class="titre-bloc">À venir</h2>' . cartes_evenements($prochains) : '<p>Aucun événement annoncé pour l\'instant.</p>')
                 . ($passes ? '<h2 class="titre-bloc">Événements passés</h2>' . cartes_evenements($passes, true) : '');
