@@ -164,4 +164,8 @@ check "page Gérer : onglets Organisation, Journal, Archiver" "$(c "$U/espace/cy
 check "la page de l'espace n'a plus la zone de gestion, mais un bouton Gérer" "$(c "$U/espace/cyber" >/dev/null; grep -c 'Supprimer définitivement' "$B") $(grep -c '/espace/cyber/gerer' "$B")" "0 1"
 as alice
 check "page Gérer refusée à qui ne gère pas" "$(c "$U/espace/cyber/gerer" | cut -c1-3)" "403"
+# Vue membre / vue organisateur
+as admin
+check "vue membre : ni gestion ni « À faire », choix de vue proposé" "$(c "$U/espace/cyber?vue=membre" >/dev/null; grep -c 'class="a-faire"' "$B") $(grep -c 'data-en-place>' "$B") $(grep -c '?vue=orga' "$B")" "0 0 1"
+check "vue organisateur retenue" "$(c "$U/espace/cyber?vue=orga" >/dev/null; c "$U/espace/cyber" >/dev/null; grep -c 'data-en-place>' "$B")" "3"
 bilan
