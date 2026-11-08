@@ -265,7 +265,7 @@ function bloc_dynamique(string $bloc): string
             if (!$prochains) {
                 return '';
             }
-            $agenda = db_value('SELECT slug FROM page WHERE publiee = 1 AND blocs LIKE ? LIMIT 1', ['%"bloc":"agenda"%']);
+            $agenda = page_agenda_slug();
             // Lien discret à côté du titre plutôt qu'un bouton de plus (Élise)
             return '<div class="titre-avec-lien"><h2 class="titre-bloc">Prochains événements</h2>'
                 . ($agenda ? '<a href="' . e(url('/page/' . $agenda)) . '">Tout l\'agenda →</a>' : '') . '</div>' . cartes_evenements(array_slice($prochains, 0, 3));
@@ -287,20 +287,19 @@ function bloc_dynamique(string $bloc): string
             // Visiteur seulement : comment s'inscrire (un membre connecté n'a pas besoin de ce rappel)
             $aide = current_member() === null ? '<p class="agenda-visiteur">' . c_icone('cadenas') . ' Membres : <a href="' . e(url('/connexion')) . '">connectez-vous</a> pour voir les événements réservés et vous inscrire.'
                 . (setting('lien_adhesion', '') !== '' ? ' Pas encore membre ? <a href="' . e(url('/page/adherer')) . '">Adhérer</a>.' : '') . '</p>' : '';
-            // Membre connecté : ses inscriptions à venir d'abord, pour voir tout de suite ce qui le concerne (surtout au téléphone)
+            // Membre connecté : ses inscriptions à venir d'abord (elles restent aussi dans la liste complète, avec leur statut)
             $miens = [];
             if (($moi = current_member()) !== null) {
                 $statuts = array_column(db_all('SELECT evenement_id, statut, rang FROM inscription WHERE membre_id = ? AND statut IN ("invite", "voeu", "retenu", "attente")', [$moi['id']]), null, 'evenement_id');
                 foreach ($prochains as $k => $ev) {
                     if (isset($statuts[$ev['id']])) {
-                        $miens[] = $ev + ['mon_statut' => $statuts[$ev['id']]];
-                        unset($prochains[$k]);
+                        $prochains[$k]['mon_statut'] = $statuts[$ev['id']];
+                        $miens[] = $prochains[$k];
                     }
                 }
-                $prochains = array_values($prochains);
             }
             return $aide . ($miens ? '<section class="agenda-miens"><h2 class="titre-bloc">Mes inscriptions</h2>' . cartes_evenements($miens) . '</section>' : '')
-                . ($prochains ? '<h2 class="titre-bloc">' . ($miens ? 'Autres événements à venir' : 'À venir') . '</h2>' . cartes_evenements($prochains) : ($miens ? '' : '<p>Aucun événement annoncé pour l\'instant.</p>'))
+                . ($prochains ? '<h2 class="titre-bloc">À venir</h2>' . cartes_evenements($prochains) : '<p>Aucun événement annoncé pour l\'instant.</p>')
                 . ($passes ? '<h2 class="titre-bloc">Événements passés</h2>' . cartes_evenements($passes, true) : '');
         case 'espaces-publics':
             $espaces = db_all('SELECT * FROM espace WHERE visibilite = "public" AND archive = 0 AND type <> "evenement" ORDER BY titre');
@@ -390,3 +389,10 @@ function page_barre_edition(array $page, bool $actif): string
         . '<div class="crayon-menu"><a href="' . e($ici . '?edition=1') . '">Cliquer sur un bloc pour le modifier</a><a href="' . e($editeur) . '">Ouvrir l\'éditeur de la page</a></div></details>';
 }
 
+
+// Page qui porte l'agenda complet (pour y renvoyer), ou null
+function page_agenda_slug(): ?string
+{
+    $slug = db_value('SELECT slug FROM page WHERE publiee = 1 AND blocs LIKE ? LIMIT 1', ['%"bloc":"agenda"%']);
+    return $slug !== null && $slug !== false ? (string) $slug : null;
+}

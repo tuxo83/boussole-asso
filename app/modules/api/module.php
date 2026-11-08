@@ -108,6 +108,10 @@ function mcp_outils(): array
             'inputSchema' => $objet(['email' => $texte('E-mail'), 'prenom' => $texte('Prénom'), 'nom' => $texte('Nom')], ['email'])],
         ['name' => 'inviter_membres', 'description' => "Envoyer l'invitation de bienvenue (comment se connecter) : à un membre, ou sans e-mail à tous ceux qui ne se sont jamais connectés. Clé « administration », droit « membres ».",
             'inputSchema' => $objet(['email' => $texte('E-mail du membre (facultatif)')])],
+        ['name' => 'modifier_membre', 'description' => "Modifier un membre : prénom, nom, compte actif ; « compte de démonstration » (administrateur seulement). Clé « administration », droit « membres ». Le mot de passe et la sécurité d'un compte ne se changent jamais par l'API.",
+            'inputSchema' => $objet(['email' => $texte('E-mail du membre'), 'prenom' => $texte('Prénom'), 'nom' => $texte('Nom'), 'actif' => ['type' => 'boolean'], 'compte_demo' => ['type' => 'boolean', 'description' => 'Compte de démonstration : ses utilisateurs ne peuvent changer ni mot de passe ni sécurité']], ['email'])],
+        ['name' => 'effacer_membre', 'description' => "Effacer définitivement un membre (compte, cotisations, inscriptions, clés). Clé « administration », administrateur. Redonner son e-mail dans « confirmation ».",
+            'inputSchema' => $objet(['email' => $texte('E-mail du membre'), 'confirmation' => $texte('Le même e-mail, pour confirmer')], ['email', 'confirmation'])],
         ['name' => 'lister_membres', 'description' => 'Membres (droit « membres » nécessaire).', 'inputSchema' => $objet([])],
     ];
 }
@@ -136,6 +140,8 @@ function mcp_appeler(string $name, array $a): array
         'regler_site' => api_reglages($a),
         'ajouter_membre' => api_membre_ajouter($a),
         'inviter_membres' => api_inviter((string) ($a['email'] ?? '')),
+        'modifier_membre' => api_membre_modifier($a),
+        'effacer_membre' => api_membre_effacer($a),
         'lister_membres' => api_membres(),
         default => throw new ApiErreur("Outil inconnu : $name", 404),
     };
