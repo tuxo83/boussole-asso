@@ -72,46 +72,29 @@ $mini_frise = function (array $items, bool $passe = false) use ($mois): string {
   <?php else: ?>
   <p class="vide"><?= c_icone('calendrier') ?><span>Rien de prévu pour l'instant.<?php if ($agenda): ?> <a href="<?= e(url('/page/' . $agenda)) ?>">Voir les prochains événements</a><?php endif ?></span></p>
   <?php endif ?>
-  <?php if ($passes): ?>
-  <details class="rdv-passes"><summary>Mes rendez-vous passés (<?= count($passes) ?>)</summary><?= $mini_frise($passes, true) ?></details>
-  <?php endif ?>
 </section>
+<?php
+// Mes espaces : ceux dont je fais partie de l'équipe (actifs), et les archivés pour les Archives
+$mes_espaces = db_all('SELECT s.*, em.niveau, em.libelle AS role FROM espace s JOIN espace_membre em ON em.espace_id = s.id AND em.membre_id = ? WHERE s.type <> "evenement" ORDER BY s.archive, FIELD(s.type, "comite", "commission", "projet"), s.titre', [$membre['id']]);
+$actifs = array_filter($mes_espaces, fn($e) => !$e['archive']);
+$archives = array_filter($mes_espaces, fn($e) => (bool) $e['archive']);
+?>
+<?php if ($actifs): ?>
 <section class="compte-section">
-<h2>Connexion et sécurité</h2>
-<?php $nb_cles = (int) db_value('SELECT COUNT(*) FROM cle_securite WHERE membre_id = ?', [$membre['id']]); $demo = !empty($membre['compte_demo']); ?>
-<ul class="reglages">
-  <li>
-    <span class="tuile-icone"><?= c_icone('cadenas') ?></span><div><strong>Mot de passe</strong><span class="discret"><?= $demo ? 'Compte de démonstration : fixé par un administrateur' : ($membre['mot_de_passe'] !== null ? 'Défini' : 'Aucun : connexion par lien envoyé par e-mail') ?></span></div>
-    <?php if (!$demo): ?>
-    <details class="reglage-action"<?= $erreur ? ' open' : '' ?>><summary class="bouton bouton-secondaire"><?= $membre['mot_de_passe'] !== null ? 'Changer' : 'Choisir' ?></summary>
-      <form method="post" action="<?= e(url('/compte/mot-de-passe')) ?>" class="formulaire">
-        <?= csrf_field() ?>
-        <?= c_champ('mot_de_passe', 'Nouveau mot de passe', ['type' => 'password', 'aide' => 'Au moins ' . MOT_DE_PASSE_MIN . ' caractères. Laisser vide pour se connecter seulement par lien envoyé par e-mail.']) ?>
-        <?= c_champ('confirmation', 'Confirmation', ['type' => 'password']) ?>
-        <button type="submit" class="bouton bouton-principal">Enregistrer</button>
-      </form>
-    </details>
-    <?php endif ?>
-  </li>
-  <li>
-    <span class="tuile-icone"><?= c_icone('bouclier') ?></span><div><strong>Double authentification</strong><span class="discret"><?= ($nb_cles ? $nb_cles . ' clé(s) de sécurité' : 'Aucune clé de sécurité') . ((int) $membre['totp_actif'] === 1 ? ' · application active' : '') ?></span>
-      <?php if (member_rights($membre['id']) && !$nb_cles && !(int) $membre['totp_actif']): ?><span class="petit">Conseillé pour la gestion : sinon un code par e-mail vous sera demandé.</span><?php endif ?></div>
-    <?php if (!$demo): ?><?= c_bouton('Gérer', '/compte/double-authentification', 'secondaire') ?><?php endif ?>
-  </li>
-  <?php if (!$demo): ?>
-  <li>
-    <span class="tuile-icone"><?= c_icone('cle') ?></span><div><strong>Clés d'API</strong><span class="discret">Donner à un outil ou à une IA un accès avec vos droits</span></div>
-    <?= c_bouton('Gérer', '/compte/cles', 'secondaire') ?>
-  </li>
-  <?php endif ?>
-  <li>
-    <span class="tuile-icone"><?= c_icone('horloge') ?></span><div><strong>Activité du compte</strong><span class="discret"><?= $membre['derniere_connexion'] ? 'Dernière connexion : ' . e(date('d/m/Y à H\\hi', strtotime($membre['derniere_connexion']))) : 'Connexions et modifications du compte' ?></span></div>
-    <details class="reglage-action"><summary class="bouton bouton-secondaire">Voir</summary>
-      <div class="activite">
-        <?= partial('historique', ['historique' => $historique ?? [], 'cible_id' => $membre['id']]) ?>
-        <p class="petit">Une ligne que vous ne reconnaissez pas ? Changez votre mot de passe et prévenez l'association.</p>
-      </div>
-    </details>
-  </li>
-</ul>
+  <div class="titre-avec-lien"><h2>Mes espaces</h2><a href="<?= e(url('/espaces')) ?>">Tous les espaces →</a></div>
+  <ul class="tuiles">
+    <?php foreach ($actifs as $es): $alertes = espace_peut_gerer($membre, $es) || espace_peut_contribuer($membre, $es) ? espace_alertes($es) : []; ?>
+    <li><a href="<?= e(url('/espace/' . $es['slug'])) ?>"><span class="tuile-texte"><strong><?= e($es['titre']) ?></strong><span class="discret"><?= e(ESPACE_TYPES[$es['type']]) ?><?= $es['role'] ? ' · ' . e($es['role']) : (in_array($es['niveau'], ['n1', 'n2'], true) ? ' · ' . e(ESPACE_NIVEAUX[$es['niveau']]) : '') ?></span>
+      <span class="tuile-etat"><?= c_meteo($es['meteo']) ?><?php if ($alertes): ?><span class="alertes-mini"><?= c_icone('attention') ?><?= e(count($alertes) === 1 ? $alertes[0] : count($alertes) . ' points à traiter') ?></span><?php endif ?></span></span></a></li>
+    <?php endforeach ?>
+  </ul>
 </section>
+<?php endif ?>
+<?php if ($passes || $archives): ?>
+<details class="compte-archives"><summary>Archives</summary>
+  <?php if ($passes): ?><h3>Mes rendez-vous passés</h3><?= $mini_frise($passes, true) ?><?php endif ?>
+  <?php if ($archives): ?><h3>Mes espaces archivés</h3>
+  <ul class="liste"><?php foreach ($archives as $es): ?><li><a href="<?= e(url('/espace/' . $es['slug'])) ?>"><?= e($es['titre']) ?></a> <span class="discret">· <?= e(ESPACE_TYPES[$es['type']]) ?></span></li><?php endforeach ?></ul>
+  <?php endif ?>
+</details>
+<?php endif ?>

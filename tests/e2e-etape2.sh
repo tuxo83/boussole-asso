@@ -47,7 +47,7 @@ c "$U/connexion/double-authentification" >/dev/null; T=$(tok)
 check "code e-mail : bon code, retour à la page demandée" "$(c --data-urlencode "_csrf=$T" -d "code=$(grep -o 'Votre code de confirmation : [0-9]*' "$MAIL" | tail -1 | grep -o '[0-9]*$')" "$U/connexion/double-authentification/code")" "303 $U/admin/parametres"
 c "$U/compte/double-authentification" >/dev/null; T=$(tok); S=$(grep -o '<code class="cle">[^<]*' "$B" | sed 's/.*>//; s/ //g')
 check "activation 2FA : mauvais code" "$(c --data-urlencode "_csrf=$T" -d 'code=000000' "$U/compte/double-authentification")" "422 "
-check "activation 2FA : bon code" "$(c --data-urlencode "_csrf=$T" -d "code=$(totp "$S")" "$U/compte/double-authentification")" "303 $U/compte"
+check "activation 2FA : bon code" "$(c --data-urlencode "_csrf=$T" -d "code=$(totp "$S")" "$U/compte/double-authentification")" "303 $U/compte/parametres"
 check "admin accessible" "$(c "$U/admin/parametres")" "200 "
 T=$(tok)
 check "réglages : CSS avec </style refusé" "$(c --data-urlencode "_csrf=$T" -d 'nom_association=Asso test&couleur_principale=#123456&couleur_accent=#654321&smtp_securite=starttls&css_personnalise=body{}</style><script>' "$U/admin/parametres")" "422 "
