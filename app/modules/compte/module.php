@@ -240,12 +240,15 @@ function administration_tuiles(array $member): array
     if (has_right($member, 'membres')) {
         $tuiles[] = ['personnes', 'Membres', 'Ajouter, modifier, droits', '/admin/membres', ''];
     }
-    $tuiles[] = ['bouclier', 'Qui peut faire quoi', 'Les droits, espace par espace', '/compte/aide-droits', ''];
     if (is_admin($member)) {
         $nouveaux = (int) db_value('SELECT COUNT(*) FROM message_contact WHERE lu = 0');
         $tuiles[] = ['enveloppe', 'Messages reçus', 'Formulaire de contact', '/admin/messages', $nouveaux ? $nouveaux . ($nouveaux > 1 ? ' nouveaux' : ' nouveau') : ''];
         $tuiles[] = ['reglages', 'Réglages du site', 'Nom, apparence, e-mails', '/admin/parametres', ''];
         $tuiles[] = ['cle', 'Toutes les clés', "Clés d'API des membres", '/admin/cles', ''];
+    }
+    // L'aide sur les droits accompagne les autres tuiles : sans droit de gestion, aucune tuile (ni section Administration)
+    if ($tuiles) {
+        $tuiles[] = ['bouclier', 'Qui peut faire quoi', 'Les droits, espace par espace', '/compte/aide-droits', ''];
     }
     return $tuiles;
 }
