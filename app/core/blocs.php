@@ -464,26 +464,15 @@ function bloc_equipe(string $slug): string
     }
     $personnes = db_all('SELECT m.prenom, m.nom, m.email, em.niveau, em.libelle FROM espace_membre em JOIN membre m ON m.id = em.membre_id
         WHERE em.espace_id = ? AND m.actif = 1 ORDER BY FIELD(em.niveau, "n1", "n2", "membre", "associe"), m.nom, m.prenom', [$espace['id']]);
-    $groupes = [];
-    foreach ($personnes as $p) {
-        $roles = array_filter(array_map('trim', explode(';', (string) $p['libelle'])), fn($r) => $r !== '');
-        if (!$roles) {
-            $roles = [$p['niveau'] === 'associe' ? 'Associés : ' : 'Membres : '];
-        }
-        foreach ($roles as $role) {
-            [$groupe, $intitule] = str_contains($role, ':') ? array_map('trim', explode(':', $role, 2)) : ['Membres', $role];
-            $groupes[$groupe !== '' ? $groupe : 'Membres'][] = ['nom' => membre_nom_affiche($p), 'role' => $intitule];
-        }
-    }
+    $groupes = espace_equipe_groupes($personnes);
     if (!$groupes) {
         return '';
     }
-    // « Membres » et « Associés » en dernier, les autres groupes dans leur ordre d'apparition
-    uksort($groupes, fn($a, $b) => (in_array($a, ['Membres', 'Associés'], true) <=> in_array($b, ['Membres', 'Associés'], true)));
     $html = '<div class="bloc-equipe">';
     foreach ($groupes as $groupe => $liste) {
         $html .= (count($groupes) > 1 ? '<h3>' . e($groupe) . '</h3>' : '') . '<ul class="equipe-cartes">';
         foreach ($liste as $l) {
+            $l['nom'] = membre_nom_affiche($l['personne']);
             $html .= '<li><span class="avatar" aria-hidden="true">' . e(mb_strtoupper(mb_substr($l['nom'], 0, 1))) . '</span><span class="qui"><strong>' . e($l['nom']) . '</strong>'
                 . ($l['role'] !== '' ? '<span>' . e($l['role']) . '</span>' : '') . '</span></li>';
         }
