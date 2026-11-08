@@ -260,3 +260,14 @@ function espaces_meteo_auto_actualiser(): int
     }
     return $n;
 }
+
+// Libellé d'une personne dans l'équipe : soit « libelle » tel quel (API, ancien formulaire), soit « groupe » + « role » du formulaire
+function espace_libelle_compose(array $in): string
+{
+    if (array_key_exists('role', $in) || array_key_exists('groupe', $in)) {
+        $groupe = trim(str_replace([':', ';'], ' ', (string) ($in['groupe'] ?? '')));
+        $role = trim(str_replace(';', ',', (string) ($in['role'] ?? '')));
+        return $groupe !== '' ? $groupe . ' : ' . $role : $role;
+    }
+    return trim((string) ($in['libelle'] ?? ''));
+}
