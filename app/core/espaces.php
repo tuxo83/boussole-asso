@@ -145,3 +145,23 @@ function espace_inscription_ouverte(?array $member, array $espace): bool
 {
     return $espace['visibilite'] === 'public' || ($member !== null && (cotisation_a_jour($member) !== null || is_admin($member) || espace_niveau($member, $espace) !== null));
 }
+
+// Équipe rangée par groupes, d'après le libellé de chacun : « Bureau : Président » (groupe Bureau, rôle Président),
+// plusieurs rôles séparés par « ; », sans « : » le groupe est « Membres ». Sert à l'espace et au bloc de page.
+function espace_equipe_groupes(array $personnes): array
+{
+    $groupes = [];
+    foreach ($personnes as $p) {
+        $roles = array_filter(array_map('trim', explode(';', (string) $p['libelle'])), fn($r) => $r !== '');
+        if (!$roles) {
+            $roles = [($p['niveau'] === 'associe' ? 'Associés' : 'Membres') . ' : '];
+        }
+        foreach ($roles as $role) {
+            [$groupe, $intitule] = str_contains($role, ':') ? array_map('trim', explode(':', $role, 2)) : ['Membres', $role];
+            $groupes[$groupe !== '' ? $groupe : 'Membres'][] = ['personne' => $p, 'role' => $intitule];
+        }
+    }
+    // « Membres » et « Associés » en dernier, les autres groupes dans leur ordre d'apparition
+    uksort($groupes, fn($a, $b) => in_array($a, ['Membres', 'Associés'], true) <=> in_array($b, ['Membres', 'Associés'], true));
+    return $groupes;
+}
