@@ -1,6 +1,19 @@
 <h1>Sécurité du compte</h1>
 <?php if ($erreur): ?><?= c_alerte('erreur', $erreur) ?><?php endif ?>
-<p>Pour la gestion de l'association, chaque connexion demande deux preuves : par exemple votre mot de passe puis votre clé, ou un code reçu par e-mail.</p>
+<p>Deux preuves au lieu d'une : par exemple votre mot de passe puis votre clé, ou un code reçu par e-mail. Toujours exigées pour la gestion de l'association.</p>
+
+<section class="mfa-moment">
+  <h2>Quand la demander ?</h2>
+  <form method="post" action="<?= e(url('/compte/double-authentification/moment')) ?>">
+    <?= csrf_field() ?>
+    <fieldset class="choix-visibilite"><legend class="visuellement-cache">Quand demander la double authentification</legend>
+      <label class="choix"><input type="radio" name="mfa_connexion" value="0"<?= empty($membre['mfa_connexion']) ? ' checked' : '' ?>><span><strong>Seulement pour la gestion</strong><small>On se connecte normalement pour consulter ; la deuxième preuve est demandée en entrant dans l'administration, une fois par session.</small></span></label>
+      <label class="choix"><input type="radio" name="mfa_connexion" value="1"<?= !empty($membre['mfa_connexion']) ? ' checked' : '' ?>><span><strong>À chaque connexion</strong><small>Le plus sûr : la deuxième preuve est demandée dès la connexion (si vous avez une clé ou une application).</small></span></label>
+    </fieldset>
+    <button type="submit" class="bouton bouton-secondaire">Enregistrer</button>
+  </form>
+  <p class="petit">Dans les deux cas, changer de mot de passe ou créer une clé d'API redemande une preuve.</p>
+</section>
 
 <section>
   <h2>Clés de sécurité (recommandé)</h2>
