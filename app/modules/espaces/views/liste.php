@@ -39,7 +39,7 @@ $lien_filtre = function (array $changer) use ($filtre_type, $filtre_meteo): stri
     <h1><?= $archives ? 'Espaces archivés' : 'Espaces' ?></h1>
     <?php if (!$archives): ?><p class="discret chapeau">Les comités, commissions et projets de l'association.<?php if ($agenda = page_agenda_slug()): ?> Les événements sont dans l'<a href="<?= e(url('/page/' . $agenda)) ?>">agenda</a>.<?php endif ?></p><?php endif ?>
   </div>
-  <?php if (is_admin($membre) && !$archives): ?><?= c_bouton('+ Nouvel espace', '/espaces/nouveau') ?><?php endif ?>
+  <?php if (is_admin($membre) && !$archives): ?><?= c_bouton('+ Créer', '/espaces/nouveau') ?><?php endif ?>
 </div>
 <?php if ($archives): ?><p><a href="<?= e(url('/espaces')) ?>">← Espaces en cours</a></p><?php endif ?>
 
