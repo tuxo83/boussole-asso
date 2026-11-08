@@ -59,6 +59,7 @@ function admin_settings_validate(array $input): array
     $v = [
         'nom_association' => $text('nom_association', 150),
         'slogan' => $text('slogan', 200),
+        'bandeau_legende' => $text('bandeau_legende', 300),
         'presentation' => $text('presentation', 20000),
         'pied_de_page' => $text('pied_de_page', 500),
         'couleur_principale' => $text('couleur_principale', 7),
