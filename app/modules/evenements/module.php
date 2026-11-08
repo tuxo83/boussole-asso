@@ -140,12 +140,12 @@ function evenement_action(string $slug, string $droit): array
 
 
 // Données de la partie « inscriptions » d'une fiche d'événement
-function evenement_vue(array $espace, ?array $member): array
+function evenement_vue(array $espace, ?array $member, bool $vue_orga = true): array
 {
     evenements_cloturer_echus();
     evenement_regler(evenement_de($espace));
     $ev = evenement_de($espace);
-    $gere = espace_peut_gerer($member, $espace);
+    $gere = $vue_orga && espace_peut_gerer($member, $espace);
     return [
         'espace' => $espace,
         'ev' => $ev,
