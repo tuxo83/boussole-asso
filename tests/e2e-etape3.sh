@@ -109,6 +109,8 @@ check "fichier effacé du disque" "$(find "$ROOT/app/stockage" -name "$STOCK" | 
 check "le sous-espace remonte d'un niveau" "$(sql "SELECT COALESCE(parent_id, 'aucun') FROM espace WHERE slug = 'sous-projet'")" "aucun"
 check "admin change l'e-mail d'un membre" "$(post "$U/admin/membres" "$U/admin/membres/$ALICE" -d 'email=alice.nouvelle@example.org&prenom=Alice&actif=1&droits[]=membres' >/dev/null; sql "SELECT email FROM membre WHERE id = $ALICE")" "alice.nouvelle@example.org"
 check "e-mail déjà pris : refusé" "$(post "$U/admin/membres" "$U/admin/membres/$ALICE" -d 'email=bob@example.org&prenom=Alice&actif=1&droits[]=membres' >/dev/null; sql "SELECT email FROM membre WHERE id = $ALICE")" "alice.nouvelle@example.org"
+as alice; check "e-mail changé par l'administrateur : ses sessions ouvertes sont coupées" "$(c "$U/compte")" "303 $U/connexion"
+login_link alice alice.nouvelle@example.org; as admin
 BOB=$(sql "SELECT id FROM membre WHERE email = 'bob@example.org'")
 post "$U/admin/membres" "$U/admin/membres/$BOB/mot-de-passe-provisoire" >/dev/null; c "$U/admin/membres" >/dev/null
 PROV=$(grep -o 'bob@example.org) : [A-Za-z0-9]\{4\}-[A-Za-z0-9]\{4\}-[A-Za-z0-9]\{4\}' "$B" | sed 's/.* : //')
@@ -128,7 +130,7 @@ as intrus
 hpost "$U/connexion" "$U/connexion" -d 'email=carole@example.org&mot_de_passe=mauvais-mot-de-passe-123' >/dev/null
 as admin
 CAROLE=$(sql "SELECT id FROM membre WHERE email = 'carole@example.org'")
-check "historique du compte : mot de passe choisi, connexions, échec de connexion" "$(c "$U/admin/membres/$ALICE/historique" >/dev/null; grep -c 'Mot de passe choisi' "$B") $(grep -c 'Connexion (e-mail)' "$B") $(c "$U/admin/membres/$CAROLE/historique" >/dev/null; grep -c 'Échec de connexion' "$B")" "1 1 1"
+check "historique du compte : mot de passe choisi, 2 connexions (avant et après le changement d’e-mail), échec de connexion" "$(c "$U/admin/membres/$ALICE/historique" >/dev/null; grep -c 'Mot de passe choisi' "$B") $(grep -c 'Connexion (e-mail)' "$B") $(c "$U/admin/membres/$CAROLE/historique" >/dev/null; grep -c 'Échec de connexion' "$B")" "1 2 1"
 check "historique : action d'un administrateur signée" "$(c "$U/admin/membres/$BOB/historique" >/dev/null; grep -c 'Mot de passe provisoire donné par un administrateur' "$B")" "1"
 check "mon historique dans Mon compte" "$(as bobmdp; c "$U/compte/parametres" >/dev/null; grep -c 'Mot de passe provisoire remplacé' "$B")" "1"
 as admin

@@ -83,6 +83,10 @@ function admin_settings_validate(array $input): array
         'meteo_auto_retard_jours' => (string) max(1, min(365, (int) ($input['meteo_auto_retard_jours'] ?? 15))),
         'meteo_auto_dates_bloque' => (string) max(2, min(20, (int) ($input['meteo_auto_dates_bloque'] ?? 3))),
         'meteo_auto_horizon_jours' => (string) max(1, min(365, (int) ($input['meteo_auto_horizon_jours'] ?? 30))),
+        'application_active' => ($input['application_active'] ?? '') === '1' ? '1' : '0',
+        'application_nom_court' => $text('application_nom_court', 30),
+        'appareil_duree_jours' => (string) max(0, min(400, (int) ($input['appareil_duree_jours'] ?? 90))),
+        'mfa_validite_heures' => (string) max(1, min(720, (int) ($input['mfa_validite_heures'] ?? 12))),
         'fichiers_apercu' => ($input['fichiers_apercu'] ?? '') === '1' ? '1' : '0',
         'arrivee_cotisant' => connexion_arrivee_valide($text('arrivee_cotisant', 120)) ? $text('arrivee_cotisant', 120) : '',
         'arrivee_non_cotisant' => connexion_arrivee_valide($text('arrivee_non_cotisant', 120)) ? $text('arrivee_non_cotisant', 120) : '',
@@ -139,8 +143,8 @@ function admin_logo_upload(?array $file, array &$erreurs): ?string
     }
     $types = [IMAGETYPE_PNG => 'png', IMAGETYPE_JPEG => 'jpg', IMAGETYPE_WEBP => 'webp'];
     $info = $file['error'] === UPLOAD_ERR_OK && $file['size'] <= LOGO_TAILLE_MAX ? @getimagesize($file['tmp_name']) : false;
-    if ($info === false || !isset($types[$info[2]])) {
-        $erreurs['logo'] = 'Image PNG, JPEG ou WebP de 1 Mo maximum.';
+    if ($info === false || !isset($types[$info[2]]) || $info[0] > LOGO_COTE_MAX || $info[1] > LOGO_COTE_MAX) {
+        $erreurs['logo'] = 'Image PNG, JPEG ou WebP de 1 Mo et ' . LOGO_COTE_MAX . ' pixels de côté au plus.';
         return null;
     }
     $name = 'uploads/logo-' . bin2hex(random_bytes(8)) . '.' . $types[$info[2]];

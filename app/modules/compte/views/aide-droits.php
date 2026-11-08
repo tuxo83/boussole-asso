@@ -81,6 +81,7 @@
   <h2>Sécurité des comptes</h2>
   <ul>
     <li>Chacun gère son mot de passe, sa double authentification et ses clés dans <em>Paramètres</em>.</li>
+    <li><strong>Rester connecté sur cet appareil</strong> (case à la connexion, cochée d'office dans l'application) : seule la connexion simple reste ouverte ; la gestion redemande la double authentification, valable <?= (int) mfa_validite_heures() ?> heures. Changer de mot de passe déconnecte les autres appareils ; la liste est dans <em>Paramètres › Appareils connectés</em>.</li>
     <li>Un administrateur peut donner un <strong>mot de passe provisoire</strong> (à changer à la connexion suivante) ou effacer un membre.</li>
     <li>Un <strong>compte de démonstration</strong> a un mot de passe fixé par l'administrateur ; ses utilisateurs ne peuvent changer ni ce mot de passe ni la sécurité.</li>
     <li>Toute action de gestion laisse une trace : le journal, et l'historique du compte concerné.</li>

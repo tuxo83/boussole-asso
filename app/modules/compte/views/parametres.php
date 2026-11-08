@@ -29,6 +29,33 @@
     <?= c_bouton('Gérer', '/compte/cles', 'secondaire') ?>
   </li>
   <?php endif ?>
+  <?php $appareils = appareils_du_membre((int) $membre['id']); $appareil_courant = (int) ($_SESSION['appareil_id'] ?? 0); ?>
+  <li id="appareils">
+    <span class="tuile-icone"><?= c_icone('ecran') ?></span><div><strong>Appareils connectés</strong><span class="discret"><?= $appareils ? count($appareils) . ' appareil(s) restent connectés' : 'Aucun : cochez « Rester connecté » à la connexion' ?></span>
+      <span class="petit">Ils rouvrent la connexion simple ; la gestion redemande toujours la double authentification.</span></div>
+    <?php if ($appareils): ?>
+    <details class="reglage-action"><summary class="bouton bouton-secondaire">Voir</summary>
+      <ul class="appareils-liste">
+        <?php foreach ($appareils as $appareil): ?>
+        <li><span><strong><?= e($appareil['libelle']) ?></strong><?= (int) $appareil['id'] === $appareil_courant ? ' <span class="badge">cet appareil</span>' : '' ?>
+          <span class="discret">Depuis le <?= e(date('d/m/Y', strtotime($appareil['cree_le']))) ?><?= $appareil['derniere_utilisation'] ? ' · utilisé le ' . e(date('d/m/Y', strtotime($appareil['derniere_utilisation']))) : '' ?></span></span>
+          <form method="post" action="<?= e(url('/compte/appareils/' . (int) $appareil['id'] . '/oublier')) ?>" class="en-ligne"><?= csrf_field() ?><button type="submit" class="lien-bouton">Déconnecter</button></form></li>
+        <?php endforeach ?>
+      </ul>
+      <?php if (count($appareils) > 1 || !$appareil_courant): ?>
+      <form method="post" action="<?= e(url('/compte/appareils/oublier-autres')) ?>"><?= csrf_field() ?><button type="submit" class="bouton bouton-secondaire" data-confirmer="Déconnecter tous les autres appareils ?">Déconnecter les autres appareils</button></form>
+      <?php endif ?>
+    </details>
+    <?php endif ?>
+  </li>
+  <?php if (application_active()): ?>
+  <li id="application" data-application>
+    <span class="tuile-icone"><?= c_icone('telephone') ?></span><div><strong>Application</strong><span class="discret" data-application-etat>Installez le site sur votre téléphone : une icône, et vous restez connecté.</span>
+      <span class="petit" data-application-ios hidden>Sur iPhone : touchez <strong>Partager</strong> (le carré avec une flèche), puis <strong>Sur l'écran d'accueil</strong>.</span>
+      <span class="petit" data-application-autre hidden>Dans le menu du navigateur : <strong>Installer l'application</strong> ou <strong>Ajouter à l'écran d'accueil</strong>.</span></div>
+    <button type="button" class="bouton bouton-secondaire" data-installer hidden>Installer</button>
+  </li>
+  <?php endif ?>
   <li>
     <span class="tuile-icone"><?= c_icone('horloge') ?></span><div><strong>Activité du compte</strong><span class="discret"><?= $membre['derniere_connexion'] ? 'Dernière connexion : ' . e(date('d/m/Y à H\\hi', strtotime($membre['derniere_connexion']))) : 'Connexions et modifications du compte' ?></span></div>
     <details class="reglage-action"><summary class="bouton bouton-secondaire">Voir</summary>

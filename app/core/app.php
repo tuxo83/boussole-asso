@@ -19,6 +19,7 @@ require __DIR__ . '/totp.php';
 require __DIR__ . '/webauthn.php';
 require __DIR__ . '/mail.php';
 require __DIR__ . '/auth.php';
+require __DIR__ . '/appareils.php';
 require __DIR__ . '/humain.php';
 require __DIR__ . '/espaces.php';
 require __DIR__ . '/blocs.php';
@@ -85,6 +86,10 @@ function boussole_run(): void
     }
     if ($installed) {
         migrate_if_needed();
+        // Appareil retenu (« Rester connecté ») : la session se rouvre à un seul facteur
+        if (!$api) {
+            appareil_restaurer();
+        }
         if (construction_active()) {
             header('X-Robots-Tag: noindex, nofollow');
             if (!construction_autorise($path)) {

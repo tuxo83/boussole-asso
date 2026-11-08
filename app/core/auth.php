@@ -17,6 +17,13 @@ function current_member(): ?array
         if (!empty($_SESSION['membre_id']) && !empty($_SESSION['connecte'])) {
             // Compte désactivé ou en attente : la session ouverte cesse aussitôt
             $member = db_one('SELECT * FROM membre WHERE id = ? AND actif = 1', [$_SESSION['membre_id']]);
+            // Sessions coupées (mot de passe changé, « déconnecter les autres », désactivation), ou appareil déconnecté : fin de session
+            if ($member !== null && ((int) ($_SESSION['session_version'] ?? 0) !== (int) $member['session_version'] || (!empty($_SESSION['appareil_id'])
+                && db_value('SELECT id FROM connexion_appareil WHERE id = ? AND membre_id = ?', [$_SESSION['appareil_id'], $member['id']]) === null))) {
+                $member = null;
+                $_SESSION = [];
+                session_regenerate_id(true);
+            }
         }
     }
     return $member;
@@ -62,7 +69,8 @@ function require_right(string $right = 'admin'): array
         render('erreur', ['titre' => 'Accès réservé']);
         exit;
     }
-    // Gestion : deux facteurs différents dans cette session (API : la clé suffit, elle est créée par un compte à deux facteurs)
+    // Gestion : deux facteurs différents dans cette session (API : la clé suffit, elle est créée par un compte à deux facteurs) ;
+    // le second ne vaut que quelques heures (réglage, voir facteurs())
     if (api_member() === null && count(facteurs()) < 2) {
         $_SESSION['apres_connexion'] = request_path();
         flash('info', 'Pour la gestion, confirmez votre identité une seconde fois.');
@@ -71,15 +79,59 @@ function require_right(string $right = 'admin'): array
     return $member;
 }
 
-// Facteurs prouvés dans cette session : 'mdp' (mot de passe), 'email' (lien ou code reçu), 'cle' (FIDO2), 'totp' (application)
+// Facteurs prouvés dans cette session : 'mdp' (mot de passe), 'email' (lien ou code reçu), 'cle' (FIDO2), 'totp' (application).
+// Le second ne vaut que quelques heures (réglage) : passé ce délai, il ne reste que le premier, partout où on les compte.
 function facteurs(): array
 {
-    return $_SESSION['facteurs'] ?? [];
+    $faits = $_SESSION['facteurs'] ?? [];
+    if (count($faits) >= 2 && time() - (int) ($_SESSION['facteur2_le'] ?? 0) > mfa_validite_heures() * 3600) {
+        $faits = $_SESSION['facteurs'] = array_slice($faits, 0, 1);
+    }
+    return $faits;
 }
 
+// Preuve réellement donnée dans cette session (mot de passe, code, clé, application) : elle compte comme facteur,
+// et la session n'est plus seulement « rouverte par un appareil retenu »
 function ajouter_facteur(string $facteur): void
 {
     $_SESSION['facteurs'] = array_values(array_unique([...facteurs(), $facteur]));
+    if (count($_SESSION['facteurs']) >= 2) {
+        $_SESSION['facteur2_le'] = time();
+    }
+    unset($_SESSION['par_appareil']);
+}
+
+// Session rouverte par « Rester connecté », sans preuve donnée depuis : elle ne compte AUCUN facteur.
+// Consulter, s'inscrire, déposer : oui. Sécurité du compte, clés, mot de passe : une preuve fraîche. Gestion : deux.
+function session_par_appareil(): bool
+{
+    return !empty($_SESSION['par_appareil']);
+}
+
+// Une preuve fraîche avant une action sensible du compte (session rouverte par un appareil retenu)
+function exiger_preuve_fraiche(string $retour): void
+{
+    if (session_par_appareil()) {
+        $_SESSION['apres_connexion'] = $retour;
+        flash('info', 'Confirmez votre identité pour continuer.');
+        redirect('/connexion/double-authentification');
+    }
+}
+
+// Couper toutes les sessions d'un membre et oublier ses appareils ; $garder_courante : la session en cours reste ouverte
+function membre_deconnecter_partout(int $memberId, bool $garder_courante = false): void
+{
+    db_query('UPDATE membre SET session_version = session_version + 1 WHERE id = ?', [$memberId]);
+    appareils_oublier_tous($memberId, $garder_courante ? ($_SESSION['appareil_id'] ?? null) : null);
+    if ($garder_courante && (int) ($_SESSION['membre_id'] ?? 0) === $memberId) {
+        $_SESSION['session_version'] = (int) db_value('SELECT session_version FROM membre WHERE id = ?', [$memberId]);
+    }
+}
+
+// Durée de validité du second facteur pour la gestion (réglage, 12 h par défaut)
+function mfa_validite_heures(): int
+{
+    return max(1, min(720, (int) setting('mfa_validite_heures', '12')));
 }
 
 // Second facteur toujours exigé quand la personne en a configuré un (clé ou application)
@@ -98,6 +150,8 @@ function login_first_step(array $member, string $facteur): void
     session_regenerate_id(true);
     $_SESSION['membre_id'] = (int) $member['id'];
     $_SESSION['facteurs'] = [$facteur];
+    $_SESSION['session_version'] = (int) $member['session_version'];
+    unset($_SESSION['par_appareil'], $_SESSION['appareil_id'], $_SESSION['facteur2_le']);
     // Choix de chacun : second facteur à chaque connexion, ou seulement en entrant dans la gestion (require_right le demande alors)
     if (member_exige_2fa($member) && !empty($member['mfa_connexion'])) {
         $_SESSION['connecte'] = false;
@@ -110,6 +164,11 @@ function login_complete(array $member): never
 {
     $deja = !empty($_SESSION['connecte']);
     $_SESSION['connecte'] = true;
+    // « Rester connecté sur cet appareil » coché à la connexion : la première étape seulement est retenue
+    if (!$deja && !empty($_SESSION['rester_connecte'])) {
+        appareil_retenir($member, facteurs()[0] ?? 'mdp', ($_SESSION['rester_connecte'] ?? '') === 'appli');
+    }
+    unset($_SESSION['rester_connecte']);
     unset($_SESSION['rappel_cotisation_masque']); // le rappel de cotisation masqué revient à chaque connexion
     $preuves = ['mdp' => 'mot de passe', 'email' => 'e-mail', 'code' => 'code e-mail', 'totp' => 'application', 'cle' => 'clé de sécurité'];
     journal_compte((int) $member['id'], $member, ($deja ? 'Seconde vérification' : 'Connexion') . ' (' . implode(' + ', array_map(fn($f) => $preuves[$f] ?? $f, facteurs())) . ')');
@@ -122,6 +181,7 @@ function login_complete(array $member): never
 
 function logout(): void
 {
+    appareil_oublier_courant();
     $_SESSION = [];
     session_regenerate_id(true);
 }
@@ -168,11 +228,13 @@ function token_code_hash(int|string $memberId, string $code): string
 
 function use_login_link(string $link): ?array
 {
-    $token = db_one('SELECT * FROM connexion_jeton WHERE lien_hash = ? AND utilise_le IS NULL AND expire_le > NOW()', [hash('sha256', $link)]);
+    // Le lien et le code se consomment chacun de leur côté : sur iPhone, le lien s'ouvre dans Safari,
+    // et l'application installée (stockage à part) se connecte avec le code du même e-mail
+    $token = db_one('SELECT * FROM connexion_jeton WHERE lien_hash = ? AND lien_utilise_le IS NULL AND expire_le > NOW()', [hash('sha256', $link)]);
     if ($token === null) {
         return null;
     }
-    db_query('UPDATE connexion_jeton SET utilise_le = NOW() WHERE id = ?', [$token['id']]);
+    db_query('UPDATE connexion_jeton SET lien_utilise_le = NOW() WHERE id = ?', [$token['id']]);
     return db_one('SELECT * FROM membre WHERE id = ?', [$token['membre_id']]);
 }
 
@@ -190,7 +252,8 @@ function use_login_code(string $email, string $code): ?array
         db_query('UPDATE connexion_jeton SET essais = essais + 1 WHERE id = ?', [$token['id']]);
         return null;
     }
-    db_query('UPDATE connexion_jeton SET utilise_le = NOW() WHERE id = ?', [$token['id']]);
+    // Le code consomme aussi le lien (l'inverse non : lien ouvert dans Safari, code saisi ensuite dans l'application)
+    db_query('UPDATE connexion_jeton SET utilise_le = NOW(), lien_utilise_le = COALESCE(lien_utilise_le, NOW()) WHERE id = ?', [$token['id']]);
     return $member;
 }
 
