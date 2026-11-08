@@ -78,7 +78,7 @@ $boutons = '<span class="en-place-boutons"><button type="submit" class="bouton b
 <?php if ($alertes && $peut_contribuer): ?>
 <div class="a-faire" role="status"><strong><?= c_icone('attention') ?>À faire</strong>
   <ul><?php foreach ($alertes as $alerte): $cible = $cible_alerte($alerte); $verbe_alerte = match ($cible) { '#ajout-equipe' => 'Choisir', '#fichiers' => 'Déposer', default => 'Voir' }; ?>
-    <li><span><?= e($alerte) ?></span><?php if ($cible): ?><a class="bouton bouton-secondaire" href="<?= $cible ?>"<?= $cible === '#ajout-equipe' ? ' data-ouvrir="ajout-equipe"' : '' ?>><?= $verbe_alerte ?></a><?php endif ?></li><?php endforeach ?></ul>
+    <li><span><?= e($alerte) ?></span><?php if ($cible): ?><a class="bouton bouton-secondaire" href="<?= $cible ?>"<?= $cible === '#ajout-equipe' ? ' data-dialogue-equipe' : '' ?>><?= $verbe_alerte ?></a><?php endif ?></li><?php endforeach ?></ul>
   <?php if ($espace['meteo'] === 'soleil' && array_filter($alertes, fn($a) => str_contains($a, 'dépassée'))): ?><p class="petit">Une date clé est dépassée : la météo est-elle toujours « À jour » ?</p><?php endif ?>
 </div>
 <?php endif ?>
@@ -191,31 +191,40 @@ $boutons = '<span class="en-place-boutons"><button type="submit" class="bouton b
   <ul class="equipe-liste">
     <?php foreach ($liste as ['personne' => $personne, 'role' => $role]): $niv = ['n1' => 'N°1', 'n2' => 'N°2', 'associe' => 'Associé'][$personne['niveau']] ?? ''; ?>
     <li><span class="avatar" aria-hidden="true"><?= e(mb_strtoupper(mb_substr($nom_court($personne), 0, 1))) ?></span><span class="qui"><strong title="<?= e($personne['email']) ?>"><?= e($nom_court($personne)) ?></strong>
-      <span class="discret"><?= e(implode(' · ', array_filter([$niv, $role !== '' ? $role : ($niv === '' ? 'Membre' : '')]))) ?></span></span></li>
+      <span class="discret"><?= e(implode(' · ', array_filter([$niv, $role !== '' ? $role : ($niv === '' ? 'Membre' : '')]))) ?></span></span>
+      <?php if ($peut_gerer): ?><button type="button" class="equipe-modifier" data-dialogue-equipe data-id="<?= (int) $personne['id'] ?>" data-email="<?= e($personne['email']) ?>" data-nom="<?= e($nom_court($personne)) ?>" data-niveau="<?= e($personne['niveau']) ?>" data-groupe="<?= e(str_contains($personne['libelle'], ':') && !str_contains($personne['libelle'], ';') ? trim(explode(':', $personne['libelle'], 2)[0]) : '') ?>" data-role="<?= e(str_contains($personne['libelle'], ':') && !str_contains($personne['libelle'], ';') ? trim(explode(':', $personne['libelle'], 2)[1]) : $personne['libelle']) ?>" aria-label="Modifier <?= e($nom_court($personne)) ?>" title="Modifier"><?= c_icone('crayon') ?></button><?php endif ?></li>
     <?php endforeach ?>
   </ul>
   <?php endforeach ?>
   <?php if ($peut_gerer): ?>
-  <details id="ajout-equipe"><summary>+ Ajouter ou modifier</summary>
+  <p><button type="button" class="bouton bouton-secondaire" id="ajout-equipe" data-dialogue-equipe>+ Ajouter une personne</button></p>
+  <?php // Ajouter ou modifier une personne : une petite fenêtre (sans JavaScript, elle s'affiche dépliée sous la liste) ?>
+  <dialog class="dialogue" id="dialogue-equipe" aria-labelledby="dialogue-equipe-titre">
   <form method="post" action="<?= $action('/equipe') ?>" class="formulaire">
     <?= csrf_field() ?>
-    <div class="champ"><label for="champ-email">Membre</label>
+    <h3 id="dialogue-equipe-titre" data-titre-ajout="Ajouter une personne">Ajouter une personne</h3>
+    <div class="champ" data-champ-email><label for="champ-email">Membre</label>
       <input type="email" id="champ-email" name="email" list="liste-membres" required autocomplete="off" placeholder="Tapez un nom ou une adresse">
       <small>La liste se filtre pendant la saisie.</small></div>
     <datalist id="liste-membres"><?php foreach ($membres_actifs as $m): ?><option value="<?= e($m['email']) ?>"><?= e(trim($m['prenom'] . ' ' . $m['nom']) ?: $m['email']) ?></option><?php endforeach ?></datalist>
     <div class="champ-avec-aide"><?= c_champ('niveau', 'Niveau', ['type' => 'select', 'valeur' => 'membre', 'choix' => ESPACE_NIVEAUX]) ?><?= aide_niveaux_equipe() ?></div>
-    <?= c_champ('libelle', 'Libellé affiché (facultatif)', ['aide' => 'Ex. « Bureau : Président » ; plusieurs rôles séparés par « ; ». Repris tel quel dans les pages qui affichent cette équipe.', 'max' => 100]) ?>
-    <button type="submit" class="bouton bouton-secondaire">Enregistrer</button>
+    <?php $groupes_connus = array_values(array_filter(array_keys($groupes_equipe), fn($g) => !in_array($g, ['Membres', 'Associés'], true))); ?>
+    <div class="champ"><label for="champ-groupe">Groupe <span class="discret">(facultatif)</span></label>
+      <input id="champ-groupe" name="groupe" list="liste-groupes" maxlength="40" autocomplete="off" placeholder="Ex. Bureau, Chargés de mission">
+      <small>Les personnes d'un même groupe sont présentées ensemble, ici et dans les pages. Sans groupe : « Membres ».</small></div>
+    <datalist id="liste-groupes"><?php foreach (array_unique(array_merge($groupes_connus, ['Bureau', 'Chargés de mission'])) as $g): ?><option value="<?= e($g) ?>"><?php endforeach ?></datalist>
+    <?= c_champ('role', 'Rôle (facultatif)', ['aide' => 'Ex. Président, Trésorière, Trinôme académique.', 'max' => 60]) ?>
+    <p class="dialogue-actions"><button type="submit" class="bouton bouton-principal">Enregistrer</button> <button type="button" class="lien-bouton" data-fermer-dialogue>Annuler</button></p>
   </form>
   <?php if ($equipe): ?>
-  <form method="post" action="<?= $action('/equipe/retirer') ?>" class="en-ligne retirer-equipe">
+  <form method="post" action="<?= $action('/equipe/retirer') ?>" class="retirer-equipe" data-retirer>
     <?= csrf_field() ?>
     <label for="retirer-membre" class="petit">Retirer de l'équipe</label>
     <select id="retirer-membre" name="membre_id"><?php foreach ($equipe as $personne): ?><option value="<?= (int) $personne['id'] ?>"><?= e($nom_court($personne)) ?></option><?php endforeach ?></select>
-    <button type="submit" class="lien-bouton lien-danger" data-confirmer="Retirer cette personne de l'équipe ?">retirer</button>
+    <button type="submit" class="lien-bouton lien-danger" data-confirmer="Retirer cette personne de l'équipe ?">Retirer de l'équipe</button>
   </form>
   <?php endif ?>
-  </details>
+  </dialog>
   <?php endif ?>
 </section>
 <?php endif ?>
