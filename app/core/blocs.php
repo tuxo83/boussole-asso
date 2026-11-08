@@ -337,7 +337,7 @@ function carte_evenement(array $ev, string $titre, string $lien, string $contenu
     $mois = ['', 'janv.', 'févr.', 'mars', 'avril', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
     $date = $ev['debut'] !== null
         ? '<span class="jour">' . (int) date('j', strtotime($ev['debut'])) . '</span><span class="mois">' . $mois[(int) date('n', strtotime($ev['debut']))] . '</span>'
-        : '<span class="date-icone" title="Date à venir">' . c_icone('calendrier') . '</span>';
+        : '<span class="date-icone" title="Date à préciser">' . c_icone('calendrier') . '</span>';
     $equipe = $ev['visibilite'] === 'equipe';
     // Bandeau court (qui peut venir) ; l'espace organisateur est dit dans la carte, jamais à un visiteur pour un événement réservé
     $bandeau = $equipe ? 'Réunion d\'équipe' : ($ev['visibilite'] === 'public' ? 'Ouvert à tous' : 'Réservé aux membres');
@@ -437,7 +437,7 @@ function agenda_frise(array $evenements, bool $passes, bool $aujourdhui = true):
     $courant = null;
     foreach ($evenements as $ev) {
         $t = $ev['debut'] ? strtotime($ev['debut']) : null;
-        $cle = $t ? ucfirst($mois[(int) date('n', $t)]) . ' ' . date('Y', $t) : 'Date à venir';
+        $cle = $t ? ucfirst($mois[(int) date('n', $t)]) . ' ' . date('Y', $t) : 'Date à préciser';
         if ($cle !== $courant) {
             $html .= ($courant !== null ? '</ol>' : '') . '<h3 class="frise-mois">' . e($cle) . '</h3><ol class="frise-liste">';
             $courant = $cle;
