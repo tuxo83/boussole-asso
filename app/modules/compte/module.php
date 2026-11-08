@@ -9,14 +9,14 @@ return [
     'routes' => [
         ['GET', '/compte', function () {
             $member = require_member();
-            render('compte/compte', ['titre' => 'Mon compte', 'membre' => $member, 'erreur' => null, 'historique' => historique_compte((int) $member['id'], 15)]);
+            render('compte/compte', ['titre' => 'Mon compte', 'membre' => $member, 'erreur' => null]);
         }],
         ['POST', '/compte/mot-de-passe', function () {
             $member = require_member();
             compte_demo_refuser($member);
             // Changer ou retirer un mot de passe existant d'un compte qui gère : deux preuves (le premier mot de passe peut être choisi après un lien e-mail)
             if ($member['mot_de_passe'] !== null && (member_rights($member['id']) || member_exige_2fa($member)) && count(facteurs()) < 2) {
-                $_SESSION['apres_connexion'] = '/compte';
+                $_SESSION['apres_connexion'] = '/compte/parametres';
                 redirect('/connexion/double-authentification');
             }
             $password = (string) ($_POST['mot_de_passe'] ?? '');
@@ -24,27 +24,29 @@ return [
                 db_query('UPDATE membre SET mot_de_passe = NULL WHERE id = ?', [$member['id']]);
                 journal_compte((int) $member['id'], $member, 'Mot de passe retiré');
                 flash('succes', 'Mot de passe retiré : connexion par lien envoyé par e-mail.');
-                redirect('/compte');
+                redirect('/compte/parametres');
             }
             if (mb_strlen($password) < MOT_DE_PASSE_MIN || $password !== (string) ($_POST['confirmation'] ?? '')) {
                 http_response_code(422);
-                render('compte/compte', ['titre' => 'Mon compte', 'membre' => $member,
+                render('compte/parametres', ['titre' => 'Paramètres', 'membre' => $member, 'historique' => historique_compte((int) $member['id'], 15), 'tuiles' => administration_tuiles($member),
                     'erreur' => 'Le mot de passe doit faire au moins ' . MOT_DE_PASSE_MIN . ' caractères, et la confirmation être identique.']);
                 return;
             }
             db_query('UPDATE membre SET mot_de_passe = ?, mot_de_passe_provisoire = 0 WHERE id = ?', [password_hash($password, PASSWORD_DEFAULT), $member['id']]);
             journal_compte((int) $member['id'], $member, $member['mot_de_passe'] === null ? 'Mot de passe choisi' : 'Mot de passe changé');
             flash('succes', 'Mot de passe enregistré.');
-            redirect('/compte');
+            redirect('/compte/parametres');
         }],
         // Administration : les raccourcis de gestion selon les droits (depuis le menu de compte)
-        ['GET', '/administration', function () {
+        // Paramètres : la sécurité de mon compte, et l'administration du site pour qui a des droits
+        ['GET', '/compte/parametres', function () {
             $member = require_member();
-            $tuiles = administration_tuiles($member);
-            if (!$tuiles) {
-                redirect('/compte');
-            }
-            render('compte/administration', ['titre' => 'Administration', 'tuiles' => $tuiles]);
+            render('compte/parametres', ['titre' => 'Paramètres', 'membre' => $member, 'erreur' => null,
+                'historique' => historique_compte((int) $member['id'], 15), 'tuiles' => administration_tuiles($member)]);
+        }],
+        ['GET', '/administration', function () {
+            require_member();
+            redirect('/compte/parametres#administration');
         }],
         // Rappel de cotisation masqué jusqu'à la prochaine connexion
         ['POST', '/compte/rappel-cotisation/masquer', function () {
@@ -144,7 +146,7 @@ return [
             journal_compte((int) $member['id'], $member, 'Application d\'authentification activée');
             mail_send($member['email'], 'Application d\'authentification activée', "Une application d'authentification vient d'être activée sur votre compte. Si ce n'est pas vous, prévenez l'administrateur.\n");
             flash('succes', 'Application d\'authentification activée.');
-            redirect('/compte');
+            redirect('/compte/parametres');
         }],
         ['GET', '/compte/cles-securite/options', function () {
             $member = securite_membre();
@@ -185,7 +187,7 @@ function securite_membre(): array
 {
     $member = require_member();
     if (member_exige_2fa($member) && count(facteurs()) < 2) {
-        $_SESSION['apres_connexion'] = request_path() === '/compte/double-authentification' ? '/compte/double-authentification' : '/compte';
+        $_SESSION['apres_connexion'] = request_path() === '/compte/double-authentification' ? '/compte/double-authentification' : '/compte/parametres';
         redirect('/connexion/double-authentification');
     }
     return $member;
@@ -202,7 +204,7 @@ function compte_demo_refuser(array $member): void
 {
     if (!empty($member['compte_demo'])) {
         flash('erreur', 'Compte de démonstration : son mot de passe et sa sécurité ne se changent pas ici.');
-        redirect('/compte');
+        redirect('/compte/parametres');
     }
 }
 

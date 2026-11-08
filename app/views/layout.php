@@ -60,11 +60,11 @@ $titre_complet = isset($titre) ? $titre . ' · ' . $nom : ($slogan !== '' && mb_
         $initiales = mb_strtoupper(mb_substr($moi_menu['prenom'] ?: $moi_menu['email'], 0, 1) . mb_substr((string) $moi_menu['nom'], 0, 1));
         $attente = member_rights($moi_menu['id']) ? administration_en_attente($moi_menu) : 0; ?>
     <details class="compte-menu">
-      <summary aria-label="Mon compte"<?= str_starts_with($chemin, '/compte') || $chemin === '/administration' ? ' aria-current="page"' : '' ?>><span class="compte-initiales"><?= e($initiales) ?></span><?php if ($attente): ?><span class="compte-attente" aria-label="<?= $attente ?> en attente"><?= $attente ?></span><?php endif ?></summary>
+      <summary aria-label="Mon compte"<?= str_starts_with($chemin, '/compte') ? ' aria-current="page"' : '' ?>><span class="compte-initiales"><?= e($initiales) ?></span><?php if ($attente): ?><span class="compte-attente" aria-label="<?= $attente ?> en attente"><?= $attente ?></span><?php endif ?></summary>
       <div class="compte-panneau">
         <p class="compte-qui"><strong><?= e(membre_nom($moi_menu)) ?></strong><span><?= cotisation_a_jour($moi_menu) !== null ? 'Cotisation ' . e(cotisation_periode_libelle(cotisation_periode())) . ' à jour' : 'Cotisation ' . e(cotisation_periode_libelle(cotisation_periode())) . ' à régler' ?></span></p>
         <a href="<?= e(url('/compte')) ?>"><?= c_icone('personne') ?>Mon compte</a>
-        <?php if (member_rights($moi_menu['id'])): ?><a href="<?= e(url('/administration')) ?>"><?= c_icone('reglages') ?>Administration<?php if ($attente): ?><span class="compte-compteur"><?= $attente ?></span><?php endif ?></a><?php endif ?>
+        <a href="<?= e(url('/compte/parametres')) ?>"><?= c_icone('reglages') ?>Paramètres<?php if ($attente): ?><span class="compte-compteur"><?= $attente ?></span><?php endif ?></a>
         <form method="post" action="<?= e(url('/deconnexion')) ?>"><?= csrf_field() ?><button type="submit" class="compte-sortie-menu"><?= c_icone('sortie') ?>Se déconnecter</button></form>
       </div>
     </details>
