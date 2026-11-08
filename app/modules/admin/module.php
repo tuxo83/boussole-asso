@@ -80,6 +80,9 @@ function admin_settings_validate(array $input): array
         'contact_destinataire' => filter_var($text('contact_destinataire', 190), FILTER_VALIDATE_EMAIL) ? $text('contact_destinataire', 190) : '',
         'contact_conservation_mois' => (string) max(1, min(60, (int) ($input['contact_conservation_mois'] ?? 12))),
         'journal_conservation_ans' => (string) max(1, min(10, (int) ($input['journal_conservation_ans'] ?? 3))),
+        'meteo_auto_retard_jours' => (string) max(1, min(365, (int) ($input['meteo_auto_retard_jours'] ?? 15))),
+        'meteo_auto_dates_bloque' => (string) max(2, min(20, (int) ($input['meteo_auto_dates_bloque'] ?? 3))),
+        'meteo_auto_horizon_jours' => (string) max(1, min(365, (int) ($input['meteo_auto_horizon_jours'] ?? 30))),
         'arrivee_cotisant' => connexion_arrivee_valide($text('arrivee_cotisant', 120)) ? $text('arrivee_cotisant', 120) : '',
         'arrivee_non_cotisant' => connexion_arrivee_valide($text('arrivee_non_cotisant', 120)) ? $text('arrivee_non_cotisant', 120) : '',
     ];
