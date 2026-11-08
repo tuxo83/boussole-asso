@@ -63,11 +63,40 @@ return [
             }
             redirect('/espace/' . $espace['slug']);
         }],
+        // Fichier d'agenda (.ics) : mêmes droits que la fiche ; l'événement seul, jamais les participants
+        ['GET', '/espace/{slug}/agenda.ics', function (array $p) {
+            $espace = espace_par_slug($p['slug']);
+            if ($espace === null || $espace['type'] !== 'evenement' || !espace_peut_voir(current_member(), $espace)) {
+                http_response_code(404);
+                render('erreur', ['titre' => 'Page introuvable']);
+                return;
+            }
+            $ev = evenement_de($espace);
+            if (empty($ev['debut'])) {
+                redirect('/espace/' . $espace['slug']);
+            }
+            header('Content-Type: text/calendar; charset=utf-8');
+            header('Content-Disposition: attachment; filename="' . $espace['slug'] . '.ics"');
+            echo evenement_ics($espace, $ev);
+        }],
+        // Feuille d'émargement imprimable (qui gère l'événement)
+        ['GET', '/espace/{slug}/emargement', function (array $p) {
+            [$espace] = evenement_action($p['slug'], 'gerer');
+            $ev = evenement_de($espace);
+            $inscrits = db_all('SELECT m.prenom, m.nom, m.email FROM inscription i JOIN membre m ON m.id = i.membre_id WHERE i.evenement_id = ? AND i.statut = "retenu" ORDER BY m.nom, m.prenom, m.email', [$espace['id']]);
+            render('evenements/emargement', ['titre' => 'Émargement · ' . $espace['titre'], 'espace' => $espace, 'ev' => $ev, 'inscrits' => $inscrits]);
+        }],
         // Pointage facultatif : présent, absent, ou rien (sans effet sur les priorités)
         ['POST', '/espace/{slug}/presence', function (array $p) {
             [$espace] = evenement_action($p['slug'], 'gerer');
             $present = match ($_POST['present'] ?? '') { '1' => 1, '0' => 0, default => null };
             db_query('UPDATE inscription SET present = ? WHERE evenement_id = ? AND membre_id = ? AND statut = "retenu"', [$present, $espace['id'], (int) ($_POST['membre_id'] ?? 0)]);
+            // Pointage au téléphone : réponse courte, sans recharger la page entre deux pointages
+            if (str_contains((string) ($_SERVER['HTTP_ACCEPT'] ?? ''), 'application/json')) {
+                header('Content-Type: application/json');
+                echo json_encode(['present' => $present, 'presents' => (int) db_value('SELECT COUNT(*) FROM inscription WHERE evenement_id = ? AND statut = "retenu" AND present = 1', [$espace['id']])]);
+                return;
+            }
             redirect('/espace/' . $espace['slug'] . '#pointage');
         }],
         // L'organisateur annule une inscription : la place revient au suivant de la liste d'attente

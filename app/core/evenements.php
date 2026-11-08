@@ -270,7 +270,9 @@ function evenement_enregistrer(array $espace, array $member, array $in): array
     $places = (int) ($in['places'] ?? 0);
     $debut = evenement_lire_date((string) ($in['debut'] ?? ''));
     $cloture = evenement_lire_date((string) ($in['cloture'] ?? ''));
+    $fin = array_key_exists('fin', $in) ? evenement_lire_date((string) $in['fin']) : ($ev['fin'] ?? null);
     $erreurs = array_values(array_filter([
+        $fin !== null && $debut !== null && $fin <= $debut ? "L'heure de fin doit suivre le début." : null,
         !isset(EVENEMENT_MODES[$mode]) ? 'Mode inconnu.' : null,
         $mode !== 'ouvert' && $places < 1 ? 'Indiquez le nombre de places.' : null,
         $mode !== 'ouvert' && $cloture === null ? 'Indiquez la date de clôture des vœux.' : null,
@@ -285,10 +287,10 @@ function evenement_enregistrer(array $espace, array $member, array $in): array
     $lien = preg_match('#^https://[^\s"<>]+$#', $lien) ? mb_substr($lien, 0, 300) : null;
     $billetterie = $lien !== null && str_contains($lien, 'helloasso.com') ? strtolower(preg_replace('#^.*/#', '', rtrim(strtok($lien, '?'), '/'))) : null;
     $reglement = isset(EVENEMENT_REGLEMENTS[$in['reglement'] ?? '']) ? $in['reglement'] : 'aucun';
-    db_query('INSERT INTO evenement (espace_id, debut, lieu, mode, places, cloture, helloasso_formulaire, reglement, lien_paiement, delai_jours, dernieres_jours) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ON DUPLICATE KEY UPDATE debut = VALUES(debut), lieu = VALUES(lieu), mode = VALUES(mode), places = VALUES(places), cloture = VALUES(cloture), helloasso_formulaire = VALUES(helloasso_formulaire),
+    db_query('INSERT INTO evenement (espace_id, debut, fin, lieu, mode, places, cloture, helloasso_formulaire, reglement, lien_paiement, delai_jours, dernieres_jours) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE debut = VALUES(debut), fin = VALUES(fin), lieu = VALUES(lieu), mode = VALUES(mode), places = VALUES(places), cloture = VALUES(cloture), helloasso_formulaire = VALUES(helloasso_formulaire),
         reglement = VALUES(reglement), lien_paiement = VALUES(lien_paiement), delai_jours = VALUES(delai_jours), dernieres_jours = VALUES(dernieres_jours)',
-        [$espace['id'], $debut, mb_substr(trim((string) ($in['lieu'] ?? '')), 0, 200), $mode, $places ?: null, $cloture, $billetterie ? mb_substr($billetterie, 0, 150) : null,
+        [$espace['id'], $debut, $debut !== null ? $fin : null, mb_substr(trim((string) ($in['lieu'] ?? '')), 0, 200), $mode, $places ?: null, $cloture, $billetterie ? mb_substr($billetterie, 0, 150) : null,
             $reglement, $lien, max(1, min(60, (int) ($in['delai_jours'] ?? 5))), max(0, min(90, (int) ($in['dernieres_jours'] ?? 7)))]);
     journal($espace['id'], $member, "Réglages de l'événement modifiés");
     // Plus de places après attribution : la liste d'attente en profite
@@ -300,4 +302,63 @@ function evenement_lire_date(string $value): ?string
 {
     $date = DateTime::createFromFormat('Y-m-d\TH:i', $value) ?: DateTime::createFromFormat('Y-m-d H:i', $value);
     return $date === false ? null : $date->format('Y-m-d H:i:00');
+}
+
+// « Samedi 28 novembre 2026 · 9 h 30 – 12 h » (la fin est facultative ; un autre jour est écrit en entier)
+function evenement_horaire(array $ev): string
+{
+    if (empty($ev['debut'])) {
+        return 'Date à préciser';
+    }
+    $jours = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+    $mois = ['', 'janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+    $h = fn(int $t) => (int) date('G', $t) . ' h' . (date('i', $t) !== '00' ? ' ' . date('i', $t) : '');
+    $jour = fn(int $t) => ucfirst($jours[(int) date('w', $t)]) . ' ' . (int) date('j', $t) . ' ' . $mois[(int) date('n', $t)] . ' ' . date('Y', $t);
+    $d = strtotime($ev['debut']);
+    $texte = $jour($d) . ' · ' . $h($d);
+    if (!empty($ev['fin'])) {
+        $f = strtotime($ev['fin']);
+        $texte .= date('Y-m-d', $f) === date('Y-m-d', $d) ? ' – ' . $h($f) : ' – ' . lcfirst($jour($f)) . ' · ' . $h($f);
+    }
+    return $texte;
+}
+
+// Fichier d'agenda (.ics) d'un événement : sans aucun participant ; fin par défaut deux heures après le début
+function evenement_ics(array $espace, array $ev): string
+{
+    $tz = new DateTimeZone('Europe/Paris');
+    $utc = new DateTimeZone('UTC');
+    $fmt = fn(string $d) => (new DateTimeImmutable($d, $tz))->setTimezone($utc)->format('Ymd\THis\Z');
+    $fin = !empty($ev['fin']) ? $ev['fin'] : date('Y-m-d H:i:s', strtotime($ev['debut']) + 7200);
+    $echap = fn(string $t) => str_replace(["\\", ';', ',', "\r\n", "\n"], ['\\\\', '\\;', '\\,', '\\n', '\\n'], $t);
+    $hote = parse_url(absolute_url('/'), PHP_URL_HOST) ?: 'boussole';
+    $lignes = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Boussole//Agenda//FR', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', 'BEGIN:VEVENT',
+        'UID:evenement-' . (int) $espace['id'] . '@' . $hote, 'DTSTAMP:' . gmdate('Ymd\THis\Z'), 'DTSTART:' . $fmt($ev['debut']), 'DTEND:' . $fmt($fin),
+        'SUMMARY:' . $echap($espace['titre']), 'URL:' . absolute_url('/espace/' . $espace['slug'])];
+    if (trim((string) $ev['lieu']) !== '') {
+        $lignes[] = 'LOCATION:' . $echap($ev['lieu']);
+    }
+    if (trim((string) $espace['description']) !== '') {
+        $lignes[] = 'DESCRIPTION:' . $echap(mb_substr($espace['description'], 0, 1000));
+    }
+    $lignes[] = 'END:VEVENT';
+    $lignes[] = 'END:VCALENDAR';
+    // Lignes courtes (norme : 75 octets), repliées par un espace, sans couper un caractère accentué
+    return implode("\r\n", array_map(fn($l) => implode("\r\n ", mb_str_split($l, 35)), $lignes)) . "\r\n";
+}
+
+// Lien « Ajouter à Google Agenda » (Android : le fichier .ics s'y ouvre mal)
+function evenement_lien_google(array $espace, array $ev): string
+{
+    $tz = new DateTimeZone('Europe/Paris');
+    $fmt = fn(string $d) => (new DateTimeImmutable($d, $tz))->setTimezone(new DateTimeZone('UTC'))->format('Ymd\THis\Z');
+    $fin = !empty($ev['fin']) ? $ev['fin'] : date('Y-m-d H:i:s', strtotime($ev['debut']) + 7200);
+    return 'https://calendar.google.com/calendar/render?' . http_build_query(['action' => 'TEMPLATE', 'text' => $espace['titre'],
+        'dates' => $fmt($ev['debut']) . '/' . $fmt($fin), 'location' => (string) $ev['lieu'], 'details' => absolute_url('/espace/' . $espace['slug'])]);
+}
+
+// Itinéraire vers le lieu : une recherche OpenStreetMap (aucune carte intégrée, donc aucun service tiers chargé)
+function evenement_lien_itineraire(string $lieu): string
+{
+    return 'https://www.openstreetmap.org/search?query=' . rawurlencode($lieu);
 }
