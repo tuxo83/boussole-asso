@@ -664,7 +664,24 @@ details.crayon-flottant > .crayon-bouton { padding: 0; }
 .bandeau-legende { position: absolute; right: .9rem; bottom: .9rem; display: flex; flex-direction: column-reverse; align-items: flex-end; max-width: min(22rem, calc(100% - 1.8rem)); }
 .bandeau-legende > summary { list-style: none; cursor: pointer; display: grid; place-items: center; width: var(--cible); height: var(--cible); }
 .bandeau-legende > summary::-webkit-details-marker, .bandeau-legende > summary::before { display: none; content: none; }
-.bandeau-legende > summary span { display: grid; place-items: center; width: 1.6rem; height: 1.6rem; border-radius: 50%; border: 1.5px solid rgba(255, 255, 255, .8); color: #fff; font: italic 700 .9rem/1 Georgia, serif; background: rgba(10, 25, 45, .35); transition: background .15s; }
-.bandeau-legende > summary:hover span, .bandeau-legende[open] > summary span { background: rgba(10, 25, 45, .7); }
+.bandeau-legende > summary span[aria-hidden] { display: grid; place-items: center; width: 1.6rem; height: 1.6rem; border-radius: 50%; border: 1.5px solid rgba(255, 255, 255, .8); color: #fff; font: italic 700 .9rem/1 Georgia, serif; background: rgba(10, 25, 45, .35); transition: background .15s; }
+.bandeau-legende > summary:hover span[aria-hidden], .bandeau-legende[open] > summary span[aria-hidden] { background: rgba(10, 25, 45, .7); }
 .bandeau-legende p { margin: 0 0 .25rem; padding: .6rem .8rem; border-radius: var(--rayon-petit); background: rgba(10, 25, 45, .82); color: #fff; font-size: .88rem; line-height: 1.45; }
 .bandeau-photo { position: relative; }
+
+/* Bandeau photo, version image : l'image est une vraie balise (texte de remplacement), le voile passe par-dessus */
+.bandeau-photo { background: var(--couleur-principale); isolation: isolate; }
+.bandeau-fond { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 55%; z-index: -2; color: transparent; }
+.bandeau-photo::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: linear-gradient(90deg, rgba(10, 25, 45, .55) 0%, rgba(10, 25, 45, .25) 55%, rgba(10, 25, 45, 0) 80%), linear-gradient(180deg, rgba(10, 25, 45, .10) 0%, rgba(10, 25, 45, .70) 100%); }
+@media (max-width: 40rem) {
+  .bandeau-photo { background: var(--couleur-principale); }
+  .bandeau-fond { object-position: 30% center; }
+  .bandeau-photo::before { background: linear-gradient(180deg, rgba(10, 25, 45, .45) 0%, rgba(10, 25, 45, .55) 45%, rgba(10, 25, 45, .75) 100%); }
+}
+/* « i » encore plus discret */
+.bandeau-legende { right: .5rem; bottom: .5rem; }
+.bandeau-legende > summary { width: 2rem; height: 2rem; }
+.bandeau-legende > summary span[aria-hidden] { width: 1.15rem; height: 1.15rem; font-size: .7rem; border-width: 1px; border-color: rgba(255, 255, 255, .55); background: none; opacity: .75; }
+.bandeau-legende > summary:hover span[aria-hidden], .bandeau-legende[open] > summary span[aria-hidden] { opacity: 1; background: rgba(10, 25, 45, .6); }
+.bandeau-legende p { font-size: .82rem; }
