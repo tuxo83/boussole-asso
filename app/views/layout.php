@@ -89,6 +89,16 @@ $sur_compte = str_starts_with(request_path(), '/compte'); ?>
   <?php $adhesion = (string) setting('lien_adhesion', ''); ?><a href="<?= e($adhesion !== '' ? $adhesion : url('/compte')) ?>"<?= $adhesion !== '' ? ' target="_blank" rel="noopener noreferrer"' : '' ?>>Régler ma cotisation</a></span>
   <?php if (!$sur_compte): ?><form method="post" action="<?= e(url('/compte/rappel-cotisation/masquer')) ?>"><?= csrf_field() ?><input type="hidden" name="retour" value="<?= e(request_path()) ?>"><button type="submit" class="bandeau-fermer" aria-label="Masquer ce rappel jusqu'à la prochaine connexion" title="Masquer jusqu'à la prochaine connexion">×</button></form><?php endif ?></div></div>
 <?php endif ?>
+<?php // Proposer l'application : membres connectés, sur téléphone, seulement là où l'installation est possible (le script décide)
+if ($moi !== null && application_active() && setting('application_proposer', '1') === '1'): ?>
+<div class="bandeau-appli" data-proposer-appli hidden><div class="conteneur">
+  <span class="bandeau-appli-icone"><?= c_icone('telephone') ?></span>
+  <span class="bandeau-appli-texte"><strong>Installez l'application <?= e(application_nom_court()) ?></strong> : une icône, et vous restez connecté.
+    <span data-proposer-ios hidden>Touchez <strong>Partager</strong> (le carré avec une flèche), puis <strong>Sur l'écran d'accueil</strong>.</span></span>
+  <button type="button" class="bouton bouton-principal" data-proposer-installer hidden>Installer</button>
+  <button type="button" class="bandeau-fermer" data-proposer-plus-tard aria-label="Plus tard" title="Plus tard (dans 30 jours)">×</button>
+</div></div>
+<?php endif ?>
 <main id="contenu" class="conteneur">
   <?php foreach (flash() as $message): ?><?= c_alerte($message['type'], (string) $message['message']) ?><?php endforeach ?>
   <?= $content ?>

@@ -41,7 +41,8 @@ check "bob : appareil retenu (cookie et ligne)" "$(appareil) $(nb bob)" "1 1"
 check "seule l'empreinte du secret est gardée" "$(sql "SELECT COUNT(*) FROM connexion_appareil WHERE LOCATE(empreinte, '$(grep boussole_appareil "$J" | awk '{print $7}')') > 0")" "0"
 sans_session
 check "bob rouvre l'application : toujours connecté" "$(c "$U/compte" | cut -c1-3)" "200"
-check "ouverture de l'application, connecté : page d'arrivée" "$(sans_session; c "$U/app/demarrer")" "303 $U/compte"
+check "membre connecté : bandeau « Installez l'application » prêt (affiché par le script, sur téléphone)" "$(c "$U/compte" >/dev/null; grep -c 'data-proposer-appli hidden' "$B") $(as visiteur; c "$U/" >/dev/null; grep -c 'data-proposer-appli' "$B")" "1 0"
+as bob; check "ouverture de l'application, connecté : page d'arrivée" "$(sans_session; c "$U/app/demarrer")" "303 $U/compte"
 c "$U/compte/parametres" >/dev/null
 check "Paramètres : appareils connectés, « cet appareil », application" "$(grep -c '<strong>Appareils connectés</strong>' "$B") $(grep -c '>cet appareil<' "$B") $(grep -c 'id="application" data-application' "$B")" "1 1 1"
 login_link carole carole@example.org
@@ -127,6 +128,7 @@ check "administrateur désactive bob : appareils oubliés" "$(post "$U/admin/mem
 sql "REPLACE INTO parametre (cle, valeur) VALUES ('appareil_duree_jours', '0'), ('application_active', '0')"
 as visiteur; c "$U/connexion" >/dev/null
 check "durée 0 : pas de case « Rester connecté »" "$(grep -c 'name="rester"' "$B")" "0"
+check "application coupée : pas de bandeau" "$(as bob3; c "$U/compte" >/dev/null; grep -c 'data-proposer-appli' "$B"; as visiteur)" "0"
 check "application coupée : ni manifeste ni lien" "$(c "$U/app/manifest.webmanifest" | cut -c1-3) $(c "$U/" >/dev/null; grep -c 'rel="manifest"' "$B")" "404 0"
 check "application coupée : le service installé se retire" "$(c "$U/app/sw.js" | cut -c1-3) $(grep -c 'unregister' "$B")" "200 1"
 bilan

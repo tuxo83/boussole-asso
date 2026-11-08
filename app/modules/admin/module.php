@@ -84,6 +84,7 @@ function admin_settings_validate(array $input): array
         'meteo_auto_dates_bloque' => (string) max(2, min(20, (int) ($input['meteo_auto_dates_bloque'] ?? 3))),
         'meteo_auto_horizon_jours' => (string) max(1, min(365, (int) ($input['meteo_auto_horizon_jours'] ?? 30))),
         'application_active' => ($input['application_active'] ?? '') === '1' ? '1' : '0',
+        'application_proposer' => ($input['application_proposer'] ?? '') === '1' ? '1' : '0',
         'application_nom_court' => $text('application_nom_court', 30),
         'appareil_duree_jours' => (string) max(0, min(400, (int) ($input['appareil_duree_jours'] ?? 90))),
         'mfa_validite_heures' => (string) max(1, min(720, (int) ($input['mfa_validite_heures'] ?? 12))),

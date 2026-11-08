@@ -1077,3 +1077,12 @@ dialog.dialogue:not([open]) { display: block; position: static; width: auto; box
 .appareils-liste li > span { display: flex; flex-direction: column; }
 .reglages [hidden] { display: none; }
 .formulaire .case-bloc + .bouton { margin-top: 1rem; }
+
+/* Proposer l'application (téléphone seulement, affiché par le script) */
+.bandeau-appli { background: color-mix(in srgb, var(--couleur-principale) 8%, #fff); border-bottom: 1px solid color-mix(in srgb, var(--couleur-principale) 25%, #fff); padding: .6rem 0; font-size: .94rem; }
+.bandeau-appli[hidden], .bandeau-appli [hidden] { display: none; }
+.bandeau-appli .conteneur { display: flex; align-items: center; gap: .75rem; }
+.bandeau-appli-icone { flex: none; width: 2rem; height: 2rem; color: var(--couleur-principale); }
+.bandeau-appli-icone svg { width: 100%; height: 100%; }
+.bandeau-appli-texte { flex: 1; }
+.bandeau-appli .bouton { margin: 0; flex: none; }
