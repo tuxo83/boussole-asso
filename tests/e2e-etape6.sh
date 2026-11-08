@@ -118,6 +118,13 @@ post "$U/espace/sortie" "$U/espace/sortie/presence" -d "membre_id=$(id bruno)&pr
 check "pointage : absent enregistré" "$(sql "SELECT present FROM inscription WHERE membre_id = $(id bruno) AND evenement_id = (SELECT id FROM espace WHERE slug = 'sortie')")" "0"
 as bruno; post "$U/espace/sortie" "$U/espace/sortie/presence" -d "membre_id=$(id bruno)&present=1" >/dev/null
 check "un membre ne peut pas se pointer lui-même" "$(sql "SELECT present FROM inscription WHERE membre_id = $(id bruno) AND evenement_id = (SELECT id FROM espace WHERE slug = 'sortie')")" "0"
+check "agenda .ics : l'événement, jamais les participants" "$(c "$U/espace/sortie/agenda.ics" | cut -c1-3) $(grep -c 'BEGIN:VEVENT' "$B") $(grep -c '@example.org' "$B")" "200 1 0"
+check "émargement réservé à qui gère" "$(c "$U/espace/sortie/emargement" | cut -c1-3)" "403"
+as admin
+check "émargement : la liste des inscrits, imprimable" "$(c "$U/espace/sortie/emargement" | cut -c1-3) $(grep -c 'Document à détruire' "$B")" "200 1"
+check "pointage au téléphone : réponse JSON, sans recharger" "$(T=$(c "$U/espace/sortie" >/dev/null; tok); curl -s -b "$J" -c "$J" -H 'Accept: application/json' --data-urlencode "_csrf=$T" -d "membre_id=$(id bruno)&present=1" "$U/espace/sortie/presence")" '{"present":1,"presents":1}'
+as visiteur
+check "agenda .ics d'un événement réservé : refusé à un visiteur" "$(c "$U/espace/sortie/agenda.ics" | cut -c1-3)" "404"
 
 # MCP : s'inscrire pour soi-même
 as emma; post "$U/compte/cles" "$U/compte/cles" -d 'libelle=IA&portee=ecriture&duree=7' >/dev/null; c "$U/compte/cles" >/dev/null; KEY=$(grep -o 'bsl_[a-f0-9]\{8\}_[a-f0-9]\{40\}' "$B" | head -1)
