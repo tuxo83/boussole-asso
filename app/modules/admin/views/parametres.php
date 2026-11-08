@@ -37,6 +37,10 @@
     <?= c_champ('meteo_auto_horizon_jours', '« En cours » si une date clé arrive dans les (jours)', ['type' => 'number', 'valeur' => $v['meteo_auto_horizon_jours'] ?? '30', 'aide' => 'Ou s\'il y a eu de l\'activité pendant cette durée. Sinon, et sans retard : à jour.']) ?>
   </fieldset>
   <fieldset>
+    <legend>Fichiers des espaces</legend>
+    <label class="case"><input type="checkbox" name="fichiers_apercu" value="1"<?= ($v['fichiers_apercu'] ?? '1') === '1' ? ' checked' : '' ?>> Aperçu des images et des PDF : un clic sur un fichier l'affiche dans une petite fenêtre avant de le télécharger</label>
+  </fieldset>
+  <fieldset>
     <legend>Après la connexion</legend>
     <p class="petit">Page où arrive un membre qui se connecte depuis « Connexion » (s'il voulait voir une page précise, il y retourne).</p>
     <?php $arrivees = connexion_arrivees_possibles(); ?>
