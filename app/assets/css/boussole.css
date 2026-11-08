@@ -582,3 +582,21 @@ details.crayon-flottant > .crayon-bouton { padding: 0; }
   .entete-interne > .marque { flex: 1 1 0; min-width: 0; }
   .entete-interne > .compte-menu { order: 2; }
 }
+
+/* Événements d'un espace */
+.espace-evenements { margin-top: 2rem; }
+.espace-evenements .titre-avec-lien { align-items: center; margin-bottom: .75rem; }
+.espace-evenements .titre-avec-lien h2 { margin: 0; }
+.espace-evenements .titre-avec-lien .bouton { margin: 0; }
+.date-tuile.date-membres { background: var(--acces-membres); }
+.rdv-passe { opacity: .7; }
+.rdv-passe .date-tuile { background: var(--texte-doux); }
+.acces-equipe .ruban { background: #2f6f5e; }
+.acces-equipe .date-tuile { background: #2f6f5e; }
+.badge-equipe { background: #eaf4f1; border-color: #bcdcd2; color: #2f6f5e; }
+.badge-echeance { background: var(--fond-doux); border-color: var(--bordure); color: var(--texte-doux); }
+.rdv-reunion .date-tuile { background: #2f6f5e; }
+.rdv-echeance .date-tuile { background: var(--fond); color: var(--texte); border: 1.5px solid var(--bordure-forte); }
+.date-tuile.date-equipe { background: #2f6f5e; }
+.evenement-titre { min-width: 0; }
+.evenement-titre .organise { margin: .1rem 0 0; font-size: .82rem; color: var(--texte-doux); font-weight: 600; }

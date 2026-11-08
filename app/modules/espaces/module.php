@@ -20,12 +20,20 @@ return [
         ['GET', '/espaces/nouveau', function () {
             $member = require_member();
             $parent = espace_parent_autorise($member, (string) ($_GET['parent'] ?? ''));
-            render('espaces/formulaire', ['titre' => 'Nouvel espace', 'parent' => $parent, 'v' => [], 'erreurs' => []]);
+            $type = (string) ($_GET['type'] ?? '');
+            render('espaces/formulaire', ['titre' => $type === 'evenement' ? 'Organiser un événement' : 'Nouvel espace', 'parent' => $parent,
+                'v' => isset(ESPACE_TYPES[$type]) ? ['type' => $type] : [], 'erreurs' => []]);
         }],
         ['POST', '/espaces/nouveau', function () {
             $member = require_member();
             $parent = espace_parent_autorise($member, (string) ($_POST['parent'] ?? ''));
             [$v, $erreurs] = espace_valider($_POST);
+            // Événement : date et lieu dès la création (le reste se règle ensuite sur sa page)
+            $debut = null;
+            if ($v['type'] === 'evenement' && trim((string) ($_POST['debut'] ?? '')) !== '') {
+                $t = strtotime((string) $_POST['debut']);
+                $t === false ? $erreurs['debut'] = 'Date invalide.' : $debut = date('Y-m-d H:i:s', $t);
+            }
             if ($erreurs) {
                 http_response_code(422);
                 render('espaces/formulaire', ['titre' => 'Nouvel espace', 'parent' => $parent, 'v' => $v, 'erreurs' => $erreurs]);
@@ -35,6 +43,9 @@ return [
             db_query('INSERT INTO espace (type, titre, slug, description, visibilite, meteo, parent_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
                 [$v['type'], $v['titre'], $slug, $v['description'], $v['visibilite'], $v['meteo'], $parent['id'] ?? null]);
             $id = (int) db()->lastInsertId();
+            if ($v['type'] === 'evenement') {
+                db_query('INSERT INTO evenement (espace_id, debut, lieu) VALUES (?, ?, ?)', [$id, $debut, mb_substr(trim((string) ($_POST['lieu'] ?? '')), 0, 200)]);
+            }
             // La personne qui crée l'espace en est le n°1, sauf l'administrateur qui le crée pour d'autres
             if (!is_admin($member)) {
                 db_query('INSERT INTO espace_membre (espace_id, membre_id, niveau) VALUES (?, ?, "n1")', [$id, $member['id']]);
@@ -58,7 +69,11 @@ return [
                     : ['index' => false],
                 'membre' => $member,
                 'parent' => $espace['parent_id'] ? db_one('SELECT * FROM espace WHERE id = ?', [$espace['parent_id']]) : null,
-                'enfants' => array_filter(db_all('SELECT * FROM espace WHERE parent_id = ? AND archive = 0 ORDER BY titre', [$espace['id']]), fn($e) => espace_peut_voir($member, $e)),
+                'enfants' => array_filter(db_all('SELECT * FROM espace WHERE parent_id = ? AND archive = 0 AND type <> "evenement" ORDER BY titre', [$espace['id']]), fn($e) => espace_peut_voir($member, $e)),
+                // Événements rattachés à cet espace : à venir d'abord, puis les passés récents
+                'evenements_espace' => array_values(array_filter(db_all('SELECT s.*, e.debut, e.lieu FROM espace s LEFT JOIN evenement e ON e.espace_id = s.id
+                    WHERE s.parent_id = ? AND s.type = "evenement" AND s.archive = 0 AND (e.debut IS NULL OR e.debut >= CURDATE() - INTERVAL 6 MONTH)
+                    ORDER BY e.debut IS NULL, e.debut < CURDATE(), CASE WHEN e.debut >= CURDATE() THEN e.debut END, e.debut DESC', [$espace['id']]), fn($e) => espace_peut_voir($member, $e))),
                 'equipe' => db_all('SELECT m.*, em.niveau, em.libelle FROM espace_membre em JOIN membre m ON m.id = em.membre_id WHERE em.espace_id = ? ORDER BY FIELD(em.niveau, "n1", "n2", "membre", "associe"), m.nom, m.email', [$espace['id']]),
                 'jalons' => db_all('SELECT * FROM jalon WHERE espace_id = ? ORDER BY fait, date_jalon', [$espace['id']]),
                 'fichiers' => db_all('SELECT f.*, m.prenom, m.nom AS nom_membre, m.email FROM fichier f LEFT JOIN membre m ON m.id = f.depose_par WHERE f.espace_id = ? ORDER BY f.depose_le DESC', [$espace['id']]),

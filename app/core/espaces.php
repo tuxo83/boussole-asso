@@ -22,8 +22,17 @@ function espace_peut_voir(?array $member, array $espace): bool
         'public' => true,
         'adherents' => $member !== null,
         'cotisants' => $member !== null, // ancienne valeur, traitée comme « membres »
-        default => is_admin($member) || espace_niveau($member, $espace) !== null,
+        default => is_admin($member) || espace_niveau($member, $espace) !== null || espace_equipe_parente($member, $espace),
     };
+}
+
+// Réunion d'équipe rattachée à un espace : l'équipe de l'espace parent la voit (et peut s'y inscrire)
+function espace_equipe_parente(?array $member, array $espace): bool
+{
+    if ($member === null || empty($espace['parent_id'])) {
+        return false;
+    }
+    return db_one('SELECT 1 AS ok FROM espace_membre WHERE espace_id = ? AND membre_id = ?', [$espace['parent_id'], $member['id']]) !== null;
 }
 
 // Contribuer : fichiers, dates clés, météo
