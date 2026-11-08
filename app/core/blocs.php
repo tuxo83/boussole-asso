@@ -298,9 +298,18 @@ function bloc_dynamique(string $bloc): string
                     }
                 }
             }
-            return $aide . ($miens ? '<section class="agenda-miens"><h2 class="titre-bloc">Mes inscriptions</h2>' . cartes_evenements($miens) . '</section>' : '')
-                . ($prochains ? '<h2 class="titre-bloc">À venir</h2>' . cartes_evenements($prochains) : '<p>Aucun événement annoncé pour l\'instant.</p>')
+            // Deux vues des mêmes données : la frise (par défaut) et la liste en fiches ; le choix est retenu par le navigateur
+            $mes = $miens ? '<section class="agenda-miens"><h2 class="titre-bloc">Mes inscriptions</h2>' . agenda_mes_lignes($miens) . '</section>' : '';
+            $frise = ($prochains ? agenda_frise($prochains, false) : '<p>Aucun événement annoncé pour l\'instant.</p>')
+                . ($passes ? '<details class="agenda-passes"><summary>Événements passés</summary>' . agenda_frise($passes, true) . '</details>' : '');
+            $liste = ($prochains ? '<h2 class="titre-bloc">À venir</h2>' . cartes_evenements($prochains) : '<p>Aucun événement annoncé pour l\'instant.</p>')
                 . ($passes ? '<h2 class="titre-bloc">Événements passés</h2>' . cartes_evenements($passes, true) : '');
+            return $aide . $mes
+                . '<div class="agenda-vues" data-vues>'
+                . '<p class="agenda-choix" role="group" aria-label="Affichage de l\'agenda" hidden><button type="button" data-vue="frise" aria-pressed="true">Frise</button><button type="button" data-vue="liste" aria-pressed="false">Liste</button></p>'
+                . '<div class="agenda-vue" data-vue-contenu="frise">' . $frise . '</div>'
+                . '<div class="agenda-vue" data-vue-contenu="liste" hidden>' . $liste . '</div>'
+                . '</div>';
         case 'espaces-publics':
             $espaces = db_all('SELECT * FROM espace WHERE visibilite = "public" AND archive = 0 AND type <> "evenement" ORDER BY titre');
             if (!$espaces) {
@@ -403,4 +412,72 @@ function page_agenda_slug(): ?string
 {
     $slug = db_value('SELECT slug FROM page WHERE publiee = 1 AND blocs LIKE ? LIMIT 1', ['%"bloc":"agenda"%']);
     return $slug !== null && $slug !== false ? (string) $slug : null;
+}
+
+// Mes inscriptions à venir : des lignes simples (date, titre, statut écrit)
+function agenda_mes_lignes(array $evenements): string
+{
+    $mois = ['', 'janv.', 'févr.', 'mars', 'avril', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+    $html = '<ul class="rdv">';
+    foreach ($evenements as $ev) {
+        $st = $ev['mon_statut'];
+        $html .= '<li><a href="' . e(url('/espace/' . $ev['slug'])) . '"><span class="date-tuile">'
+            . ($ev['debut'] ? '<span class="jour">' . (int) date('j', strtotime($ev['debut'])) . '</span><span class="mois">' . $mois[(int) date('n', strtotime($ev['debut']))] . '</span>' : '<span class="date-icone">' . c_icone('calendrier') . '</span>')
+            . '</span><span class="rdv-texte"><strong>' . e($ev['titre']) . '</strong><span class="rdv-ligne"><span class="discret">' . e(trim(($ev['debut'] ? agenda_jour_heure($ev['debut']) : 'Date à venir') . ($ev['lieu'] ? ' · ' . $ev['lieu'] : ''))) . '</span>'
+            . '<span class="badge ' . ($st['statut'] === 'retenu' ? 'badge-ok' : 'badge-attention') . '">' . e(ucfirst(INSCRIPTION_STATUTS[$st['statut']])) . ($st['statut'] === 'attente' ? ' n°' . (int) $st['rang'] : '') . '</span></span></span></a></li>';
+    }
+    return $html . '</ul>';
+}
+
+// « Mercredi · 18 h 30 »
+function agenda_jour_heure(string $debut): string
+{
+    $jours = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+    $t = strtotime($debut);
+    return $jours[(int) date('w', $t)] . ' · ' . (int) date('G', $t) . ' h ' . date('i', $t);
+}
+
+// Frise de l'agenda : un intertitre par mois, date à gauche et carte à droite, toujours ; statut écrit, un seul bouton
+function agenda_frise(array $evenements, bool $passes): string
+{
+    $mois = ['', 'janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+    $membre = current_member();
+    $html = '<div class="frise-agenda' . ($passes ? ' frise-passee' : '') . '">' . ($passes ? '' : '<p class="frise-aujourdhui">Aujourd\'hui</p>');
+    $courant = null;
+    foreach ($evenements as $ev) {
+        $t = $ev['debut'] ? strtotime($ev['debut']) : null;
+        $cle = $t ? ucfirst($mois[(int) date('n', $t)]) . ' ' . date('Y', $t) : 'Date à venir';
+        if ($cle !== $courant) {
+            $html .= ($courant !== null ? '</ol>' : '') . '<h3 class="frise-mois">' . e($cle) . '</h3><ol class="frise-liste">';
+            $courant = $cle;
+        }
+        $verrou = $ev['visibilite'] !== 'public' && $membre === null;
+        $acces = match (true) {
+            $ev['visibilite'] === 'equipe' => 'Réunion d\'équipe',
+            $ev['visibilite'] === 'public' => 'Ouvert à tous',
+            default => 'Réservé aux membres',
+        };
+        $titre = $verrou ? 'Événement des membres' : $ev['titre'];
+        $lien = $verrou ? '/evenement/' . (int) $ev['id'] : '/espace/' . $ev['slug'];
+        $statut = '';
+        if (isset($ev['mon_statut'])) {
+            $st = $ev['mon_statut'];
+            $statut = '<span class="frise-statut' . ($st['statut'] === 'retenu' ? ' ok' : '') . '">' . e(ucfirst(INSCRIPTION_STATUTS[$st['statut']])) . ($st['statut'] === 'attente' ? ' n°' . (int) $st['rang'] : '') . '</span>';
+        }
+        $bouton = $passes ? '' : match (true) {
+            $verrou => c_bouton('Se connecter', $lien, 'secondaire'),
+            isset($ev['mon_statut']) => c_bouton('Mon inscription', $lien, 'secondaire'),
+            $membre !== null => c_bouton('S\'inscrire', $lien, 'principal'),
+            default => c_bouton('En savoir plus', $lien, 'secondaire'),
+        };
+        $html .= '<li class="frise-item acces-' . ($ev['visibilite'] === 'public' ? 'public' : ($ev['visibilite'] === 'equipe' ? 'equipe' : 'membres')) . '">'
+            . '<div class="frise-date">' . ($t ? '<span class="frise-jour">' . (int) date('j', $t) . '</span><span class="frise-heure">' . e(str_replace(' · ', "\u{00A0}· ", agenda_jour_heure($ev['debut']))) . '</span>' : '<span class="frise-heure">Date à venir</span>') . '</div>'
+            . '<div class="frise-carte"><h4><a href="' . e(url($lien)) . '">' . e($titre) . '</a></h4>'
+            . (!$verrou && $ev['lieu'] ? '<p class="frise-lieu">' . c_icone('lieu') . e($ev['lieu']) . '</p>' : '')
+            . (!$verrou && trim((string) $ev['description']) !== '' ? '<p class="frise-resume">' . e($ev['description']) . '</p>' : '')
+            . '<p class="frise-pied"><span class="frise-acces">' . e($acces . (!$verrou && !empty($ev['parent_titre']) ? ' · ' . $ev['parent_titre'] : '')) . '</span>' . $statut . '</p>'
+            . ($bouton !== '' ? '<p class="frise-action">' . $bouton . '</p>' : '')
+            . '</div></li>';
+    }
+    return $html . ($courant !== null ? '</ol>' : '') . '</div>';
 }
