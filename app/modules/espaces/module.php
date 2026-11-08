@@ -82,12 +82,16 @@ return [
                     ? db_all('SELECT j.*, m.prenom, m.nom, m.email FROM journal j LEFT JOIN membre m ON m.id = j.membre_id WHERE j.espace_id = ? ORDER BY j.le DESC LIMIT 30', [$espace['id']])
                     : [],
                 'alertes' => espace_alertes($espace),
-                'peut_gerer' => espace_peut_gerer($member, $espace),
+                // Vue membre par défaut ; la vue organisateur (choix retenu par le navigateur, ou jour J d'un événement) ajoute la gestion
+                'organise' => $organise = espace_peut_contribuer($member, $espace),
+                'vue_orga' => $vue_orga = $organise && espace_vue_organisateur($espace),
+                'peut_gerer' => $vue_orga && espace_peut_gerer($member, $espace),
+                'gere_vraiment' => espace_peut_gerer($member, $espace),
                 'membres_actifs' => espace_peut_gerer($member, $espace) ? db_all('SELECT email, prenom, nom FROM membre WHERE actif = 1 AND en_attente = 0 ORDER BY nom, prenom, email') : [],
                 'parents_possibles' => is_admin($member)
                     ? array_column(array_filter(db_all('SELECT slug, titre, id FROM espace WHERE archive = 0 ORDER BY titre'), fn($e) => !in_array((int) $e['id'], espace_descendants((int) $espace['id']), true)), 'titre', 'slug')
                     : [],
-                'peut_contribuer' => espace_peut_contribuer($member, $espace),
+                'peut_contribuer' => $vue_orga,
             ]);
         }],
         // Page « Gérer » : réglages, organisation, journal, archiver ou supprimer
@@ -350,4 +354,21 @@ function espace_valider(array $input): array
         $erreurs['visibilite'] = 'Visibilité invalide.';
     }
     return [$v, $erreurs];
+}
+
+// Vue organisateur : ?vue=orga / ?vue=membre la change et la retient (cookie, ce navigateur) ; un événement du jour l'ouvre d'office
+function espace_vue_organisateur(array $espace): bool
+{
+    if (isset($_GET['vue'])) {
+        $orga = $_GET['vue'] === 'orga';
+        setcookie('vue_orga', $orga ? '1' : '0', ['expires' => time() + 365 * 86400, 'path' => '/', 'samesite' => 'Lax', 'httponly' => true, 'secure' => !empty($_SERVER['HTTPS'])]);
+        return $orga;
+    }
+    if ($espace['type'] === 'evenement') {
+        $debut = db_value('SELECT debut FROM evenement WHERE espace_id = ?', [$espace['id']]);
+        if ($debut && substr((string) $debut, 0, 10) === date('Y-m-d') && ($_COOKIE['vue_orga'] ?? '') !== '0') {
+            return true;
+        }
+    }
+    return ($_COOKIE['vue_orga'] ?? '') === '1';
 }

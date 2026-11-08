@@ -1054,3 +1054,9 @@ dialog.dialogue:not([open]) { display: block; position: static; width: auto; box
 .zone-sensible { border-color: #f2c3c8; background: #fdf7f8; }
 .bouton-danger { background: #b4233a; border-color: #b4233a; color: #fff; }
 @media (max-width: 40rem) { .journal-liste li { grid-template-columns: 1fr; } .bouton-gerer { float: none; } }
+
+/* Vue membre / vue organisateur (en haut à droite, pour qui organise) */
+.bouton-gerer { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: .5rem; }
+.vue-choix { display: inline-flex; padding: .2rem; border: 1px solid var(--bordure); border-radius: 999px; background: var(--fond-doux); }
+.vue-choix a { display: inline-flex; align-items: center; min-height: 2.3rem; padding: 0 .85rem; border-radius: 999px; text-decoration: none; font-weight: 600; font-size: .9rem; color: var(--texte-doux); }
+.vue-choix a[aria-current] { background: var(--fond); color: var(--couleur-principale); box-shadow: var(--ombre); }

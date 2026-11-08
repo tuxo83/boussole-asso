@@ -15,7 +15,9 @@ php -S 127.0.0.1:$PORT -t "$ROOT/app" "$ROOT/tests/router-serveur-php.php" > "$W
 SERVER=$!; trap 'kill $SERVER; rm -f "$ROOT/app/config/config.php"' EXIT; sleep 1
 
 sql() { mysql -u "$DBU" -p"$DBP" "$DB" -N -e "$1" 2>/dev/null; }
-c() { curl -s -b "$J" -c "$J" -o "$B" -w '%{http_code} %{redirect_url}' "$@"; }
+# Les tests voient les pages d'espace en « vue organisateur » (le site, lui, s'ouvre en vue membre) ; un fichier de cookies vide
+# est d'abord amorcé pour que curl lise et écrive le même fichier
+c() { [ -s "$J" ] || printf '# Netscape HTTP Cookie File\n127.0.0.1\tFALSE\t/\tFALSE\t0\tvue_orga\t1\n' > "$J"; curl -s -b "$J" -c "$J" -o "$B" -w '%{http_code} %{redirect_url}' "$@"; }
 tok() { grep -o 'name="_csrf" value="[^"]*"' "$B" | head -1 | sed 's/.*value="//;s/"//'; }
 post() { # post <page du formulaire> <action> <données…> : jeton CSRF de la page
     local page=$1 action=$2; shift 2; c "$page" >/dev/null; local t; t=$(tok); c --data-urlencode "_csrf=$t" "$@" "$action"
