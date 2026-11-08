@@ -10,6 +10,7 @@ $moi_menu = installation_done() ? current_member() : null;
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script>document.documentElement.classList.add('js')</script>
 <?php $slogan = installation_done() ? trim((string) setting('slogan', '')) : '';
 // Accueil : nom et accroche, si l'ensemble reste lisible dans un résultat de recherche (65 caractères)
 $titre_complet = isset($titre) ? $titre . ' · ' . $nom : ($slogan !== '' && mb_strlen($nom . ' – ' . $slogan) <= 65 ? $nom . ' – ' . $slogan : $nom); ?>

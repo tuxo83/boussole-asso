@@ -250,3 +250,51 @@ if (window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)')
     document.querySelectorAll(selecteur).forEach(function (d) { d.open = false; var s = d.querySelector('summary'); if (s && d.contains(document.activeElement)) s.focus(); });
   });
 })();
+
+// Équipe d'un espace : ajouter ou modifier une personne dans une petite fenêtre (crayon sur chaque personne)
+(function () {
+  var dialogue = document.getElementById('dialogue-equipe');
+  if (!dialogue || typeof dialogue.showModal !== 'function') return;
+  var titre = dialogue.querySelector('h3');
+  var email = dialogue.querySelector('[name="email"]');
+  var champEmail = dialogue.querySelector('[data-champ-email]');
+  var niveau = dialogue.querySelector('[name="niveau"]');
+  var groupe = dialogue.querySelector('[name="groupe"]');
+  var role = dialogue.querySelector('[name="role"]');
+  var retirer = dialogue.querySelector('[data-retirer]');
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-dialogue-equipe]');
+    if (!b) return;
+    e.preventDefault();
+    var modifier = !!b.dataset.email;
+    titre.textContent = modifier ? 'Modifier : ' + b.dataset.nom : titre.dataset.titreAjout;
+    email.value = b.dataset.email || '';
+    email.readOnly = modifier;
+    champEmail.hidden = modifier;
+    niveau.value = b.dataset.niveau || 'membre';
+    groupe.value = b.dataset.groupe || '';
+    role.value = b.dataset.role || '';
+    if (retirer) {
+      retirer.hidden = !modifier;
+      if (modifier) retirer.querySelector('select').value = b.dataset.id;
+    }
+    dialogue.showModal();
+    (modifier ? groupe : email).focus();
+  });
+  dialogue.querySelector('[data-fermer-dialogue]').addEventListener('click', function () { dialogue.close(); });
+  dialogue.addEventListener('click', function (e) { if (e.target === dialogue) dialogue.close(); });
+})();
+
+// Fenêtres « ? » : toujours dans l'écran (recalées à gauche si elles débordent à droite)
+document.addEventListener('toggle', function (e) {
+  var d = e.target;
+  if (!d.matches || !d.matches('details.aide') || !d.open) return;
+  var c = d.querySelector('.aide-contenu');
+  if (!c) return;
+  c.style.left = ''; c.style.right = '';
+  var r = c.getBoundingClientRect();
+  var marge = 8;
+  if (r.right > window.innerWidth - marge) c.style.left = (parseFloat(getComputedStyle(c).left) - (r.right - window.innerWidth + marge)) + 'px';
+  r = c.getBoundingClientRect();
+  if (r.left < marge) c.style.left = (parseFloat(getComputedStyle(c).left) + (marge - r.left)) + 'px';
+}, true);
