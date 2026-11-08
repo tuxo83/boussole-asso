@@ -21,7 +21,7 @@ return [
             $member = require_member();
             $parent = espace_parent_autorise($member, (string) ($_GET['parent'] ?? ''));
             $type = (string) ($_GET['type'] ?? '');
-            render('espaces/formulaire', ['titre' => $type === 'evenement' ? 'Organiser un événement' : 'Nouvel espace', 'parent' => $parent,
+            render('espaces/formulaire', ['titre' => $type === 'evenement' ? 'Nouvel événement' : 'Créer', 'parent' => $parent,
                 'v' => isset(ESPACE_TYPES[$type]) ? ['type' => $type] : [], 'erreurs' => []]);
         }],
         ['POST', '/espaces/nouveau', function () {

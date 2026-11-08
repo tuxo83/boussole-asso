@@ -177,6 +177,7 @@ $bouton_payer = $paiement && $ev['lien_paiement'] ? '<a class="bouton bouton-pri
     <?= c_champ('debut', 'Date et heure', ['type' => 'datetime-local', 'valeur' => $ev['debut'] ? date('Y-m-d\TH:i', strtotime($ev['debut'])) : '']) ?>
     <?= c_champ('fin', 'Fin (facultatif)', ['type' => 'datetime-local', 'valeur' => !empty($ev['fin']) ? date('Y-m-d\TH:i', strtotime($ev['fin'])) : '', 'aide' => 'Pour afficher « 9 h 30 – 12 h » et un agenda exact.']) ?>
     <?= c_champ('lieu', 'Lieu', ['valeur' => $ev['lieu'], 'max' => 200]) ?>
+    <input type="hidden" name="public_apres" value="0"><label class="case"><input type="checkbox" name="public_apres" value="1"<?= !empty($ev['public_apres']) ? ' checked' : '' ?>> Rendre public une fois passé <span class="discret">(réservé avant, visible de tous ensuite : compte rendu, photos)</span></label>
     <?= c_champ('mode', 'Inscriptions', ['type' => 'select', 'valeur' => $ev['mode'], 'choix' => EVENEMENT_MODES]) ?>
     <?= c_champ('places', 'Nombre de places (places limitées)', ['type' => 'number', 'valeur' => (string) ($ev['places'] ?? '')]) ?>
     <?= c_champ('reglement', 'Après l\'attribution des places (places limitées)', ['type' => 'select', 'valeur' => $ev['reglement'], 'choix' => EVENEMENT_REGLEMENTS]) ?>
