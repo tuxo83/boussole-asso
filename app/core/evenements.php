@@ -259,7 +259,7 @@ function evenement_mes_inscriptions(array $member): array
 
 function evenement_date(?string $datetime): string
 {
-    return $datetime === null ? 'date à venir' : date('d/m/Y \à H\hi', strtotime($datetime));
+    return $datetime === null ? 'date à préciser' : date('d/m/Y \à H\hi', strtotime($datetime));
 }
 
 // Réglages d'un événement (formulaire et API) : renvoie la liste des erreurs, vide si tout est enregistré
