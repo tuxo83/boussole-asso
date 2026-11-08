@@ -17,6 +17,15 @@ $titre_complet = isset($titre) ? $titre . ' · ' . $nom : ($slogan !== '' && mb_
 <title><?= e($titre_complet) ?></title>
 <?= installation_done() ? seo_balises($titre_complet, $seo ?? []) : '' ?>
 <link rel="stylesheet" href="<?= e(asset('/assets/css/boussole.css')) ?>">
+<?php if (installation_done() && application_active()): $v_icones = application_version_icones(); ?>
+<link rel="manifest" href="<?= e(url('/app/manifest.webmanifest')) ?>">
+<meta name="theme-color" content="<?= color_setting('couleur_principale', '#1f4e79') ?>">
+<link rel="apple-touch-icon" href="<?= e(url('/app/icone-180.png')) ?>?v=<?= e($v_icones) ?>">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="<?= e(application_nom_court()) ?>">
+<meta name="boussole-sw" content="<?= e(url('/app/sw.js')) ?>" data-portee="<?= e(url('/')) ?>">
+<?php endif ?>
 <style>:root{--couleur-principale:<?= color_setting('couleur_principale', '#1f4e79') ?>;--couleur-accent:<?= color_setting('couleur_accent', '#c8102e') ?>;--acces-membres:<?= color_setting('couleur_membres', '#5a2d91') ?>}</style>
 <?php if (installation_done() && trim((string) setting('css_personnalise', '')) !== ''): ?>
 <link rel="stylesheet" href="<?= e(url('/theme.css')) ?>?v=<?= e(substr(md5((string) setting('css_personnalise')), 0, 8)) ?>">

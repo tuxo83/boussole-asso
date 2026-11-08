@@ -124,7 +124,7 @@ function seo_robots(): string
         return "User-agent: *\nDisallow: /\n";
     }
     $lignes = ['User-agent: *'];
-    foreach (['/compte', '/admin', '/connexion', '/deconnexion', '/espaces', '/cotisations', '/fichier/', '/api/', '/mcp', '/acces', '/evenement/'] as $interne) {
+    foreach (['/compte', '/admin', '/connexion', '/deconnexion', '/espaces', '/cotisations', '/fichier/', '/api/', '/mcp', '/acces', '/evenement/', '/app/'] as $interne) {
         $lignes[] = "Disallow: $interne";
     }
     $lignes[] = 'Sitemap: ' . absolute_url('sitemap.xml');

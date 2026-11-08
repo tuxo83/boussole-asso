@@ -3,7 +3,7 @@
 // Les membres connectés, la page de connexion, l'API, le MCP et les notifications HelloAsso restent accessibles.
 declare(strict_types=1);
 
-const CONSTRUCTION_LIBRES = ['/acces', '/connexion', '/installation', '/theme.css', '/mcp', '/robots.txt', '/sitemap.xml'];
+const CONSTRUCTION_LIBRES = ['/acces', '/connexion', '/installation', '/theme.css', '/mcp', '/robots.txt', '/sitemap.xml', '/app'];
 
 function construction_active(): bool
 {

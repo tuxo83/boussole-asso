@@ -192,6 +192,9 @@ function api_membre_modifier(array $args): array
     }
     if ($champs) {
         db_query('UPDATE membre SET ' . implode(', ', array_map(fn($c) => "$c = ?", array_keys($champs))) . ' WHERE id = ?', [...array_values($champs), $cible['id']]);
+        if (($champs['actif'] ?? 1) === 0) {
+            membre_deconnecter_partout((int) $cible['id']);
+        }
         if (isset($champs['compte_demo']) && $champs['compte_demo'] !== (int) $cible['compte_demo']) {
             journal_compte((int) $cible['id'], $member, $champs['compte_demo'] ? 'Marqué compte de démonstration' : 'N\'est plus un compte de démonstration');
         }

@@ -1,7 +1,9 @@
 <section class="acces">
   <h1>Confirmez votre identité</h1>
-  <?php if ($deja_connecte): ?>
-  <p><strong>Vous êtes bien connecté.</strong> Cette action (gestion, clé d'API en écriture, sécurité du compte) demande une seconde preuve, différente de la première : choisissez-en une ci-dessous. Elle reste valable jusqu'à la déconnexion.</p>
+  <?php if ($deja_connecte && session_par_appareil()): ?>
+  <p><strong>Vous êtes connecté sur cet appareil.</strong> Pour cette action, confirmez d'abord votre identité : choisissez un moyen ci-dessous. La gestion en demande deux, différents.</p>
+  <?php elseif ($deja_connecte): ?>
+  <p><strong>Vous êtes bien connecté.</strong> Cette action (gestion, clé d'API en écriture, sécurité du compte) demande une seconde preuve, différente de la première : choisissez-en une ci-dessous. Elle reste valable <?= (int) mfa_validite_heures() ?> heures.</p>
   <?php else: ?>
   <p>Une seconde vérification protège les comptes qui gèrent l'association.</p>
   <?php endif ?>

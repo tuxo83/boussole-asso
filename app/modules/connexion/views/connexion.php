@@ -5,5 +5,6 @@
   <?= humain_champs() ?>
   <?= c_champ('email', 'Votre adresse e-mail', ['type' => 'email', 'valeur' => $email, 'requis' => true]) ?>
   <?= c_champ('mot_de_passe', 'Mot de passe (facultatif)', ['type' => 'password', 'aide' => 'Sans mot de passe, vous recevez un lien de connexion par e-mail.']) ?>
+  <?= appareil_case() ?>
   <button type="submit" class="bouton bouton-principal">Se connecter</button>
 </form>
