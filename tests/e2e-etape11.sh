@@ -87,4 +87,6 @@ check "sans réglage : « Mon compte »" "$(arrivee lea4 lea@example.org)" "303 
 check "membre à jour : inscription possible" "$(post "$U/espace/diner-cotisants" "$U/espace/diner-cotisants/inscription" -d 'action=voeu' >/dev/null; sql "SELECT statut FROM inscription i JOIN membre m ON m.id = i.membre_id WHERE m.email = 'lea@example.org'")" "retenu"
 sql "INSERT INTO page (slug, titre, contenu, blocs, publiee) VALUES ('agenda-complet', 'Agenda complet', '', '{\"blocks\":[{\"type\":\"boussole\",\"data\":{\"bloc\":\"agenda\"}}]}', 1)"
 check "agenda : mes inscriptions en premier, avec leur statut, et aussi dans la liste complète" "$(c "$U/page/agenda-complet" >/dev/null; grep -o 'Mes inscriptions' "$B" | wc -l) $(grep -o 'Dîner des cotisants' "$B" | wc -l) $(grep -o 'badge badge-ok\">Inscrit' "$B" | wc -l) $(grep -c 'data-vue-contenu=\"frise\"' "$B")" "2 4 4 1"
+as lea
+check "membre sans droit : ni Administration ni aide sur les droits dans Paramètres" "$(c "$U/compte/parametres" >/dev/null; grep -c 'Administration du site\|Qui peut faire quoi' "$B")" "0"
 bilan
