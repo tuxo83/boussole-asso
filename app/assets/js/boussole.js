@@ -238,3 +238,15 @@ if (window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)')
     menu.addEventListener('mouseleave', function () { minuterie = setTimeout(function () { menu.open = false; }, 250); });
   });
 }
+
+// Petites fenêtres (aide « ? », météo, menu de compte, ajouter à l'agenda, menu burger) : un clic ailleurs ou Échap les referme
+(function () {
+  var selecteur = 'details.aide[open], details.meteo-menu[open], details.compte-menu[open], details.ajout-agenda[open], details.menu-burger[open]';
+  document.addEventListener('click', function (e) {
+    document.querySelectorAll(selecteur).forEach(function (d) { if (!d.contains(e.target)) d.open = false; });
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape') return;
+    document.querySelectorAll(selecteur).forEach(function (d) { d.open = false; var s = d.querySelector('summary'); if (s && d.contains(document.activeElement)) s.focus(); });
+  });
+})();
