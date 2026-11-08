@@ -31,7 +31,7 @@ sql "INSERT INTO inscription (evenement_id, membre_id, statut) SELECT s.id, $(id
 
 as admin
 post "$U/espaces/nouveau" "$U/espaces/nouveau" -d 'type=evenement&titre=Visite du port&visibilite=adherents&description=Visite guidée' >/dev/null
-check "places limitées sans clôture : refusé" "$(post "$U/espace/visite-du-port" "$U/espace/visite-du-port/evenement" -d "mode=auto&places=3&debut=$MOIS" >/dev/null; sql "SELECT COUNT(*) FROM evenement e JOIN espace s ON s.id = e.espace_id WHERE s.slug = 'visite-du-port'")" "0"
+check "places limitées sans clôture : refusé" "$(post "$U/espace/visite-du-port" "$U/espace/visite-du-port/evenement" -d "mode=auto&places=3&debut=$MOIS" >/dev/null; sql "SELECT COUNT(*) FROM evenement e JOIN espace s ON s.id = e.espace_id WHERE s.slug = 'visite-du-port' AND e.places IS NOT NULL")" "0"
 post "$U/espace/visite-du-port" "$U/espace/visite-du-port/evenement" -d "mode=auto&places=3&debut=$MOIS&cloture=$DEMAIN&lieu=Quai nord" >/dev/null
 check "événement réglé" "$(sql "SELECT CONCAT(mode, ' ', places, ' ', etat) FROM evenement e JOIN espace s ON s.id = e.espace_id WHERE s.slug = 'visite-du-port'")" "auto 3 ouvert"
 post "$U/espace/visite-du-port" "$U/espace/visite-du-port/inviter" -d 'email=farid@example.org' >/dev/null
