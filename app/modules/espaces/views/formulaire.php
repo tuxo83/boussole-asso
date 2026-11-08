@@ -1,7 +1,7 @@
 <?php $evenement = ($v['type'] ?? '') === 'evenement' && $parent;
 // Visibilité dite dans les mots de la situation : une réunion de l'équipe, ou un événement ouvert
 $visibilites = $evenement
-    ? ['equipe' => "L'équipe de « " . $parent['titre'] . ' » seulement (réunion de travail)', 'adherents' => 'Tous les membres connectés', 'public' => 'Tout le monde (public)']
+    ? ['equipe' => "L'équipe seulement (réunion de travail)", 'adherents' => 'Tous les membres connectés', 'public' => 'Tout le monde (public)']
     : ESPACE_VISIBILITES; ?>
 <h1><?= $evenement ? 'Organiser un événement' : 'Nouvel espace' ?><?= $parent ? ' dans « ' . e($parent['titre']) . ' »' : '' ?></h1>
 <form method="post" action="<?= e(url('/espaces/nouveau')) ?>" class="formulaire">
@@ -18,7 +18,7 @@ $visibilites = $evenement
   <?= c_champ('lieu', 'Lieu', ['valeur' => (string) ($_POST['lieu'] ?? ''), 'max' => 200, 'aide' => 'Une salle, une adresse, ou « en visio ».']) ?>
   <?php endif ?>
   <?= c_champ('description', $evenement ? 'Ordre du jour ou présentation' : 'Description', ['type' => 'textarea', 'valeur' => $v['description'] ?? '']) ?>
-  <?= c_champ('visibilite', 'Qui le voit ?', ['type' => 'select', 'valeur' => $v['visibilite'] ?? 'equipe', 'choix' => $visibilites, 'erreur' => $erreurs['visibilite'] ?? null,
-      'aide' => $evenement ? 'Ouvert aux membres ou au public, il apparaît dans l\'agenda de tous ; réservé à l\'équipe, seulement dans l\'agenda de ses membres.' : null]) ?>
+  <?= c_visibilite_choix((string) ($v['visibilite'] ?? 'equipe'), $visibilites, $evenement ? $parent['titre'] : null) ?>
+  <?php if (!empty($erreurs['visibilite'])): ?><p class="erreur-champ"><?= e($erreurs['visibilite']) ?></p><?php endif ?>
   <button type="submit" class="bouton bouton-principal"><?= $evenement ? 'Créer l\'événement' : 'Créer' ?></button>
 </form>
