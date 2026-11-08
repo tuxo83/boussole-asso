@@ -118,13 +118,13 @@ as admin
 CAROLE=$(sql "SELECT id FROM membre WHERE email = 'carole@example.org'")
 check "historique du compte : mot de passe choisi, connexions, échec de connexion" "$(c "$U/admin/membres/$ALICE/historique" >/dev/null; grep -c 'Mot de passe choisi' "$B") $(grep -c 'Connexion (e-mail)' "$B") $(c "$U/admin/membres/$CAROLE/historique" >/dev/null; grep -c 'Échec de connexion' "$B")" "1 1 1"
 check "historique : action d'un administrateur signée" "$(c "$U/admin/membres/$BOB/historique" >/dev/null; grep -c 'Mot de passe provisoire donné par un administrateur' "$B")" "1"
-check "mon historique dans Mon compte" "$(as bobmdp; c "$U/compte" >/dev/null; grep -c 'Mot de passe provisoire remplacé' "$B")" "1"
+check "mon historique dans Mon compte" "$(as bobmdp; c "$U/compte/parametres" >/dev/null; grep -c 'Mot de passe provisoire remplacé' "$B")" "1"
 as admin
 check "compte de démonstration : l'administrateur fixe son mot de passe" "$(post "$U/admin/membres" "$U/admin/membres/$BOB" -d 'email=bob@example.org&prenom=Bob&actif=1&compte_demo=1&mot_de_passe_demo=demo-fixe-123' >/dev/null; sql "SELECT CONCAT(compte_demo, mot_de_passe_provisoire) FROM membre WHERE id = $BOB")" "10"
 check "compte de démonstration : pas de mot de passe provisoire" "$(post "$U/admin/membres" "$U/admin/membres/$BOB/mot-de-passe-provisoire" >/dev/null; sql "SELECT mot_de_passe_provisoire FROM membre WHERE id = $BOB")" "0"
 as demo
 hpost "$U/connexion" "$U/connexion" -d 'email=bob@example.org&mot_de_passe=demo-fixe-123' >/dev/null
-check "compte de démonstration : connexion avec le mot de passe fixé, formulaire de changement absent" "$(c "$U/compte" >/dev/null; grep -c 'Compte de démonstration : fixé par un administrateur' "$B") $(grep -c 'name="mot_de_passe"' "$B")" "1 0"
+check "compte de démonstration : connexion avec le mot de passe fixé, formulaire de changement absent" "$(c "$U/compte/parametres" >/dev/null; grep -c 'Compte de démonstration : fixé par un administrateur' "$B") $(grep -c 'name="mot_de_passe"' "$B")" "1 0"
 check "compte de démonstration : ses utilisateurs ne changent ni mot de passe ni clés" "$(post "$U/compte" "$U/compte/mot-de-passe" -d 'mot_de_passe=pirate-mot-de-passe&confirmation=pirate-mot-de-passe' >/dev/null; post "$U/compte/cles" "$U/compte/cles" -d 'libelle=x&duree=30' >/dev/null; sql "SELECT COUNT(*) FROM cle_api WHERE membre_id = $BOB") $(as admin; c "$U/admin/membres/$BOB/historique" >/dev/null; grep -c 'Mot de passe changé' "$B")" "0 0"
 as admin
 check "espace : titre, description et visibilité modifiables sur place par qui gère, pas par un visiteur" "$(c "$U/espace/journee-portes-ouvertes" >/dev/null; grep -c 'data-en-place>' "$B") $(as visiteur; c "$U/espace/journee-portes-ouvertes" >/dev/null; grep -c 'data-en-place>' "$B")" "3 0"
