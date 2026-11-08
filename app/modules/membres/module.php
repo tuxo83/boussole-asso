@@ -57,6 +57,7 @@ return [
                     redirect('/admin/membres');
                 }
                 db_query('UPDATE membre SET email = ? WHERE id = ?', [$email, $cible['id']]);
+                membre_deconnecter_partout((int) $cible['id'], (int) $cible['id'] === (int) $gestionnaire['id']);
                 journal_compte((int) $cible['id'], $gestionnaire, 'E-mail changé : ' . $cible['email'] . ' → ' . $email);
             }
             db_query('UPDATE membre SET prenom = ?, nom = ?, type_membre_id = ?, actif = ? WHERE id = ?', [
@@ -79,6 +80,7 @@ return [
                         flash('erreur', 'Mot de passe de démonstration trop court (8 caractères au moins) : il n\'a pas été changé.');
                     } else {
                         db_query('UPDATE membre SET mot_de_passe = ?, mot_de_passe_provisoire = 0 WHERE id = ?', [password_hash($mdp_demo, PASSWORD_DEFAULT), $cible['id']]);
+                        membre_deconnecter_partout((int) $cible['id']);
                         journal_compte((int) $cible['id'], $gestionnaire, 'Mot de passe de démonstration fixé par un administrateur');
                     }
                 }
@@ -98,6 +100,7 @@ return [
             }
             if (empty($_POST['actif']) && (int) $cible['id'] !== (int) $gestionnaire['id']) {
                 db_query('DELETE FROM droit_plateforme WHERE membre_id = ?', [$cible['id']]);
+                membre_deconnecter_partout((int) $cible['id']); // désactivé : ses appareils retenus ne rouvriront rien, même s'il est réactivé
             }
             journal_compte((int) $cible['id'], $gestionnaire, 'Fiche modifiée (nom, type, droits, activation)');
             flash('succes', 'Membre enregistré.');
@@ -175,6 +178,7 @@ return [
             }
             $provisoire = mot_de_passe_provisoire();
             db_query('UPDATE membre SET mot_de_passe = ?, mot_de_passe_provisoire = 1 WHERE id = ?', [password_hash($provisoire, PASSWORD_DEFAULT), $cible['id']]);
+            membre_deconnecter_partout((int) $cible['id']);
             journal_compte((int) $cible['id'], $gestionnaire, 'Mot de passe provisoire donné par un administrateur');
             flash('info', 'Mot de passe provisoire de ' . membre_nom($cible) . ' (' . $cible['email'] . ') : ' . $provisoire
                 . ' — notez-le maintenant, il ne sera plus affiché. Il devra en choisir un autre à sa prochaine connexion.');

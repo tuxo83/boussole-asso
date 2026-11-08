@@ -19,10 +19,15 @@ return [
                 $_SESSION['apres_connexion'] = '/compte/parametres';
                 redirect('/connexion/double-authentification');
             }
+            // Session rouverte par un appareil retenu : une preuve fraîche d'abord (mot de passe actuel, code e-mail…).
+            // Une session ouverte par lien e-mail suffit, elle : c'est ainsi qu'on remplace un mot de passe oublié.
+            exiger_preuve_fraiche('/compte/parametres');
             $password = (string) ($_POST['mot_de_passe'] ?? '');
             if ($password === '') {
                 db_query('UPDATE membre SET mot_de_passe = NULL WHERE id = ?', [$member['id']]);
+                membre_deconnecter_partout((int) $member['id'], true);
                 journal_compte((int) $member['id'], $member, 'Mot de passe retiré');
+                compte_avis_mot_de_passe($member, 'retiré');
                 flash('succes', 'Mot de passe retiré : connexion par lien envoyé par e-mail.');
                 redirect('/compte/parametres');
             }
@@ -33,9 +38,30 @@ return [
                 return;
             }
             db_query('UPDATE membre SET mot_de_passe = ?, mot_de_passe_provisoire = 0 WHERE id = ?', [password_hash($password, PASSWORD_DEFAULT), $member['id']]);
+            membre_deconnecter_partout((int) $member['id'], true); // les autres sessions et appareils devront se reconnecter
             journal_compte((int) $member['id'], $member, $member['mot_de_passe'] === null ? 'Mot de passe choisi' : 'Mot de passe changé');
+            compte_avis_mot_de_passe($member, $member['mot_de_passe'] === null ? 'choisi' : 'changé');
             flash('succes', 'Mot de passe enregistré.');
             redirect('/compte/parametres');
+        }],
+        // Appareils restés connectés : en déconnecter un, ou tous sauf celui-ci
+        ['POST', '/compte/appareils/{id}/oublier', function (array $p) {
+            $member = require_member();
+            $appareil = db_one('SELECT * FROM connexion_appareil WHERE id = ? AND membre_id = ?', [(int) $p['id'], $member['id']]);
+            if ($appareil !== null) {
+                db_query('DELETE FROM connexion_appareil WHERE id = ?', [$appareil['id']]);
+                journal_compte((int) $member['id'], $member, 'Appareil déconnecté : ' . $appareil['libelle']);
+                flash('succes', 'Appareil déconnecté : ' . $appareil['libelle'] . '.');
+            }
+            redirect('/compte/parametres#appareils');
+        }],
+        ['POST', '/compte/appareils/oublier-autres', function () {
+            $member = require_member();
+            exiger_preuve_fraiche('/compte/parametres#appareils');
+            membre_deconnecter_partout((int) $member['id'], true);
+            journal_compte((int) $member['id'], $member, 'Autres sessions et appareils déconnectés');
+            flash('succes', 'Les autres appareils et sessions sont déconnectés.');
+            redirect('/compte/parametres#appareils');
         }],
         // Administration : les raccourcis de gestion selon les droits (depuis le menu de compte)
         // Paramètres : la sécurité de mon compte, et l'administration du site pour qui a des droits
@@ -102,6 +128,7 @@ return [
         ['POST', '/compte/cles', function () {
             $member = require_member();
             compte_demo_refuser($member);
+            exiger_preuve_fraiche('/compte/cles'); // une clé survit à la déconnexion : jamais depuis une session seulement rouverte
             $libelle = mb_substr(trim((string) ($_POST['libelle'] ?? '')), 0, 100);
             $jours = (int) ($_POST['duree'] ?? 0);
             if ($libelle === '' || !isset(CLE_DUREES[$jours])) {
@@ -204,6 +231,8 @@ return [
 function securite_membre(): array
 {
     $member = require_member();
+    // Session rouverte par un appareil retenu : une preuve fraîche d'abord (sinon un téléphone volé ajouterait sa propre application)
+    exiger_preuve_fraiche(request_path() === '/compte/double-authentification' ? '/compte/double-authentification' : '/compte/parametres');
     if (member_exige_2fa($member) && count(facteurs()) < 2) {
         $_SESSION['apres_connexion'] = request_path() === '/compte/double-authentification' ? '/compte/double-authentification' : '/compte/parametres';
         redirect('/connexion/double-authentification');
@@ -264,4 +293,13 @@ function administration_en_attente(array $member): int
         $n += (int) db_value('SELECT COUNT(*) FROM message_contact WHERE lu = 0');
     }
     return $n;
+}
+
+// Avis par e-mail : le mot de passe a changé (si ce n'est pas la personne, elle le sait aussitôt)
+function compte_avis_mot_de_passe(array $member, string $quoi): void
+{
+    $site = (string) setting('nom_association', 'Boussole');
+    mail_send($member['email'], "Mot de passe $quoi", "Bonjour,\n\nLe mot de passe de votre compte sur le site de $site vient d'être $quoi. "
+        . "Les autres appareils restés connectés ont été déconnectés.\n\nSi ce n'est pas vous : sur la page de connexion, laissez le mot de passe vide pour recevoir un lien, puis changez-le dans Paramètres ; "
+        . "si vous gérez le site, demandez plutôt à un administrateur un mot de passe provisoire. Et prévenez l'association.\n");
 }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 const IMAGE_TAILLE_MAX = 8 * 1024 * 1024;
 const IMAGE_PIXELS_MAX = 40000000;   // protège la mémoire contre les « bombes » de décompression
 const IMAGE_COTE_MAX = 2000;         // au-delà, l'image est réduite
+const LOGO_COTE_MAX = 2048;          // logo du site : au-delà, refusé (les icônes de l'application en sont tirées)
 
 // Renvoie le chemin de l'image enregistrée (uploads/img-….webp) ou un message d'erreur
 // $televerse = false : fichier temporaire écrit par Boussole (API), et non envoyé par un formulaire
