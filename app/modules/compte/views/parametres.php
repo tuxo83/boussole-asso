@@ -19,7 +19,7 @@
     <?php endif ?>
   </li>
   <li>
-    <span class="tuile-icone"><?= c_icone('bouclier') ?></span><div><strong>Double authentification</strong><span class="discret"><?= ($nb_cles ? $nb_cles . ' clé(s) de sécurité' : 'Aucune clé de sécurité') . ((int) $membre['totp_actif'] === 1 ? ' · application active' : '') ?></span>
+    <span class="tuile-icone"><?= c_icone('bouclier') ?></span><div><strong>Double authentification</strong><span class="discret"><?= ($nb_cles ? $nb_cles . ' clé(s) de sécurité' : 'Aucune clé de sécurité') . ((int) $membre['totp_actif'] === 1 ? ' · application active' : '') . (($nb_cles || (int) $membre['totp_actif'] === 1) ? (!empty($membre['mfa_connexion']) ? ' · à chaque connexion' : ' · pour la gestion') : '') ?></span>
       <?php if (member_rights($membre['id']) && !$nb_cles && !(int) $membre['totp_actif']): ?><span class="petit">Conseillé pour la gestion : sinon un code par e-mail vous sera demandé.</span><?php endif ?></div>
     <?php if (!$demo): ?><?= c_bouton('Gérer', '/compte/double-authentification', 'secondaire') ?><?php endif ?>
   </li>
