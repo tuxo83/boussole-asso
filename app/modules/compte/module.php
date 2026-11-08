@@ -55,6 +55,16 @@ return [
             }
             redirect('/compte/parametres#appareils');
         }],
+        // Ouvert dans l'application installée avec une session déjà connectée (Android : même connexion que Chrome) :
+        // l'appareil est retenu comme si « Rester connecté » avait été coché (seulement une vraie connexion, pas une session rouverte)
+        ['POST', '/compte/appareils/retenir-appli', function () {
+            $member = require_member();
+            if (empty($_SESSION['appareil_id']) && !session_par_appareil() && facteurs() && appareil_autorise($member)) {
+                appareil_retenir($member, facteurs()[0], true);
+            }
+            header('Content-Type: application/json');
+            echo json_encode(['retenu' => !empty($_SESSION['appareil_id'])]);
+        }],
         ['POST', '/compte/appareils/oublier-autres', function () {
             $member = require_member();
             exiger_preuve_fraiche('/compte/parametres#appareils');

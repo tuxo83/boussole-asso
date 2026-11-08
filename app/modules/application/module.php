@@ -32,6 +32,8 @@ return [
                 'background_color' => '#ffffff',
                 'theme_color' => color_setting('couleur_principale', '#1f4e79'),
                 'icons' => $icones,
+                // Permet au site, ouvert dans Chrome, de savoir que l'application est déjà installée
+                'related_applications' => [['platform' => 'webapp', 'url' => absolute_url('/app/manifest.webmanifest')]],
             ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
         }],
         ['GET', '/app/icone-{nom}.png', function (array $p) {

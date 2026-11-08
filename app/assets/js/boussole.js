@@ -398,7 +398,27 @@ document.querySelectorAll('[data-reglages-evenement]').forEach(function (form) {
   var proposer = bandeau && telephone && !plusTard && !appli;
   if (appli) {
     if (bloc) bloc.querySelector('[data-application-etat]').textContent = "Vous utilisez l'application.";
+    // Session déjà connectée (ouverte dans le navigateur) mais pas encore retenue : l'application la retient
+    var retenir = document.querySelector('meta[name="boussole-retenir"]');
+    if (retenir && window.fetch) {
+      var corps = new FormData();
+      corps.append('_csrf', retenir.dataset.csrf);
+      fetch(retenir.content, { method: 'POST', body: corps, credentials: 'same-origin' }).catch(function () {});
+    }
     return;
+  }
+  // Ouvert dans le navigateur alors que l'application est déjà installée (Chrome Android) : on le dit, sans rien proposer
+  if (navigator.getInstalledRelatedApps) {
+    navigator.getInstalledRelatedApps().then(function (apps) {
+      if (!apps.length) return;
+      if (bloc) {
+        clearTimeout(autre);
+        bloc.querySelector('[data-application-autre]').hidden = true;
+        bloc.querySelector('[data-installer]').hidden = true;
+        bloc.querySelector('[data-application-etat]').textContent = "L'application est installée sur cet appareil : ouvrez-la depuis l'écran d'accueil.";
+      }
+      if (bandeau) bandeau.hidden = true;
+    }).catch(function () {});
   }
   if (ios) {
     if (bloc) bloc.querySelector('[data-application-ios]').hidden = false;

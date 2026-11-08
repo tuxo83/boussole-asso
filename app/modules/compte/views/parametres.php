@@ -31,7 +31,7 @@
   <?php endif ?>
   <?php $appareils = appareils_du_membre((int) $membre['id']); $appareil_courant = (int) ($_SESSION['appareil_id'] ?? 0); ?>
   <li id="appareils">
-    <span class="tuile-icone"><?= c_icone('ecran') ?></span><div><strong>Appareils connectés</strong><span class="discret"><?= $appareils ? count($appareils) . ' appareil(s) restent connectés' : 'Aucun : cochez « Rester connecté » à la connexion' ?></span>
+    <span class="tuile-icone"><?= c_icone('ecran') ?></span><div><strong>Appareils connectés</strong><span class="discret"><?= $appareils ? count($appareils) . ' appareil(s) restent connectés' : 'Aucun pour l\'instant : dans l\'application, c\'est automatique ; dans le navigateur, cochez « Rester connecté » à la connexion' ?></span>
       <span class="petit">Ils rouvrent la connexion simple ; la gestion redemande toujours la double authentification.</span></div>
     <?php if ($appareils): ?>
     <details class="reglage-action"><summary class="bouton bouton-secondaire">Voir</summary>

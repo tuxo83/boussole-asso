@@ -99,6 +99,9 @@ if ($moi !== null && application_active() && setting('application_proposer', '1'
   <button type="button" class="bandeau-fermer" data-proposer-plus-tard aria-label="Plus tard" title="Plus tard (dans 30 jours)">×</button>
 </div></div>
 <?php endif ?>
+<?php if ($moi !== null && application_active() && empty($_SESSION['appareil_id']) && appareil_autorise($moi)): ?>
+<meta name="boussole-retenir" content="<?= e(url('/compte/appareils/retenir-appli')) ?>" data-csrf="<?= e(csrf_token()) ?>">
+<?php endif ?>
 <main id="contenu" class="conteneur">
   <?php foreach (flash() as $message): ?><?= c_alerte($message['type'], (string) $message['message']) ?><?php endforeach ?>
   <?= $content ?>
