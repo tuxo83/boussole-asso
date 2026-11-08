@@ -230,7 +230,7 @@ function api_moi(): array
 
 function api_espace_resume(array $e): array
 {
-    return ['slug' => $e['slug'], 'type' => $e['type'], 'titre' => $e['titre'], 'meteo' => $e['meteo'], 'visibilite' => $e['visibilite'], 'archive' => (bool) $e['archive'], 'alertes' => espace_alertes($e)];
+    return ['slug' => $e['slug'], 'type' => $e['type'], 'titre' => $e['titre'], 'meteo' => $e['meteo'], 'meteo_auto' => !empty($e['meteo_auto']), 'visibilite' => $e['visibilite'], 'archive' => (bool) $e['archive'], 'alertes' => espace_alertes($e)];
 }
 
 function api_espaces(): array
@@ -309,8 +309,9 @@ function api_espace_creer(array $args): array
     }
     $meteo = in_array($args['meteo'] ?? '', ['soleil', 'eclaircie', 'pluie', 'orage'], true) ? $args['meteo'] : 'eclaircie';
     $slug = slug_unique($titre);
-    db_query('INSERT INTO espace (type, titre, slug, description, visibilite, meteo, parent_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
-        [$type, $titre, $slug, mb_substr(trim((string) ($args['description'] ?? '')), 0, 20000), $visibilite, $meteo, $parent['id'] ?? null]);
+    // Météo automatique par défaut, sauf pour un événement (pas d'équipe permanente) ou une météo donnée
+    db_query('INSERT INTO espace (type, titre, slug, description, visibilite, meteo, parent_id, meteo_auto) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        [$type, $titre, $slug, mb_substr(trim((string) ($args['description'] ?? '')), 0, 20000), $visibilite, $meteo, $parent['id'] ?? null, $type !== 'evenement' && empty($args['meteo']) ? 1 : 0]);
     $id = (int) db()->lastInsertId();
     if (!is_admin($member)) {
         db_query('INSERT INTO espace_membre (espace_id, membre_id, niveau) VALUES (?, ?, "n1")', [$id, $member['id']]);
