@@ -747,3 +747,19 @@ details.crayon-flottant > .crayon-bouton { padding: 0; }
 .frise-item.frise-equipe::before { border-color: #2f6f5e; }
 .frise-item.frise-public::before { border-color: var(--couleur-principale); }
 @media (max-width: 40rem) { .frise-item > .carte { margin-left: 0; } }
+
+/* Frise continue : une seule ligne du début à la fin ; les mois sont posés dessus, sans la couper */
+.frise-agenda { position: relative; }
+.frise-agenda::before { content: ""; position: absolute; top: 0; bottom: .5rem; left: 8.75rem; width: 2px; background: var(--principale-moyen); }
+.frise-liste::before { display: none; }
+.frise-liste { margin-bottom: 0; }
+.frise-mois { position: relative; margin: 1.5rem 0 1rem calc(8.75rem + 1.5rem + .75rem); }
+.frise-mois::before { content: ""; position: absolute; left: calc(-1.5rem - .75rem - 4px); top: 50%; width: 10px; height: 10px; margin-top: -5px; background: var(--principale-moyen); transform: rotate(45deg); }
+.frise-aujourdhui { position: relative; margin-left: calc(8.75rem - 2.6rem); z-index: 1; }
+.frise-agenda > .frise-aujourdhui:first-child + .frise-mois { margin-top: .75rem; }
+@media (max-width: 40rem) {
+  .frise-agenda::before { left: .35rem; }
+  .frise-mois { margin-left: 1.6rem; }
+  .frise-mois::before { left: calc(-1.6rem + .35rem - 4px); }
+  .frise-aujourdhui { margin-left: 0; }
+}
