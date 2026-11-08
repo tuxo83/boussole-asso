@@ -52,7 +52,7 @@ post "$U/cotisations" "$U/cotisations/annuler" -d "periode=$P&membre_id=$(id chl
 check "annulation d'une erreur de saisie" "$(sql "SELECT COUNT(*) FROM cotisation WHERE membre_id = $(id chloe)")" "0"
 
 as alice; login_link alice alice@example.org
-check "alice : « À jour » sur son compte" "$(c "$U/compte" >/dev/null; grep -c 'badge-ok">À jour' "$B")" "1"
+check "alice : « À jour » sur son compte" "$(c "$U/compte" >/dev/null; grep -c 'badge-ok">Cotisation [0-9]* à jour' "$B")" "1"
 check "alice : pas d'accès à la gestion des cotisations" "$(c "$U/cotisations")" "403 "
 as bruno; login_link bruno bruno@example.org
 sql "INSERT INTO cotisation (membre_id, periode, paye_le, moyen) VALUES ($(id bruno), $((P-1)), '$((P-1))-03-01', 'cheque'), ($(id bruno), $((P-2)), '$((P-2))-03-01', 'cheque')"
@@ -70,7 +70,7 @@ post "$U/cotisations" "$U/cotisations/marquer" -d "periode=$((P-4))&membre_id=$(
 sql "INSERT INTO cotisation (membre_id, periode, paye_le, moyen) VALUES ($(id frank), $((P-2)), '$((P-2))-02-01', 'cheque')"
 sql "UPDATE membre SET cree_le = NOW() - INTERVAL 3 YEAR WHERE email IN ('eve@example.org', 'dave@example.org', 'frank@example.org')"
 check "tâche d'effacement : 2 personnes, météo affichée" "$(c "$U/cotisations" >/dev/null; grep -c 'name="membres\[\]"' "$B") $(grep -c 'meteo-eclaircie' "$B")" "2 [1-9]*"
-check "le compte indique la tâche au responsable" "$(c "$U/compte" >/dev/null; grep -c 'donnée(s) à effacer' "$B")" "1"
+check "le compte indique la tâche au responsable" "$(c "$U/compte" >/dev/null; grep -c '[0-9] à effacer' "$B")" "1"
 c "$U/cotisations/export-effacement" >/dev/null
 check "export avant effacement : dave et eve" "$(grep -c 'dave@example.org\|eve@example.org' "$B")" "2"
 post "$U/cotisations" "$U/cotisations/effacer" -d "membres[]=$(id dave)&membres[]=$(id eve)&membres[]=$(id alice)" >/dev/null
