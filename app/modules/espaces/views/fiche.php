@@ -98,8 +98,17 @@ $boutons = '<span class="en-place-boutons"><button type="submit" class="bouton b
 <?php endif ?>
 <?php if ($espace['type'] === 'evenement'): ?><?= partial('evenements/bloc', evenement_vue($espace, $membre, $vue_orga)) ?><?php endif ?>
 
-<?php if ($espace['type'] !== 'evenement'): ?>
-<nav class="ancres" aria-label="Dans cet espace"><?php foreach (['agenda' => 'Agenda', 'dates' => 'Dates', 'fichiers' => 'Fichiers', 'equipe' => 'Équipe'] as $id => $libelle): ?><a href="#<?= $id ?>"><?= $libelle ?></a><?php endforeach ?></nav>
+<?php // Raccourcis seulement vers les rubriques affichées (une rubrique vide n'est montrée qu'à qui peut la remplir)
+$rubriques = array_filter([
+    'agenda' => $espace['type'] !== 'evenement' && ($evenements_espace || $peut_gerer) ? 'Agenda' : null,
+    'dates' => $jalons || $peut_contribuer ? 'Dates' : null,
+    'fichiers' => $fichiers || $peut_contribuer ? 'Fichiers' : null,
+    'equipe' => $equipe || $peut_gerer ? 'Équipe' : null,
+]); ?>
+<?php if ($espace['type'] !== 'evenement' && count($rubriques) >= 2): ?>
+<nav class="ancres" aria-label="Dans cet espace"><?php foreach ($rubriques as $id => $libelle): ?><a href="#<?= $id ?>"><?= $libelle ?></a><?php endforeach ?></nav>
+<?php elseif ($espace['type'] !== 'evenement' && !$rubriques): ?>
+<p class="vide"><?= c_icone('dossier') ?><span>Rien de publié dans cet espace pour l'instant.</span></p>
 <?php endif ?>
 <div class="espace-colonnes">
 <div class="espace-principal">
