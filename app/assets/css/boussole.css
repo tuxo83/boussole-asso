@@ -616,6 +616,46 @@ details.crayon-flottant > .crayon-bouton { padding: 0; }
   .entete-interne { flex-wrap: wrap; row-gap: 0; padding-top: .5rem; }
   .entete-interne > .marque { flex: 1 1 0; }
   .entete-interne > .compte-menu { order: 2; }
-  .entete-interne > .navigation { order: 3; flex: 0 0 100%; margin: 0 -1rem; padding: 0 .5rem .25rem; overflow-x: auto; scrollbar-width: none; }
+  .entete-interne > .navigation { order: 3; flex: 0 0 calc(100% + 2rem); margin: 0 -1rem; padding: 0 .5rem .25rem; overflow-x: auto; scrollbar-width: none; }
   .entete-interne > .navigation::-webkit-scrollbar { display: none; }
+}
+
+/* Bandeau photo : le texte reste lisible quelle que soit la photo (voile plus marqué du côté du texte, ombre portée) */
+.bandeau-photo { background:
+  linear-gradient(90deg, rgba(10, 25, 45, .55) 0%, rgba(10, 25, 45, .25) 55%, rgba(10, 25, 45, 0) 80%),
+  linear-gradient(180deg, rgba(10, 25, 45, .10) 0%, rgba(10, 25, 45, .70) 100%),
+  var(--bandeau) center / cover no-repeat; }
+.bandeau-photo h1, .bandeau-photo .slogan { text-shadow: 0 1px 3px rgba(0, 0, 0, .45), 0 2px 14px rgba(0, 0, 0, .35); }
+@media (max-width: 40rem) {
+  .bandeau-photo { background:
+    linear-gradient(180deg, rgba(10, 25, 45, .45) 0%, rgba(10, 25, 45, .55) 45%, rgba(10, 25, 45, .75) 100%),
+    var(--bandeau) 30% center / cover no-repeat; }
+}
+
+/* Téléphone : menu burger (le bandeau de liens est masqué) ; ailleurs, le bouton n'existe pas */
+.menu-burger { display: none; }
+@media (max-width: 40rem) {
+  .entete-interne { flex-wrap: nowrap; padding-top: 0; min-height: 3.75rem; gap: .5rem; }
+  .entete-interne > .navigation { display: none; }
+  .entete-interne > .compte-menu { order: 2; }
+  .menu-burger { display: block; order: 3; flex: none; }
+  .menu-burger > summary { list-style: none; cursor: pointer; display: grid; place-items: center; width: var(--cible); height: var(--cible); border-radius: var(--rayon-petit); }
+  .menu-burger > summary::-webkit-details-marker, .menu-burger > summary::before { display: none; content: none; }
+  .menu-burger > summary:hover, .menu-burger[open] > summary { background: rgba(255, 255, 255, .14); }
+  .burger { display: flex; flex-direction: column; justify-content: space-between; width: 1.35rem; height: 1rem; }
+  .burger span { display: block; height: 2px; border-radius: 2px; background: #fff; transition: transform .2s, opacity .2s; }
+  .menu-burger[open] .burger span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  .menu-burger[open] .burger span:nth-child(2) { opacity: 0; }
+  .menu-burger[open] .burger span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+  .burger-panneau { position: absolute; left: 0; right: 0; top: 100%; z-index: 40; background: var(--couleur-principale); padding: .25rem 1rem 1rem; box-shadow: 0 12px 24px rgba(16, 24, 40, .18); display: flex; flex-direction: column; }
+  .burger-panneau a { display: flex; align-items: center; gap: .5rem; min-height: 3rem; padding: 0 .5rem; color: #fff; text-decoration: none; font-size: 1.1rem; border-bottom: 1px solid rgba(255, 255, 255, .14); }
+  .burger-panneau a:last-child { border-bottom: 0; }
+  .burger-panneau a[aria-current="page"] { font-weight: 700; }
+  .burger-panneau a[aria-current="page"]::before { content: ""; width: 4px; height: 1.2rem; border-radius: 2px; background: #fff; margin-right: .25rem; }
+  .burger-panneau .burger-compte { margin-top: .5rem; justify-content: center; background: #fff; color: var(--couleur-principale); border-radius: 999px; font-weight: 700; border: 0; }
+  .burger-panneau svg { width: 1rem; height: 1rem; }
+  .entete { position: relative; }
+}
+@media (max-width: 40rem) {
+  .entete nav.burger-panneau { margin: 0; padding: .25rem 1.25rem 1rem; overflow: visible; -webkit-mask-image: none; mask-image: none; }
 }

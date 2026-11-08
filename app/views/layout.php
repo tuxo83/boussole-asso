@@ -46,6 +46,16 @@ $titre_complet = isset($titre) ? $titre . ' · ' . $nom : ($slogan !== '' && mb_
       </ul>
     </nav>
     <?php endif ?>
+    <?php if ($menu): // Téléphone : un bouton menu qui déplie toutes les pages (le menu en ligne y est masqué) ?>
+    <details class="menu-burger">
+      <summary aria-label="Menu"><span class="burger" aria-hidden="true"><span></span><span></span><span></span></span></summary>
+      <nav class="burger-panneau" aria-label="Menu principal (téléphone)">
+        <?php foreach ($menu as $item): if (($item['zone'] ?? '') === 'compte' && $moi_menu !== null) { continue; } ?>
+        <a href="<?= e(url($item['lien'])) ?>"<?= $item['lien'] === $chemin ? ' aria-current="page"' : '' ?><?= ($item['zone'] ?? '') === 'compte' ? ' class="burger-compte"' : '' ?>><?= !empty($item['verrou']) ? c_icone('cadenas') : '' ?><?= e($item['libelle']) ?></a>
+        <?php endforeach ?>
+      </nav>
+    </details>
+    <?php endif ?>
     <?php if ($moi_menu !== null): // Menu de compte : initiales ; Mon compte, Administration (si droits), Se déconnecter
         $initiales = mb_strtoupper(mb_substr($moi_menu['prenom'] ?: $moi_menu['email'], 0, 1) . mb_substr((string) $moi_menu['nom'], 0, 1));
         $attente = member_rights($moi_menu['id']) ? administration_en_attente($moi_menu) : 0; ?>
