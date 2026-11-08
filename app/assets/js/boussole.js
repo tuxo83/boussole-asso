@@ -373,46 +373,61 @@ document.querySelectorAll('[data-reglages-evenement]').forEach(function (form) {
   dialogue.addEventListener('click', function (e) { if (e.target === dialogue) dialogue.close(); });
 })();
 
-// Application installable : service minimal (page « hors ligne »), « Rester connecté » coché d'office dans l'application,
-// et, dans Paramètres, le bouton « Installer » (Android, ordinateur) ou le geste à faire (iPhone)
+// Application installable : service minimal (page « hors ligne »), « Rester connecté » coché d'office dans l'application ;
+// l'installation proposée seulement là où elle est possible : bouton « Installer » quand le navigateur le permet (Android,
+// ordinateur), le geste à faire sur iPhone et iPad ; jamais dans l'application elle-même. Le bandeau, lui, n'apparaît que sur
+// écran tactile sans souris (téléphone, tablette).
 (function () {
   var sw = document.querySelector('meta[name="boussole-sw"]');
   if (sw && 'serviceWorker' in navigator) {
     navigator.serviceWorker.register(sw.content, { scope: sw.dataset.portee }).catch(function () {});
   }
-  var appli = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+  var mm = function (q) { return window.matchMedia && window.matchMedia(q).matches; };
+  var appli = mm('(display-mode: standalone)') || window.navigator.standalone === true;
   document.querySelectorAll('[data-rester-connecte]').forEach(function (c) {
     if (appli) { c.checked = true; c.value = 'appli'; }
   });
-  var bloc = document.querySelector('[data-application]');
-  if (!bloc) return;
-  var etat = bloc.querySelector('[data-application-etat]');
-  var bouton = bloc.querySelector('[data-installer]');
   var ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  var telephone = mm('(pointer: coarse)') && mm('(hover: none)');
+  var bloc = document.querySelector('[data-application]');
+  var bandeau = document.querySelector('[data-proposer-appli]');
+  var installee = "L'application est installée : retrouvez-la sur l'écran d'accueil.";
+  var cle = 'boussole_appli_plus_tard';
+  var plusTard = false;
+  try { plusTard = Date.now() - Number(localStorage.getItem(cle) || 0) < 30 * 86400000; } catch (e) { /* stockage indisponible : on propose */ }
+  var proposer = bandeau && telephone && !plusTard && !appli;
   if (appli) {
-    etat.textContent = "Vous utilisez l'application.";
+    if (bloc) bloc.querySelector('[data-application-etat]').textContent = "Vous utilisez l'application.";
     return;
   }
   if (ios) {
-    bloc.querySelector('[data-application-ios]').hidden = false;
-    return;
+    if (bloc) bloc.querySelector('[data-application-ios]').hidden = false;
+    if (proposer) { bandeau.querySelector('[data-proposer-ios]').hidden = false; bandeau.hidden = false; }
   }
   var invite = null;
-  var autre = setTimeout(function () { bloc.querySelector('[data-application-autre]').hidden = false; }, 1500);
+  var autre = bloc && !ios ? setTimeout(function () { bloc.querySelector('[data-application-autre]').hidden = false; }, 1500) : null;
+  function fini(texte) {
+    if (bloc) { bloc.querySelector('[data-installer]').hidden = true; bloc.querySelector('[data-application-etat]').textContent = texte; }
+    if (bandeau) bandeau.hidden = true;
+  }
+  function installer() {
+    if (!invite) return;
+    invite.prompt();
+    invite.userChoice.then(function (r) { if (r.outcome === 'accepted') fini(installee); invite = null; });
+  }
   window.addEventListener('beforeinstallprompt', function (e) {
     e.preventDefault();
     invite = e;
-    clearTimeout(autre);
-    bloc.querySelector('[data-application-autre]').hidden = true;
-    bouton.hidden = false;
+    if (bloc) { clearTimeout(autre); bloc.querySelector('[data-application-autre]').hidden = true; bloc.querySelector('[data-installer]').hidden = false; }
+    if (proposer) { bandeau.querySelector('[data-proposer-installer]').hidden = false; bandeau.hidden = false; }
   });
-  bouton.addEventListener('click', function () {
-    if (!invite) return;
-    invite.prompt();
-    invite.userChoice.then(function (r) {
-      if (r.outcome === 'accepted') { bouton.hidden = true; etat.textContent = "L'application est installée : retrouvez-la sur l'écran d'accueil."; }
-      invite = null;
+  if (bloc) bloc.querySelector('[data-installer]').addEventListener('click', installer);
+  if (bandeau) {
+    bandeau.querySelector('[data-proposer-installer]').addEventListener('click', installer);
+    bandeau.querySelector('[data-proposer-plus-tard]').addEventListener('click', function () {
+      try { localStorage.setItem(cle, String(Date.now())); } catch (e) { /* tant pis : il reviendra */ }
+      bandeau.hidden = true;
     });
-  });
-  window.addEventListener('appinstalled', function () { bouton.hidden = true; etat.textContent = "L'application est installée : retrouvez-la sur l'écran d'accueil."; });
+  }
+  window.addEventListener('appinstalled', function () { fini(installee); });
 })();
