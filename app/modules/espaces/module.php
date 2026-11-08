@@ -252,7 +252,8 @@ return [
             journal($espace['id'], $member, "Fichier déposé : $nom");
             redirect('/espace/' . $espace['slug']);
         }],
-        // Téléchargement : uniquement pour qui peut voir l'espace, toujours en pièce jointe
+        // Téléchargement : uniquement pour qui peut voir l'espace, en pièce jointe ;
+        // ?apercu=1 : affiché dans le navigateur, seulement pour les images et PDF (FICHIER_APERCU_TYPES)
         ['GET', '/fichier/{id}', function (array $p) {
             $file = db_one('SELECT f.*, e.slug FROM fichier f JOIN espace e ON e.id = f.espace_id WHERE f.id = ?', [(int) $p['id']]);
             $espace = $file ? espace_par_slug($file['slug']) : null;
@@ -262,8 +263,17 @@ return [
                 return;
             }
             $path = BOUSSOLE_ROOT . '/stockage/' . $file['stockage'];
-            header('Content-Type: application/octet-stream');
-            header("Content-Disposition: attachment; filename*=UTF-8''" . rawurlencode($file['nom']));
+            $apercu = ($_GET['apercu'] ?? '') === '1' ? fichier_apercu($file) : null;
+            if ($apercu !== null) {
+                header('Content-Type: ' . $file['type_mime']);
+                header("Content-Disposition: inline; filename*=UTF-8''" . rawurlencode($file['nom']));
+                if ($apercu === 'image') {
+                    header("Content-Security-Policy: default-src 'none'; img-src 'self'; style-src 'unsafe-inline'");
+                }
+            } else {
+                header('Content-Type: application/octet-stream');
+                header("Content-Disposition: attachment; filename*=UTF-8''" . rawurlencode($file['nom']));
+            }
             header('Content-Length: ' . filesize($path));
             header('Cache-Control: private, no-store');
             readfile($path);

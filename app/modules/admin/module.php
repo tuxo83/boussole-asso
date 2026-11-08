@@ -83,6 +83,7 @@ function admin_settings_validate(array $input): array
         'meteo_auto_retard_jours' => (string) max(1, min(365, (int) ($input['meteo_auto_retard_jours'] ?? 15))),
         'meteo_auto_dates_bloque' => (string) max(2, min(20, (int) ($input['meteo_auto_dates_bloque'] ?? 3))),
         'meteo_auto_horizon_jours' => (string) max(1, min(365, (int) ($input['meteo_auto_horizon_jours'] ?? 30))),
+        'fichiers_apercu' => ($input['fichiers_apercu'] ?? '') === '1' ? '1' : '0',
         'arrivee_cotisant' => connexion_arrivee_valide($text('arrivee_cotisant', 120)) ? $text('arrivee_cotisant', 120) : '',
         'arrivee_non_cotisant' => connexion_arrivee_valide($text('arrivee_non_cotisant', 120)) ? $text('arrivee_non_cotisant', 120) : '',
     ];
