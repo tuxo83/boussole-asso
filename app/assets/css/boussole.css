@@ -685,3 +685,58 @@ details.crayon-flottant > .crayon-bouton { padding: 0; }
 .bandeau-legende > summary span[aria-hidden] { width: 1.15rem; height: 1.15rem; font-size: .7rem; border-width: 1px; border-color: rgba(255, 255, 255, .55); background: none; opacity: .75; }
 .bandeau-legende > summary:hover span[aria-hidden], .bandeau-legende[open] > summary span[aria-hidden] { opacity: 1; background: rgba(10, 25, 45, .6); }
 .bandeau-legende p { font-size: .82rem; }
+
+/* Agenda : choix de la vue (deux mots), frise sur une colonne — date à gauche, carte à droite */
+.agenda-choix { display: inline-flex; gap: .25rem; padding: .25rem; margin: 1.25rem 0 .5rem; border: 1px solid var(--bordure); border-radius: 999px; background: var(--fond-doux); }
+.agenda-choix button { min-height: 2.5rem; padding: 0 1.1rem; border: 0; border-radius: 999px; background: none; font: inherit; font-weight: 600; color: var(--texte-doux); cursor: pointer; }
+.agenda-choix button[aria-pressed="true"] { background: var(--fond); color: var(--couleur-principale); box-shadow: var(--ombre); }
+.frise-agenda { position: relative; margin: 1rem 0 2rem; }
+.frise-aujourdhui { display: inline-block; margin: 0 0 .5rem; padding: .15rem .7rem; border-radius: 999px; background: var(--couleur-principale); color: #fff; font-size: .82rem; font-weight: 700; }
+.frise-mois { margin: 1.75rem 0 .75rem; font-size: 1.15rem; color: var(--principale-fonce); }
+.frise-liste { list-style: none; margin: 0; padding: 0; position: relative; }
+.frise-liste::before { content: ""; position: absolute; top: .5rem; bottom: .5rem; left: 7.25rem; width: 2px; background: var(--principale-moyen); }
+.frise-item { position: relative; display: grid; grid-template-columns: 6.5rem 1fr; gap: 1.5rem; margin-bottom: 1rem; }
+.frise-item::before { content: ""; position: absolute; left: calc(7.25rem - 5px); top: .85rem; width: 12px; height: 12px; border-radius: 50%; background: var(--fond); border: 3px solid var(--couleur-principale); }
+.frise-item.acces-membres::before { border-color: var(--acces-membres); }
+.frise-item.acces-equipe::before { border-color: #2f6f5e; }
+.frise-date { text-align: right; padding-top: .2rem; }
+.frise-jour { display: block; font-size: 2.1rem; font-weight: 800; line-height: 1; color: var(--principale-fonce); }
+.frise-heure { display: block; margin-top: .3rem; font-size: .85rem; color: var(--texte-doux); line-height: 1.3; }
+.frise-carte { margin-left: .75rem; padding: 1rem 1.15rem; border: 1px solid var(--bordure); border-radius: var(--rayon); background: var(--fond); box-shadow: var(--ombre); }
+.frise-carte h4 { margin: 0 0 .3rem; font-size: 1.1rem; line-height: 1.3; }
+.frise-carte h4 a { color: var(--texte); text-decoration: none; }
+.frise-carte h4 a:hover { color: var(--couleur-principale); text-decoration: underline; }
+.frise-lieu { display: flex; align-items: center; gap: .35rem; margin: 0 0 .3rem; color: var(--texte); font-size: .95rem; }
+.frise-lieu svg { width: 1rem; height: 1rem; flex: none; }
+.frise-resume { margin: 0 0 .5rem; color: var(--texte-doux); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.frise-pied { display: flex; flex-wrap: wrap; gap: .4rem .9rem; margin: 0; font-size: .9rem; }
+.frise-acces { color: var(--couleur-principale); font-weight: 600; }
+.acces-membres .frise-acces { color: var(--acces-membres); }
+.acces-equipe .frise-acces { color: #2f6f5e; }
+.frise-statut { font-weight: 700; color: #7a4b00; }
+.frise-statut.ok { color: #1f6a34; }
+.frise-action { margin: .75rem 0 0; }
+.frise-action .bouton { margin: 0; min-height: var(--cible); }
+.agenda-passes { margin-top: 2rem; }
+.agenda-passes > summary { cursor: pointer; font-weight: 700; font-size: 1.15rem; min-height: var(--cible); display: flex; align-items: center; }
+.frise-passee .frise-jour { color: var(--texte-doux); }
+.frise-passee .frise-item::before { border-color: var(--texte-doux); }
+.frise-passee .frise-carte { box-shadow: none; background: var(--fond-doux); }
+@media (max-width: 40rem) {
+  .frise-liste::before { left: .35rem; }
+  .frise-item { grid-template-columns: 1fr; gap: .35rem; padding-left: 1.6rem; }
+  .frise-item::before { left: -1px; top: .45rem; }
+  .frise-date { text-align: left; display: flex; align-items: baseline; gap: .5rem; padding-top: 0; }
+  .frise-jour { font-size: 1.6rem; display: inline; }
+  .frise-heure { display: inline; margin: 0; }
+  .frise-carte { margin-left: 0; }
+}
+.frise-item { grid-template-columns: 8rem 1fr; }
+.frise-liste::before { left: 8.75rem; }
+.frise-item::before { left: calc(8.75rem - 5px); }
+.frise-heure { white-space: normal; }
+@media (max-width: 40rem) {
+  .frise-item { grid-template-columns: 1fr; }
+  .frise-liste::before { left: .35rem; }
+  .frise-item::before { left: -1px; }
+}

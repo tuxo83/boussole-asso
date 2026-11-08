@@ -121,3 +121,23 @@ document.querySelectorAll('[data-en-place]').forEach(function (zone) {
   form.querySelector('[data-en-place-annuler]').addEventListener('click', fermer);
   form.addEventListener('keydown', function (event) { if (event.key === 'Escape') { fermer(); } });
 });
+
+// Agenda : deux vues (frise par défaut, liste) ; le choix est retenu par ce navigateur
+document.querySelectorAll('[data-vues]').forEach(function (bloc) {
+  var choix = bloc.querySelector('.agenda-choix');
+  if (!choix) return;
+  choix.hidden = false;
+  function montrer(vue) {
+    bloc.querySelectorAll('[data-vue-contenu]').forEach(function (c) { c.hidden = c.dataset.vueContenu !== vue; });
+    choix.querySelectorAll('[data-vue]').forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.vue === vue ? 'true' : 'false'); });
+  }
+  var garde = null;
+  try { garde = localStorage.getItem('agenda-vue'); } catch (e) {}
+  if (garde === 'liste' || garde === 'frise') montrer(garde);
+  choix.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-vue]');
+    if (!b) return;
+    montrer(b.dataset.vue);
+    try { localStorage.setItem('agenda-vue', b.dataset.vue); } catch (e2) {}
+  });
+});
