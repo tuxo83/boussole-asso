@@ -321,3 +321,54 @@ document.querySelectorAll('[data-reglages-evenement]').forEach(function (form) {
   form.addEventListener('change', maj);
   maj();
 });
+
+// Fichiers d'un espace : un clic ouvre une petite fenêtre avec l'aperçu (images, PDF) et le bouton Télécharger.
+// Sur téléphone, un PDF ne s'affiche pas bien dans une fenêtre : on propose de l'ouvrir en grand.
+(function () {
+  var dialogue = document.getElementById('dialogue-fichier');
+  if (!dialogue || typeof dialogue.showModal !== 'function') return;
+  var titre = dialogue.querySelector('h3');
+  var zone = dialogue.querySelector('[data-apercu-zone]');
+  var telecharger = dialogue.querySelector('[data-telecharger]');
+  var ouvrir = dialogue.querySelector('[data-ouvrir]');
+  var tactile = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+  function message(texte) {
+    var p = document.createElement('p');
+    p.className = 'apercu-message';
+    p.textContent = texte;
+    zone.appendChild(p);
+  }
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest('a[data-fichier]');
+    if (!a || e.ctrlKey || e.metaKey || e.shiftKey) return;
+    e.preventDefault();
+    var type = a.dataset.fichier;
+    titre.textContent = a.textContent;
+    zone.textContent = '';
+    zone.className = 'apercu-zone' + (type ? ' apercu-' + type : '');
+    telecharger.href = a.href;
+    telecharger.setAttribute('download', '');
+    ouvrir.hidden = !type;
+    if (type) ouvrir.href = a.dataset.apercuUrl;
+    if (type === 'image') {
+      var img = document.createElement('img');
+      img.src = a.dataset.apercuUrl;
+      img.alt = a.textContent;
+      zone.appendChild(img);
+    } else if (type === 'pdf' && !tactile) {
+      var cadre = document.createElement('iframe');
+      cadre.src = a.dataset.apercuUrl;
+      cadre.title = a.textContent;
+      zone.appendChild(cadre);
+    } else if (type === 'pdf') {
+      message('Document PDF (' + a.dataset.detail + '). Touchez « Ouvrir en grand » pour le lire.');
+    } else {
+      message("Pas d'aperçu pour ce type de fichier (" + a.dataset.detail + ').');
+    }
+    dialogue.showModal();
+    telecharger.focus();
+  });
+  dialogue.addEventListener('close', function () { zone.textContent = ''; });
+  dialogue.querySelector('[data-fermer-dialogue]').addEventListener('click', function () { dialogue.close(); });
+  dialogue.addEventListener('click', function (e) { if (e.target === dialogue) dialogue.close(); });
+})();

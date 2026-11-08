@@ -179,7 +179,8 @@ $rubriques = array_filter([
   <?php if ($fichiers): ?>
   <ul class="fichiers-liste">
     <?php foreach ($fichiers as $fichier): ?>
-    <li><a href="<?= e(url('/fichier/' . (int) $fichier['id'])) ?>"><?= e($fichier['nom']) ?></a>
+    <?php $apercu = fichier_apercu($fichier); ?>
+    <li><a href="<?= e(url('/fichier/' . (int) $fichier['id'])) ?>" data-fichier="<?= e($apercu ?? '') ?>" data-apercu-url="<?= $apercu ? e(url('/fichier/' . (int) $fichier['id']) . '?apercu=1') : '' ?>" data-detail="<?= e(taille_lisible((int) $fichier['taille'])) ?>"><?= e($fichier['nom']) ?></a>
       <span class="discret">· <?= e(taille_lisible((int) $fichier['taille'])) ?> · <?= e(date('d/m/Y', strtotime($fichier['depose_le']))) ?></span>
       <?php if ($peut_gerer): ?>
       <form method="post" action="<?= e(url('/fichier/' . (int) $fichier['id'] . '/supprimer')) ?>" class="en-ligne"><?= csrf_field() ?><button type="submit" class="lien-bouton" data-confirmer="Supprimer le fichier <?= e($fichier['nom']) ?> ?" aria-label="Supprimer <?= e($fichier['nom']) ?>">supprimer</button></form>
@@ -187,6 +188,15 @@ $rubriques = array_filter([
     </li>
     <?php endforeach ?>
   </ul>
+  <dialog class="dialogue dialogue-apercu" id="dialogue-fichier" aria-labelledby="dialogue-fichier-titre">
+    <h3 id="dialogue-fichier-titre"></h3>
+    <div class="apercu-zone" data-apercu-zone></div>
+    <p class="dialogue-actions">
+      <a class="bouton bouton-principal" data-telecharger href="#">Télécharger</a>
+      <a class="bouton bouton-secondaire" data-ouvrir href="#" target="_blank" rel="noopener">Ouvrir en grand</a>
+      <button type="button" class="lien-bouton" data-fermer-dialogue>Fermer</button>
+    </p>
+  </dialog>
   <?php endif ?>
 </section>
 <?php endif ?>

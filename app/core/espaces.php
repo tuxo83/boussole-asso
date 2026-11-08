@@ -271,3 +271,15 @@ function espace_libelle_compose(array $in): string
     }
     return trim((string) ($in['libelle'] ?? ''));
 }
+
+
+// Aperçu d'un fichier dans une petite fenêtre : images courantes et PDF (jamais SVG ni HTML, qui peuvent porter du code)
+const FICHIER_APERCU_TYPES = ['image/png' => 'image', 'image/jpeg' => 'image', 'image/gif' => 'image', 'image/webp' => 'image', 'application/pdf' => 'pdf'];
+
+function fichier_apercu(array $fichier): ?string
+{
+    if (setting('fichiers_apercu', '1') !== '1') {
+        return null;
+    }
+    return FICHIER_APERCU_TYPES[(string) ($fichier['type_mime'] ?? '')] ?? null;
+}
