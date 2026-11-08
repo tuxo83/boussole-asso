@@ -974,3 +974,17 @@ details.crayon-flottant > .crayon-bouton { padding: 0; }
 .case-auto { flex: none; width: 1.15rem; height: 1.15rem; border: 2px solid var(--couleur-principale); border-radius: 4px; }
 .meteo-auto-choix button[aria-pressed="true"] .case-auto { background: var(--couleur-principale) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.5' stroke-linecap='round'%3E%3Cpath d='m6 12 4 4 8-8'/%3E%3C/svg%3E") center / 80% no-repeat; }
 .meteo-options .petit { margin: .25rem .5rem; }
+
+/* Présentation : menu météo plus large (choix à la main en 2 × 2), visibilité ouverte sous la ligne, « ? » plus lisible */
+.meteo-options { min-width: 19rem; padding: .5rem; }
+.meteo-options > form:last-child { display: grid; grid-template-columns: 1fr 1fr; gap: .35rem; width: 100%; }
+.meteo-options > form:last-child .petit { grid-column: 1 / -1; margin: .25rem .25rem .1rem; }
+.meteo-options > form:last-child button { justify-content: flex-start; width: 100%; }
+.meteo-auto-choix { width: 100%; }
+.espace-etat:has(.en-place-ligne .en-place-form:not([hidden])) { align-items: flex-start; }
+.en-place-ligne:has(.en-place-form:not([hidden])) { flex-basis: 100%; margin-top: .25rem; }
+.en-place-ligne .en-place-form .choix-visibilite { max-width: 34rem; }
+.aide-contenu { left: -.5rem; transform: none; width: min(34rem, 92vw); }
+.aide-contenu th { text-transform: none; letter-spacing: 0; font-size: .82rem; vertical-align: bottom; }
+.aide-contenu td:not(:first-child), .aide-contenu th:not(:first-child) { text-align: center; }
+.aide-contenu td:first-child { white-space: nowrap; }
