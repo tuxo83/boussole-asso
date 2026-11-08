@@ -163,6 +163,63 @@ function api_membre_ajouter(array $args): array
     return ['email' => $email, 'prenom' => (string) ($args['prenom'] ?? ''), 'nom' => (string) ($args['nom'] ?? '')];
 }
 
+// Modifier un membre (clé « administration », droit « membres » ; compte de démonstration : administrateur).
+// Jamais par l'API : mot de passe, double authentification, clés (voir docs/regles.md).
+function api_membre_modifier(array $args): array
+{
+    $member = api_administration('membres');
+    $cible = db_one('SELECT * FROM membre WHERE email = ?', [mb_strtolower(trim((string) ($args['email'] ?? '')))]);
+    if ($cible === null) {
+        throw new ApiErreur('Membre introuvable', 404);
+    }
+    $champs = [];
+    foreach (['prenom', 'nom'] as $c) {
+        if (array_key_exists($c, $args)) {
+            $champs[$c] = mb_substr(trim((string) $args[$c]), 0, 100);
+        }
+    }
+    if (array_key_exists('actif', $args) && (int) $cible['id'] !== (int) $member['id']) {
+        $champs['actif'] = $args['actif'] ? 1 : 0;
+    }
+    if (array_key_exists('compte_demo', $args)) {
+        if (!is_admin($member)) {
+            throw new ApiErreur('Compte de démonstration : administrateur seulement', 403);
+        }
+        if ((int) $cible['id'] === (int) $member['id']) {
+            throw new ApiErreur('Pas sur votre propre compte', 403);
+        }
+        $champs['compte_demo'] = $args['compte_demo'] ? 1 : 0;
+    }
+    if ($champs) {
+        db_query('UPDATE membre SET ' . implode(', ', array_map(fn($c) => "$c = ?", array_keys($champs))) . ' WHERE id = ?', [...array_values($champs), $cible['id']]);
+        if (isset($champs['compte_demo']) && $champs['compte_demo'] !== (int) $cible['compte_demo']) {
+            journal_compte((int) $cible['id'], $member, $champs['compte_demo'] ? 'Marqué compte de démonstration' : 'N\'est plus un compte de démonstration');
+        }
+        journal(null, $member, 'Membre modifié : ' . $cible['email']);
+    }
+    $apres = db_one('SELECT email, prenom, nom, actif, compte_demo FROM membre WHERE id = ?', [$cible['id']]);
+    return ['email' => $apres['email'], 'prenom' => $apres['prenom'], 'nom' => $apres['nom'], 'actif' => (bool) $apres['actif'], 'compte_demo' => (bool) $apres['compte_demo']];
+}
+
+// Effacer un membre définitivement (clé « administration », administrateur) : il faut redonner son e-mail dans « confirmation »
+function api_membre_effacer(array $args): array
+{
+    $member = api_administration('admin');
+    $email = mb_strtolower(trim((string) ($args['email'] ?? '')));
+    $cible = db_one('SELECT * FROM membre WHERE email = ?', [$email]);
+    if ($cible === null) {
+        throw new ApiErreur('Membre introuvable', 404);
+    }
+    if ((int) $cible['id'] === (int) $member['id']) {
+        throw new ApiErreur('Pas sur votre propre compte', 403);
+    }
+    if (mb_strtolower(trim((string) ($args['confirmation'] ?? ''))) !== $email) {
+        throw new ApiErreur('Confirmation : redonnez l\'e-mail du membre à effacer');
+    }
+    membre_effacer($cible, $member, "à la demande d'un administrateur (API)");
+    return ['efface' => $email];
+}
+
 // ---------- Actions (appelées par l'API JSON et par le MCP)
 
 function api_moi(): array
@@ -484,5 +541,5 @@ function api_membres(): array
     if (!has_right(current_member(), 'membres')) {
         throw new ApiErreur('Droit « membres » nécessaire', 403);
     }
-    return db_all('SELECT m.email, m.prenom, m.nom, m.actif, t.libelle AS type FROM membre m LEFT JOIN type_membre t ON t.id = m.type_membre_id ORDER BY m.nom, m.email');
+    return db_all('SELECT m.email, m.prenom, m.nom, m.actif, m.compte_demo, t.libelle AS type FROM membre m LEFT JOIN type_membre t ON t.id = m.type_membre_id ORDER BY m.nom, m.email');
 }

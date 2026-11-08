@@ -515,3 +515,41 @@ details.crayon-flottant > .crayon-bouton { padding: 0; }
 .carte-espace-ligne:has(> :only-child) { justify-content: flex-start; }
 .espaces-evenements > summary { display: flex; align-items: center; cursor: pointer; min-height: 44px; }
 .espaces-evenements > summary h2 { margin: 1.5rem 0 1rem; display: inline; }
+
+/* Mon compte : en-tête de profil, rendez-vous, tuiles de gestion, réglages avec icônes */
+.profil { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem 1.25rem; margin: .5rem 0 2rem; padding: 1.5rem; border-radius: calc(var(--rayon) * 1.5); background: linear-gradient(135deg, var(--principale-doux), var(--principale-moyen)); }
+.profil-avatar { flex: none; display: grid; place-items: center; width: 4rem; height: 4rem; border-radius: 50%; background: var(--couleur-principale); color: #fff; font-weight: 700; font-size: 1.35rem; letter-spacing: .02em; }
+.profil-texte { flex: 1 1 12rem; min-width: 0; }
+.profil-nom { margin: 0; font-size: clamp(1.4rem, 4vw, 1.8rem); font-weight: 800; color: var(--principale-fonce); line-height: 1.2; }
+.profil-email { margin: .15rem 0 0; color: var(--texte-doux); overflow-wrap: anywhere; }
+.profil-cotisation { display: flex; flex-direction: column; align-items: flex-start; gap: .4rem; }
+.profil-cotisation .bouton { margin: 0; }
+.compte-section { margin: 0 0 2rem; }
+.compte-section > h2, .compte-section .titre-avec-lien h2 { font-size: 1.2rem; margin: 0 0 .75rem; }
+.rdv, .tuiles { list-style: none; margin: 0; padding: 0; }
+.rdv { border: 1px solid var(--bordure); border-radius: var(--rayon); background: var(--fond); overflow: hidden; }
+.rdv li + li { border-top: 1px solid var(--bordure); }
+.rdv a { display: flex; align-items: center; gap: 1rem; padding: .75rem 1rem; color: var(--texte); text-decoration: none; min-height: 44px; }
+.rdv a:hover { background: var(--principale-doux); }
+.rdv .date-tuile { width: 3rem; height: 3rem; }
+.rdv .date-tuile .jour { font-size: 1.2rem; }
+.rdv-texte { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.vide { display: flex; align-items: center; gap: .6rem; padding: 1rem; border: 1px dashed var(--bordure); border-radius: var(--rayon); color: var(--texte-doux); margin: 0; }
+.vide svg, .tuile-icone svg { width: 1.3rem; height: 1.3rem; flex: none; }
+.tuiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: .75rem; }
+.tuiles a { position: relative; display: flex; align-items: center; gap: .85rem; height: 100%; padding: .9rem 1rem; border: 1px solid var(--bordure); border-radius: var(--rayon); background: var(--fond); color: var(--texte); text-decoration: none; transition: border-color .15s, box-shadow .15s; }
+.tuiles a:hover { border-color: var(--principale-moyen); box-shadow: var(--ombre); }
+.tuile-icone { flex: none; display: grid; place-items: center; width: 2.5rem; height: 2.5rem; border-radius: 50%; background: var(--principale-doux); color: var(--couleur-principale); }
+.tuile-texte { display: flex; flex-direction: column; min-width: 0; }
+.tuile-texte .discret { font-size: .85rem; }
+.pastille { position: absolute; top: .5rem; right: .6rem; font-size: .72rem; font-weight: 700; padding: .1rem .5rem; border-radius: 999px; background: #fff7e6; color: #7a4b00; border: 1px solid #f3d79a; }
+.reglages > li { justify-content: flex-start; }
+.reglages > li > div:first-child, .reglages > li > .tuile-icone + div { flex: 1 1 12rem; display: flex; flex-direction: column; gap: .1rem; min-width: 0; }
+/* Le contenu replié d'un <details> en display: contents compte comme un élément du flex : marges au lieu de gap */
+.reglages > li { column-gap: 0; }
+.reglages > li > .tuile-icone, .reglages > li > div { margin-right: 1rem; }
+.rdv-ligne { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem .6rem; margin-top: .15rem; }
+@media (max-width: 40rem) {
+  .reglages > li { align-items: flex-start; }
+  .reglages > li > .bouton, .reglages .reglage-action > summary { margin-left: 3.5rem; }
+}
