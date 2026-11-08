@@ -69,6 +69,7 @@ kill "$SMTP_PID"
 check "test d'envoi : serveur injoignable, raison affichée" "$(mailtest bon >/dev/null; grep -c "connexion impossible à 127.0.0.1:$PSMTP" "$B")" "1"
 check "feuille CSS personnalisée servie" "$(c "$U/theme.css")$(cat "$B")" "200 body{color:#111}"
 c "$U/" >/dev/null; check "couleur appliquée dans la page" "$(grep -c -- '--couleur-principale:#123456' "$B")" "1"
+check "choix : double authentification à chaque connexion" "$(c "$U/compte/double-authentification" >/dev/null; T=$(tok); c --data-urlencode "_csrf=$T" -d 'mfa_connexion=1' "$U/compte/double-authentification/moment" >/dev/null; mysql -N -u "$DBU" -p"$DBP" "$DB" -e "SELECT mfa_connexion FROM membre WHERE email = 'admin@example.org'" 2>/dev/null)" "1"
 c "$U/compte" >/dev/null; T=$(tok); c --data-urlencode "_csrf=$T" "$U/deconnexion" >/dev/null
 check "après déconnexion, compte inaccessible" "$(c "$U/compte")" "303 $U/connexion"
 hpost "$U/connexion" "$U/connexion" -d 'email=admin@example.org&mot_de_passe=motdepasse-tres-long' >/dev/null
@@ -76,6 +77,10 @@ check "avec 2FA active : 2e étape demandée" "$(c "$U/compte")" "303 $U/connexi
 c "$U/connexion/double-authentification" >/dev/null; T=$(tok)
 check "2e étape : mauvais code" "$(c --data-urlencode "_csrf=$T" -d 'code=111111' "$U/connexion/double-authentification")" "422 "
 check "2e étape : bon code" "$(c --data-urlencode "_csrf=$T" -d "code=$(totp "$S")" "$U/connexion/double-authentification")" "303 $U/compte"
+c "$U/compte" >/dev/null; T=$(tok); c --data-urlencode "_csrf=$T" "$U/deconnexion" >/dev/null
+mysql -u "$DBU" -p"$DBP" "$DB" -e "UPDATE membre SET mfa_connexion = 0 WHERE email = 'admin@example.org'" 2>/dev/null
+hpost "$U/connexion" "$U/connexion" -d 'email=admin@example.org&mot_de_passe=motdepasse-tres-long' >/dev/null
+check "choix « seulement pour la gestion » : connexion directe, 2e preuve en entrant dans la gestion" "$(c "$U/compte" | cut -c1-3) $(c "$U/admin/parametres")" "200 303 $U/connexion/double-authentification"
 c "$U/compte" >/dev/null; T=$(tok); c --data-urlencode "_csrf=$T" "$U/deconnexion" >/dev/null
 
 # Lien magique pour un membre sans mot de passe
