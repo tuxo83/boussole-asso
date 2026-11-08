@@ -327,10 +327,13 @@ function carte_evenement(array $ev, string $titre, string $lien, string $contenu
     $date = $ev['debut'] !== null
         ? '<span class="jour">' . (int) date('j', strtotime($ev['debut'])) . '</span><span class="mois">' . $mois[(int) date('n', strtotime($ev['debut']))] . '</span>'
         : '<span class="date-icone" title="Date à venir">' . c_icone('calendrier') . '</span>';
-    $bandeau = $ev['visibilite'] === 'public' ? 'Ouvert à tous' : 'Réservé aux membres';
-    return '<article class="carte carte-evenement acces-' . ($ev['visibilite'] === 'public' ? 'public' : 'membres') . ($verrouille ? ' carte-reservee' : '') . '">'
-        . '<span class="ruban">' . $bandeau . '</span>'
-        . '<div class="evenement-tete"><span class="date-tuile">' . $date . '</span><h3><a href="' . e(url($lien)) . '">' . e($titre) . '</a></h3></div>'
+    $equipe = $ev['visibilite'] === 'equipe';
+    // Bandeau court (qui peut venir) ; l'espace organisateur est dit dans la carte, jamais à un visiteur pour un événement réservé
+    $bandeau = $equipe ? 'Réunion d\'équipe' : ($ev['visibilite'] === 'public' ? 'Ouvert à tous' : 'Réservé aux membres');
+    $organise = !$verrouille && !empty($ev['parent_titre']) ? '<p class="organise">' . e($ev['parent_titre']) . '</p>' : '';
+    return '<article class="carte carte-evenement acces-' . ($equipe ? 'equipe' : ($ev['visibilite'] === 'public' ? 'public' : 'membres')) . ($verrouille ? ' carte-reservee' : '') . '">'
+        . '<span class="ruban">' . e($bandeau) . '</span>'
+        . '<div class="evenement-tete"><span class="date-tuile">' . $date . '</span><div class="evenement-titre"><h3><a href="' . e(url($lien)) . '">' . e($titre) . '</a></h3>' . $organise . '</div></div>'
         . ($ev['debut'] !== null ? '<p class="discret">' . e(evenement_date($ev['debut'])) . '</p>' : '') . $contenu . '</article>';
 }
 
@@ -339,10 +342,15 @@ function evenements_visibles(bool $avenir): array
 {
     evenements_cloturer_echus();
     $membre = current_member();
-    $lignes = db_all('SELECT s.*, e.debut, e.lieu FROM espace s LEFT JOIN evenement e ON e.espace_id = s.id
-        WHERE s.type = "evenement" AND s.visibilite IN ("public", "adherents", "cotisants") AND s.archive = 0 AND '
+    // Les réunions d'équipe n'apparaissent que dans l'agenda des membres de cette équipe (ou de l'espace auquel elles sont rattachées)
+    $lignes = db_all('SELECT s.*, e.debut, e.lieu, p.titre AS parent_titre FROM espace s LEFT JOIN evenement e ON e.espace_id = s.id LEFT JOIN espace p ON p.id = s.parent_id
+        WHERE s.type = "evenement" AND s.visibilite IN ("public", "adherents", "cotisants"' . ($membre !== null ? ', "equipe"' : '') . ') AND s.archive = 0 AND '
         . ($avenir ? '(e.debut IS NULL OR e.debut >= CURDATE()) ORDER BY e.debut IS NULL, e.debut' : 'e.debut < CURDATE() AND e.debut >= CURDATE() - INTERVAL 12 MONTH ORDER BY e.debut DESC'));
-    return array_values(array_filter($lignes, fn($ev) => $ev['visibilite'] === 'public' || $membre === null || espace_peut_voir($membre, $ev)));
+    return array_values(array_filter($lignes, fn($ev) => match ($ev['visibilite']) {
+        'public' => true,
+        'equipe' => espace_niveau($membre, $ev) !== null || espace_equipe_parente($membre, $ev),
+        default => $membre === null || espace_peut_voir($membre, $ev),
+    }));
 }
 
 function cartes_evenements(array $evenements, bool $passes = false): string

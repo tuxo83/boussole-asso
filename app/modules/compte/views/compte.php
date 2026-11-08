@@ -26,20 +26,43 @@ $mois = ['', 'janv.', 'févr.', 'mars', 'avril', 'mai', 'juin', 'juil.', 'août'
   </div>
 </section>
 
+<?php
+// Mes prochains rendez-vous : mes inscriptions, les réunions de mes équipes, et les échéances de mes espaces (60 jours)
+$rdv = [];
+$inscrit = [];
+foreach ($inscriptions as $i) {
+    $inscrit[$i['slug']] = true;
+    $rdv[] = ['date' => $i['debut'], 'heure' => true, 'titre' => $i['titre'], 'lien' => '/espace/' . $i['slug'], 'ligne' => '', 'genre' => 'evenement',
+        'badge' => [$i['statut'] === 'retenu' ? 'badge-ok' : 'badge-attention', ucfirst(INSCRIPTION_STATUTS[$i['statut']]) . ($i['statut'] === 'attente' ? ' n°' . (int) $i['rang'] : '')]];
+}
+foreach (db_all('SELECT s.*, e.debut, e.lieu, p.titre AS parent_titre FROM espace s JOIN evenement e ON e.espace_id = s.id LEFT JOIN espace p ON p.id = s.parent_id
+    WHERE s.type = "evenement" AND s.visibilite = "equipe" AND s.archive = 0 AND e.debut >= CURDATE() AND e.debut < CURDATE() + INTERVAL 60 DAY ORDER BY e.debut') as $r) {
+    if (!isset($inscrit[$r['slug']]) && (espace_niveau($membre, $r) !== null || espace_equipe_parente($membre, $r))) {
+        $rdv[] = ['date' => $r['debut'], 'heure' => true, 'titre' => $r['titre'], 'lien' => '/espace/' . $r['slug'], 'ligne' => $r['lieu'], 'genre' => 'reunion',
+            'badge' => ['badge-equipe', 'Réunion' . ($r['parent_titre'] ? ' · ' . $r['parent_titre'] : '')]];
+    }
+}
+foreach (db_all('SELECT j.*, s.titre AS espace_titre, s.slug FROM jalon j JOIN espace s ON s.id = j.espace_id JOIN espace_membre em ON em.espace_id = s.id AND em.membre_id = ?
+    WHERE j.fait = 0 AND s.archive = 0 AND j.date_jalon >= CURDATE() AND j.date_jalon < CURDATE() + INTERVAL 60 DAY ORDER BY j.date_jalon', [$membre['id']]) as $j) {
+    $rdv[] = ['date' => $j['date_jalon'], 'heure' => false, 'titre' => $j['libelle'], 'lien' => '/espace/' . $j['slug'], 'ligne' => '', 'genre' => 'echeance',
+        'badge' => ['badge-echeance', 'Échéance · ' . $j['espace_titre']]];
+}
+usort($rdv, fn($x, $y) => strcmp((string) $x['date'], (string) $y['date']));
+?>
 <section class="compte-section">
-  <div class="titre-avec-lien"><h2>Mes prochains rendez-vous</h2><?php if ($agenda && $inscriptions): ?><a href="<?= e(url('/page/' . $agenda)) ?>">Tout l'agenda →</a><?php endif ?></div>
-  <?php if ($inscriptions): ?>
+  <div class="titre-avec-lien"><h2>Mes prochains rendez-vous</h2><?php if ($agenda && $rdv): ?><a href="<?= e(url('/page/' . $agenda)) ?>">Tout l'agenda →</a><?php endif ?></div>
+  <?php if ($rdv): ?>
   <ul class="rdv">
-    <?php foreach ($inscriptions as $i): ?>
-    <li><a href="<?= e(url('/espace/' . $i['slug'])) ?>">
-      <span class="date-tuile"><?php if ($i['debut']): ?><span class="jour"><?= (int) date('j', strtotime($i['debut'])) ?></span><span class="mois"><?= $mois[(int) date('n', strtotime($i['debut']))] ?></span><?php else: ?><span class="date-icone"><?= c_icone('calendrier') ?></span><?php endif ?></span>
-      <span class="rdv-texte"><strong><?= e($i['titre']) ?></strong><span class="rdv-ligne"><span class="discret"><?= $i['debut'] ? e(date('H\hi', strtotime($i['debut']))) : 'Date à venir' ?></span>
-      <span class="badge<?= $i['statut'] === 'retenu' ? ' badge-ok' : ' badge-attention' ?>"><?= e(ucfirst(INSCRIPTION_STATUTS[$i['statut']])) ?><?= $i['statut'] === 'attente' ? ' n°' . (int) $i['rang'] : '' ?></span></span></span>
+    <?php foreach ($rdv as $r): ?>
+    <li class="rdv-<?= e($r['genre']) ?>"><a href="<?= e(url($r['lien'])) ?>">
+      <span class="date-tuile"><?php if ($r['date']): ?><span class="jour"><?= (int) date('j', strtotime($r['date'])) ?></span><span class="mois"><?= $mois[(int) date('n', strtotime($r['date']))] ?></span><?php else: ?><span class="date-icone"><?= c_icone('calendrier') ?></span><?php endif ?></span>
+      <span class="rdv-texte"><strong><?= e($r['titre']) ?></strong><span class="rdv-ligne"><?php if ($r['heure'] || $r['ligne']): ?><span class="discret"><?= e(trim(($r['heure'] ? ($r['date'] ? date('H\hi', strtotime($r['date'])) : 'Date à venir') : '') . ($r['ligne'] ? ' · ' . $r['ligne'] : ''), ' ·')) ?></span><?php endif ?>
+      <span class="badge <?= e($r['badge'][0]) ?>"><?= e($r['badge'][1]) ?></span></span></span>
     </a></li>
     <?php endforeach ?>
   </ul>
   <?php else: ?>
-  <p class="vide"><?= c_icone('calendrier') ?><span>Aucune inscription à venir.<?php if ($agenda): ?> <a href="<?= e(url('/page/' . $agenda)) ?>">Voir les prochains événements</a><?php endif ?></span></p>
+  <p class="vide"><?= c_icone('calendrier') ?><span>Rien de prévu pour l'instant.<?php if ($agenda): ?> <a href="<?= e(url('/page/' . $agenda)) ?>">Voir les prochains événements</a><?php endif ?></span></p>
   <?php endif ?>
 </section>
 <section class="compte-section">
