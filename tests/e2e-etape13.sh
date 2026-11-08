@@ -41,7 +41,9 @@ check "bob : appareil retenu (cookie et ligne)" "$(appareil) $(nb bob)" "1 1"
 check "seule l'empreinte du secret est gardée" "$(sql "SELECT COUNT(*) FROM connexion_appareil WHERE LOCATE(empreinte, '$(grep boussole_appareil "$J" | awk '{print $7}')') > 0")" "0"
 sans_session
 check "bob rouvre l'application : toujours connecté" "$(c "$U/compte" | cut -c1-3)" "200"
-check "membre connecté : bandeau « Installez l'application » prêt (affiché par le script, sur téléphone)" "$(c "$U/compte" >/dev/null; grep -c 'data-proposer-appli hidden' "$B") $(as visiteur; c "$U/" >/dev/null; grep -c 'data-proposer-appli' "$B")" "1 0"
+check "bandeau « Installez l'application » : pas proposé par défaut" "$(c "$U/compte" >/dev/null; grep -c 'data-proposer-appli' "$B")" "0"
+sql "REPLACE INTO parametre (cle, valeur) VALUES ('application_proposer', '1')"
+check "bandeau activé par l'administrateur : prêt pour un membre (affiché par le script, sur téléphone)" "$(c "$U/compte" >/dev/null; grep -c 'data-proposer-appli hidden' "$B") $(as visiteur; c "$U/" >/dev/null; grep -c 'data-proposer-appli' "$B")" "1 0"
 as bob; check "ouverture de l'application, connecté : page d'arrivée" "$(sans_session; c "$U/app/demarrer")" "303 $U/compte"
 c "$U/compte/parametres" >/dev/null
 check "Paramètres : appareils connectés, « cet appareil », application" "$(grep -c '<strong>Appareils connectés</strong>' "$B") $(grep -c '>cet appareil<' "$B") $(grep -c 'id="application" data-application' "$B")" "1 1 1"
