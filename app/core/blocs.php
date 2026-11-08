@@ -299,12 +299,14 @@ function bloc_dynamique(string $bloc): string
                 }
             }
             // Deux vues des mêmes données : la frise (par défaut) et la liste en fiches ; le choix est retenu par le navigateur
-            $mes = $miens ? '<section class="agenda-miens"><h2 class="titre-bloc">Mes inscriptions</h2>' . agenda_mes_lignes($miens) . '</section>' : '';
-            $frise = ($prochains ? agenda_frise($prochains, false) : '<p>Aucun événement annoncé pour l\'instant.</p>')
+            // « Mes inscriptions » suit la vue choisie, comme le reste de l'agenda
+            $mes_frise = $miens ? '<section class="agenda-miens"><h2 class="titre-bloc">Mes inscriptions</h2>' . agenda_frise($miens, false, false) . '</section>' : '';
+            $mes_liste = $miens ? '<section class="agenda-miens"><h2 class="titre-bloc">Mes inscriptions</h2>' . cartes_evenements($miens) . '</section>' : '';
+            $frise = $mes_frise . ($prochains ? agenda_frise($prochains, false) : '<p>Aucun événement annoncé pour l\'instant.</p>')
                 . ($passes ? '<details class="agenda-passes"><summary>Événements passés</summary>' . agenda_frise($passes, true) . '</details>' : '');
-            $liste = ($prochains ? '<h2 class="titre-bloc">À venir</h2>' . cartes_evenements($prochains) : '<p>Aucun événement annoncé pour l\'instant.</p>')
+            $liste = $mes_liste . ($prochains ? '<h2 class="titre-bloc">À venir</h2>' . cartes_evenements($prochains) : '<p>Aucun événement annoncé pour l\'instant.</p>')
                 . ($passes ? '<h2 class="titre-bloc">Événements passés</h2>' . cartes_evenements($passes, true) : '');
-            return $aide . $mes
+            return $aide
                 . '<div class="agenda-vues" data-vues>'
                 . '<p class="agenda-choix" role="group" aria-label="Affichage de l\'agenda" hidden><button type="button" data-vue="frise" aria-pressed="true">Frise</button><button type="button" data-vue="liste" aria-pressed="false">Liste</button></p>'
                 . '<div class="agenda-vue" data-vue-contenu="frise">' . $frise . '</div>'
@@ -414,21 +416,6 @@ function page_agenda_slug(): ?string
     return $slug !== null && $slug !== false ? (string) $slug : null;
 }
 
-// Mes inscriptions à venir : des lignes simples (date, titre, statut écrit)
-function agenda_mes_lignes(array $evenements): string
-{
-    $mois = ['', 'janv.', 'févr.', 'mars', 'avril', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
-    $html = '<ul class="rdv">';
-    foreach ($evenements as $ev) {
-        $st = $ev['mon_statut'];
-        $html .= '<li><a href="' . e(url('/espace/' . $ev['slug'])) . '"><span class="date-tuile">'
-            . ($ev['debut'] ? '<span class="jour">' . (int) date('j', strtotime($ev['debut'])) . '</span><span class="mois">' . $mois[(int) date('n', strtotime($ev['debut']))] . '</span>' : '<span class="date-icone">' . c_icone('calendrier') . '</span>')
-            . '</span><span class="rdv-texte"><strong>' . e($ev['titre']) . '</strong><span class="rdv-ligne"><span class="discret">' . e(trim(($ev['debut'] ? agenda_jour_heure($ev['debut']) : 'Date à venir') . ($ev['lieu'] ? ' · ' . $ev['lieu'] : ''))) . '</span>'
-            . '<span class="badge ' . ($st['statut'] === 'retenu' ? 'badge-ok' : 'badge-attention') . '">' . e(ucfirst(INSCRIPTION_STATUTS[$st['statut']])) . ($st['statut'] === 'attente' ? ' n°' . (int) $st['rang'] : '') . '</span></span></span></a></li>';
-    }
-    return $html . '</ul>';
-}
-
 // « Mercredi · 18 h 30 »
 function agenda_jour_heure(string $debut): string
 {
@@ -438,11 +425,11 @@ function agenda_jour_heure(string $debut): string
 }
 
 // Frise de l'agenda : un intertitre par mois, date à gauche et carte à droite, toujours ; statut écrit, un seul bouton
-function agenda_frise(array $evenements, bool $passes): string
+function agenda_frise(array $evenements, bool $passes, bool $aujourdhui = true): string
 {
     $mois = ['', 'janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
     $membre = current_member();
-    $html = '<div class="frise-agenda' . ($passes ? ' frise-passee' : '') . '">' . ($passes ? '' : '<p class="frise-aujourdhui">Aujourd\'hui</p>');
+    $html = '<div class="frise-agenda' . ($passes ? ' frise-passee' : '') . '">' . ($passes || !$aujourdhui ? '' : '<p class="frise-aujourdhui">Aujourd\'hui</p>');
     $courant = null;
     foreach ($evenements as $ev) {
         $t = $ev['debut'] ? strtotime($ev['debut']) : null;
