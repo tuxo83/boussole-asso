@@ -341,6 +341,24 @@ function api_equipe_ajouter(string $slug, string $email, string $niveau, string 
     return api_espace($slug);
 }
 
+// Retirer quelqu'un de l'équipe d'un espace (même droit que sur le site : qui gère l'espace) ; son compte reste
+function api_equipe_retirer(string $slug, string $email): array
+{
+    api_ecriture();
+    $member = current_member();
+    $espace = espace_par_slug($slug);
+    if ($espace === null || !espace_peut_gerer($member, $espace)) {
+        throw new ApiErreur('Espace introuvable ou droits insuffisants', 403);
+    }
+    $personne = db_one('SELECT m.* FROM membre m JOIN espace_membre em ON em.membre_id = m.id WHERE em.espace_id = ? AND m.email = ?', [$espace['id'], mb_strtolower(trim($email))]);
+    if ($personne === null) {
+        throw new ApiErreur("Personne de l'équipe avec cet e-mail : aucune", 404);
+    }
+    db_query('DELETE FROM espace_membre WHERE espace_id = ? AND membre_id = ?', [$espace['id'], $personne['id']]);
+    journal($espace['id'], $member, membre_nom($personne) . ' retiré de l\'équipe');
+    return api_espace($slug);
+}
+
 function api_evenement_regler(string $slug, array $args): array
 {
     api_ecriture();
