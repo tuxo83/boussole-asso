@@ -170,14 +170,8 @@ check "admin : messages reçus lisibles, puis marqués lus" "$(c "$U/admin/messa
 MID=$(sql "SELECT id FROM message_contact WHERE email = 'jean@example.org'")
 check "admin : suppression d'un message" "$(post "$U/admin/messages" "$U/admin/messages/$MID/supprimer" >/dev/null; sql "SELECT COUNT(*) FROM message_contact")" "0"
 check "contact : messages plus vieux que la durée réglée effacés par les tâches" "$(sql "INSERT INTO message_contact (nom, email, objet, message, recu_le) VALUES ('Ancien', 'a@example.org', 'o', 'm', NOW() - INTERVAL 13 MONTH), ('Récent', 'b@example.org', 'o', 'm', NOW() - INTERVAL 2 MONTH)"; php "$ROOT/app/bin/cli.php" cron >/dev/null; sql "SELECT GROUP_CONCAT(nom) FROM message_contact")" "Récent"
-# PDF joint (CV d'un candidat) : PDF seulement, gardé avec le message, joint au mail, effacé avec lui
-hpostf() { # formulaire anti-robot envoyé en multipart (fichier joint)
-    local page=$1 action=$2; shift 2
-    c "$page" >/dev/null; local t d; t=$(tok); d=$(grep -o 'name="_h_defi" value="[^"]*"' "$B" | sed 's/.*value="//;s/"//')
-    sleep 2
-    c -F "_csrf=$t" -F "_h_defi=$d" -F "_h_preuve=$(proof "$d")" "$@" "$action"
-}
-printf '%%PDF-1.4\n1 0 obj << /Type /Catalog >> endobj\ntrailer << /Root 1 0 R >>\n%%%%EOF\n' > "$W/mon cv.pdf"
+# PDF joint (un CV par exemple) : PDF seulement, gardé avec le message, joint au mail, effacé avec lui
+printf '%%PDF-1.4\n%%%%EOF\n' > "$W/mon cv.pdf"
 printf '<html><script>alert(1)</script></html>' > "$W/faux.pdf"
 as visiteur
 check "contact : PDF joint accepté" "$(hpostf "$U/page/nous-ecrire" "$U/contact" -F 'retour=/page/nous-ecrire' -F 'motif=Devenir membre auditeur' -F 'nom=Claire Candidate' -F 'email=claire@example.org' -F 'message=Ma candidature.' -F "piece=@$W/mon cv.pdf;type=application/pdf") $(sql "SELECT CONCAT(pj_nom, ' ', transmis) FROM message_contact WHERE email = 'claire@example.org'")" "303 $U/page/nous-ecrire mon cv.pdf 1"
