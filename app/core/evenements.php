@@ -254,7 +254,7 @@ function evenement_lien(array $ev): string
 function evenement_mes_inscriptions(array $member): array
 {
     return db_all('SELECT s.titre, s.slug, e.debut, i.statut, i.rang FROM inscription i JOIN evenement e ON e.espace_id = i.evenement_id JOIN espace s ON s.id = e.espace_id
-        WHERE i.membre_id = ? AND i.statut IN ("invite", "voeu", "retenu", "attente") AND (e.debut IS NULL OR e.debut >= CURDATE()) ORDER BY e.debut', [$member['id']]);
+        WHERE i.membre_id = ? AND i.statut IN ("invite", "voeu", "retenu", "attente") AND (e.debut IS NULL OR COALESCE(e.fin, e.debut) >= CURDATE()) ORDER BY e.debut', [$member['id']]);
 }
 
 function evenement_date(?string $datetime): string
@@ -302,6 +302,12 @@ function evenement_lire_date(string $value): ?string
 {
     $date = DateTime::createFromFormat('Y-m-d\TH:i', $value) ?: DateTime::createFromFormat('Y-m-d H:i', $value);
     return $date === false ? null : $date->format('Y-m-d H:i:00');
+}
+
+// Un événement qui dure plusieurs jours (exposition, salon) : il reste « à venir » jusqu'à sa fin
+function evenement_plusieurs_jours(array $ev): bool
+{
+    return !empty($ev['debut']) && !empty($ev['fin']) && substr((string) $ev['fin'], 0, 10) !== substr((string) $ev['debut'], 0, 10);
 }
 
 // « Samedi 28 novembre 2026 · 9 h 30 – 12 h » (la fin est facultative ; un autre jour est écrit en entier)
