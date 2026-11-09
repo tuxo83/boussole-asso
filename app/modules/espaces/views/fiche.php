@@ -117,10 +117,10 @@ $rubriques = array_filter([
   <div class="titre-avec-lien"><h2>Agenda</h2><?php if ($peut_gerer): ?><?= c_bouton('+ Organiser', '/espaces/nouveau?parent=' . $espace['slug'] . '&type=evenement', 'secondaire') ?><?php endif ?></div>
   <?php if ($evenements_espace): $mois_courts = ['', 'janv.', 'févr.', 'mars', 'avril', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.']; ?>
   <ul class="rdv">
-    <?php foreach ($evenements_espace as $ev): $passe = $ev['debut'] !== null && strtotime($ev['debut']) < strtotime('today'); ?>
+    <?php foreach ($evenements_espace as $ev): $passe = $ev['debut'] !== null && strtotime($ev['fin'] ?? $ev['debut']) < strtotime('today'); ?>
     <li<?= $passe ? ' class="rdv-passe"' : '' ?>><a href="<?= e(url('/espace/' . $ev['slug'])) ?>">
       <span class="date-tuile<?= ['public' => '', 'equipe' => ' date-equipe'][$ev['visibilite']] ?? ' date-membres' ?>"><?php if ($ev['debut']): ?><span class="jour"><?= (int) date('j', strtotime($ev['debut'])) ?></span><span class="mois"><?= $mois_courts[(int) date('n', strtotime($ev['debut']))] ?></span><?php else: ?><span class="date-icone"><?= c_icone('calendrier') ?></span><?php endif ?></span>
-      <span class="rdv-texte"><strong><?= e($ev['titre']) ?></strong><span class="rdv-ligne"><span class="discret"><?= $ev['debut'] ? e(date('H\hi', strtotime($ev['debut']))) : 'Date à préciser' ?><?= $ev['lieu'] ? ' · ' . e($ev['lieu']) : '' ?></span>
+      <span class="rdv-texte"><strong><?= e($ev['titre']) ?></strong><span class="rdv-ligne"><span class="discret"><?= $ev['debut'] ? e(evenement_plusieurs_jours($ev) ? 'jusqu\'au ' . date('d/m', strtotime($ev['fin'])) : date('H\hi', strtotime($ev['debut']))) : 'Date à préciser' ?><?= $ev['lieu'] ? ' · ' . e($ev['lieu']) : '' ?></span>
         <?php [$classe, $texte] = ['equipe' => ['badge-equipe', 'Équipe'], 'public' => ['', 'Ouvert à tous']][$ev['visibilite']] ?? ['badge-membres', 'Membres']; ?><span class="badge <?= $classe ?>"><?= $texte ?></span></span></span>
     </a></li>
     <?php endforeach ?>

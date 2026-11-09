@@ -350,7 +350,7 @@ function carte_evenement(array $ev, string $titre, string $lien, string $contenu
     return '<article class="carte carte-evenement acces-' . ($equipe ? 'equipe' : ($ev['visibilite'] === 'public' ? 'public' : 'membres')) . ($verrouille ? ' carte-reservee' : '') . '">'
         . '<span class="ruban">' . e($bandeau) . '</span>'
         . '<div class="evenement-tete"><span class="date-tuile">' . $date . '</span><div class="evenement-titre"><h3><a href="' . e(url($lien)) . '">' . e($titre) . '</a></h3>' . $organise . '</div></div>'
-        . ($ev['debut'] !== null ? '<p class="discret evenement-quand">' . e(evenement_date($ev['debut'])) . '</p>' : '') . $contenu . '</article>';
+        . ($ev['debut'] !== null ? '<p class="discret evenement-quand">' . e(evenement_plusieurs_jours($ev) ? evenement_horaire($ev) : evenement_date($ev['debut'])) . '</p>' : '') . $contenu . '</article>';
 }
 
 // Événements montrés dans l'agenda : publics et réservés aux membres (jamais ceux d'une équipe)
@@ -359,9 +359,9 @@ function evenements_visibles(bool $avenir): array
     evenements_cloturer_echus();
     $membre = current_member();
     // Les réunions d'équipe n'apparaissent que dans l'agenda des membres de cette équipe (ou de l'espace auquel elles sont rattachées)
-    $lignes = db_all('SELECT s.*, e.debut, e.lieu, p.titre AS parent_titre FROM espace s LEFT JOIN evenement e ON e.espace_id = s.id LEFT JOIN espace p ON p.id = s.parent_id
+    $lignes = db_all('SELECT s.*, e.debut, e.fin, e.lieu, p.titre AS parent_titre FROM espace s LEFT JOIN evenement e ON e.espace_id = s.id LEFT JOIN espace p ON p.id = s.parent_id
         WHERE s.type = "evenement" AND s.visibilite IN ("public", "adherents", "cotisants"' . ($membre !== null ? ', "equipe"' : '') . ') AND s.archive = 0 AND '
-        . ($avenir ? '(e.debut IS NULL OR e.debut >= CURDATE()) ORDER BY e.debut IS NULL, e.debut' : 'e.debut < CURDATE() AND e.debut >= CURDATE() - INTERVAL 12 MONTH ORDER BY e.debut DESC'));
+        . ($avenir ? '(e.debut IS NULL OR COALESCE(e.fin, e.debut) >= CURDATE()) ORDER BY e.debut IS NULL, e.debut' : 'COALESCE(e.fin, e.debut) < CURDATE() AND e.debut >= CURDATE() - INTERVAL 12 MONTH ORDER BY e.debut DESC'));
     return array_values(array_filter($lignes, fn($ev) => match ($ev['visibilite']) {
         'public' => true,
         'equipe' => espace_niveau($membre, $ev) !== null || espace_equipe_parente($membre, $ev),
