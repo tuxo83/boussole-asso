@@ -39,7 +39,7 @@ check "bob : liste des membres refusée" "$(api "$BOB_WRITE" "$U/api/membres")" 
 check "MCP initialize" "$(mcp "$BOB_WRITE" '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"test","version":"1"}}}')$(grep -o '"protocolVersion":"[^"]*"' "$B")" '200"protocolVersion":"2025-06-18"'
 check "MCP notification : 202 sans corps" "$(mcp "$BOB_WRITE" '{"jsonrpc":"2.0","method":"notifications/initialized"}')$(wc -c < "$B")" "2020"
 # shellcheck disable=SC2016
-check "MCP tools/list : 25 outils" "$(mcp "$BOB_WRITE" '{"jsonrpc":"2.0","id":2,"method":"tools/list"}'; php -r 'echo count(json_decode(file_get_contents($argv[1]),true)["result"]["tools"]);' "$B")" "20025"
+check "MCP tools/list : 26 outils" "$(mcp "$BOB_WRITE" '{"jsonrpc":"2.0","id":2,"method":"tools/list"}'; php -r 'echo count(json_decode(file_get_contents($argv[1]),true)["result"]["tools"]);' "$B")" "20026"
 check "MCP ajouter_date_cle" "$(mcp "$BOB_WRITE" '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"ajouter_date_cle","arguments":{"slug":"projet-bob","date":"2027-03-01","libelle":"Rendu"}}}'; grep -o '"isError":[a-z]*' "$B")" '200"isError":false'
 check "MCP modifier_espace : archiver puis désarchiver" "$(mcp "$BOB_WRITE" '{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"modifier_espace","arguments":{"slug":"projet-bob","archive":true}}}' >/dev/null; sql "SELECT archive FROM espace WHERE slug = 'projet-bob'"; mcp "$BOB_WRITE" '{"jsonrpc":"2.0","id":6,"method":"tools/call","params":{"name":"modifier_espace","arguments":{"slug":"projet-bob","archive":false}}}' >/dev/null; sql "SELECT archive FROM espace WHERE slug = 'projet-bob'")" "1
 0"
@@ -113,6 +113,10 @@ BOB2="bsl_0000aaaa_$(printf 'b%.0s' {1..40})"
 sql "INSERT INTO cle_api (membre_id, libelle, prefixe, empreinte, portee, expire_le) SELECT id, 'Bob 2', '0000aaaa', SHA2('$BOB2', 256), 'ecriture', NULL FROM membre WHERE email = 'bob@example.org'"
 check "MCP ajouter_fichier : espace d'un autre refusé" "$(mcpcall "$BOB2" ajouter_fichier '{"slug":"comite-secret","nom":"x.txt","base64":"eA=="}' | grep -o '"isError":[a-z]*') $(sql "SELECT COUNT(*) FROM fichier WHERE nom = 'x.txt'")" '"isError":true 0'
 check "MCP ajouter_equipe" "$(mcpcall "$ADMIN_KEY" ajouter_equipe '{"slug":"trinome-academique","email":"bob@example.org","niveau":"n1","libelle":"Responsable"}' | grep -o '"isError":[a-z]*')" '"isError":false'
+sql "INSERT INTO membre (email, prenom, nom, actif) VALUES ('retire@example.org', 'René', 'Tiré', 1)"
+check "MCP retirer_equipe : retiré, compte gardé, journal" "$(mcpcall "$ADMIN_KEY" ajouter_equipe '{"slug":"trinome-academique","email":"retire@example.org","niveau":"membre"}' >/dev/null; mcpcall "$ADMIN_KEY" retirer_equipe '{"slug":"trinome-academique","email":"retire@example.org"}' | grep -o '"isError":[a-z]*') $(sql "SELECT COUNT(*) FROM espace_membre em JOIN membre m ON m.id = em.membre_id JOIN espace s ON s.id = em.espace_id WHERE s.slug = 'trinome-academique' AND m.email = 'retire@example.org'") $(sql "SELECT COUNT(*) FROM membre WHERE email = 'retire@example.org'") $(sql "SELECT COUNT(*) FROM journal WHERE action LIKE '% retiré de l''équipe'")" '"isError":false 0 1 1'
+check "MCP retirer_equipe : personne hors de l'équipe → erreur" "$(mcpcall "$ADMIN_KEY" retirer_equipe '{"slug":"trinome-academique","email":"retire@example.org"}' | grep -o '"isError":[a-z]*')" '"isError":true'
+check "MCP retirer_equipe : sans droit de gérer → refusé" "$(mcpcall "$BOB2" retirer_equipe '{"slug":"comite-secret","email":"alice@example.org"}' | grep -o '"isError":[a-z]*')" '"isError":true'
 check "MCP creer_espace : un simple membre ne crée pas d'espace au premier niveau" "$(mcpcall "$BOB2" creer_espace '{"type":"projet","titre":"X"}' | grep -o '"isError":[a-z]*')" '"isError":true'
 
 # Clé « administration » : réglages du site et membres, dans la limite des droits
