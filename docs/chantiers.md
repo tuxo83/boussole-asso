@@ -17,6 +17,46 @@ Un chantier de réflexion d'abord, la technique ensuite.
 - **Fait (8 novembre 2026)** : le site s'installe comme une application (Android, iPhone) ; « Rester connecté sur cet appareil » garde la connexion simple, la gestion redemande la double authentification (validité réglable).
 - **Fait aussi** : bandeau « Installez l'application » pour les membres connectés, sur téléphone et tablette, seulement là où l'installation est possible (« Plus tard » : 30 jours) ; désactivé par défaut, à activer dans Administration › Paramètres (8 novembre 2026).
 - **Ensuite, une fois la partie application validée par le webmaster** : **envoyer des notifications** en plus des e-mails. Exemple : une place se libère sur un événement où l'on est en liste d'attente.
+
+### Notifications : le concept retenu (à faire plus tard, noté le 9 novembre 2026)
+Séparer **ce qui est dit** de **par où ça passe**, et laisser le membre choisir simplement.
+
+| Notion | Ce que c'est |
+|---|---|
+| **Contenu notifié** | Ce qui mérite d'être dit (place libérée, rappel de la veille…). Catalogue fixé dans l'outil : nom, famille, public, canaux permis et par défaut, texte court pour l'écran verrouillé. |
+| **Canal** | Par où ça passe : cloche dans le site (toujours, c'est l'historique), push (par appareil), mail immédiat, mail résumé (jour ou semaine). Plus tard : Signal (pour la veille), sans rien changer au reste. |
+| **Autorisation** | Le membre dit « j'autorise tel contenu ». Ses canaux sont choisis une fois (push sur cet appareil, mail immédiat ou résumé). L'admin fixe les défauts et peut interdire un canal pour un contenu. |
+
+Familles, d'après les 21 mails envoyés aujourd'hui :
+- **Sécurité du compte** (code de connexion, code de confirmation, mot de passe changé, double authentification ou clé ajoutée) : toujours par mail, jamais coupable.
+- **Mes inscriptions** (place libérée, dernières places, délai de paiement, liste d'attente, invitation, inscription annulée, rappel de la veille).
+- **Mes espaces** (rappel d'une date clé ; à venir : nouveau fichier, nouvel événement).
+- **J'organise** (liste à valider).
+- **Je gère le site** (adhésion à valider, message de contact).
+- **Adhésion** (bienvenue, cotisation reçue) : jamais coupable.
+
+Mécanique :
+- Un fait crée une seule notification, distribuée sur les canaux autorisés : pas de doublon, une trace par envoi.
+- Repli par mail si aucun canal n'est actif.
+- Heures calmes : pas de push la nuit.
+- Les rafales sont regroupées.
+- Désinscription en un clic dans chaque mail.
+- Texte neutre possible sur l'écran verrouillé.
+- Écran : Paramètres › Notifications.
+
+Push : Web Push en PHP pur (VAPID, aes128gcm avec openssl), une table des abonnements par appareil, envoi après la réponse de la page, avec la tâche planifiée en secours.
+
+Ordre de travail :
+1. Moteur et cloche (les mails passent dessus sans changement visible).
+2. Écran des autorisations.
+3. Push.
+4. Résumés.
+5. Plus tard : la veille et Signal.
+
+Questions encore ouvertes :
+- Écran verrouillé : texte neutre ou titre ?
+- Rappel de la veille : push au lieu du mail, ou les deux ?
+- Notifications des organisateurs : dès la première version ?
 - **Plus tard** : « Partager vers Boussole » depuis le téléphone (utile à la veille).
 
 ## Veille
