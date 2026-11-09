@@ -297,6 +297,7 @@ function fichier_enregistrer(array $espace, array $member, string $nom, int $tai
     $mime = (new finfo(FILEINFO_MIME_TYPE))->file($chemin) ?: 'application/octet-stream';
     db_query('INSERT INTO fichier (espace_id, nom, stockage, taille, type_mime, depose_par) VALUES (?, ?, ?, ?, ?, ?)',
         [$espace['id'], $nom, $stockage, $taille, $mime, $member['id']]);
+    $id = (int) db()->lastInsertId(); // avant le journal, qui écrit sa propre ligne
     journal($espace['id'], $member, "Fichier déposé : $nom");
-    return (int) db()->lastInsertId();
+    return $id;
 }
