@@ -123,6 +123,7 @@ function slug_unique(string $title): string
 function messages_contact_purger(): int
 {
     $mois = max(1, min(60, (int) setting('contact_conservation_mois', '12')));
+    contact_pieces_effacer('recu_le < NOW() - INTERVAL ' . $mois . ' MONTH');
     return db()->exec('DELETE FROM message_contact WHERE recu_le < NOW() - INTERVAL ' . $mois . ' MONTH') ?: 0;
 }
 

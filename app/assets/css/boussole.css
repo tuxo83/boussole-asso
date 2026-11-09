@@ -1046,6 +1046,9 @@ dialog.dialogue:not([open]) { display: block; position: static; width: auto; box
 .champs-ligne { display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); gap: 0 1rem; }
 .choix-cartes { display: grid; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); gap: .5rem; margin-bottom: 1rem; }
 .choix-cartes .carte-choix { padding: .7rem .85rem; }
+.choix-motif { border: 0; padding: 0; margin: 0 0 .5rem; }
+.choix-motif legend { font-weight: 700; margin-bottom: .5rem; }
+.choix-motif .choix-cartes { grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr)); }
 .bloc-reglage .avance > summary { cursor: pointer; font-weight: 600; color: var(--couleur-principale); min-height: var(--cible); display: flex; align-items: center; }
 .case-bloc { display: flex; align-items: flex-start; gap: .6rem; }
 .case-bloc input { margin-top: .25rem; flex: none; }
