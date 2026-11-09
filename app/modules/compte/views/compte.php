@@ -36,7 +36,7 @@ foreach ($inscriptions as $i) {
         'badge' => [$i['statut'] === 'retenu' ? 'badge-ok' : 'badge-attention', ucfirst(INSCRIPTION_STATUTS[$i['statut']]) . ($i['statut'] === 'attente' ? ' n°' . (int) $i['rang'] : '')]];
 }
 foreach (db_all('SELECT s.*, e.debut, e.lieu, p.titre AS parent_titre FROM espace s JOIN evenement e ON e.espace_id = s.id LEFT JOIN espace p ON p.id = s.parent_id
-    WHERE s.type = "evenement" AND s.visibilite = "equipe" AND s.archive = 0 AND e.debut >= CURDATE() AND e.debut < CURDATE() + INTERVAL 60 DAY ORDER BY e.debut') as $r) {
+    WHERE s.type = "evenement" AND s.visibilite = "equipe" AND s.archive = 0 AND COALESCE(e.fin, e.debut) >= CURDATE() AND e.debut < CURDATE() + INTERVAL 60 DAY ORDER BY e.debut') as $r) {
     if (!isset($inscrit[$r['slug']]) && (espace_niveau($membre, $r) !== null || espace_equipe_parente($membre, $r))) {
         $rdv[] = ['date' => $r['debut'], 'heure' => true, 'titre' => $r['titre'], 'lien' => '/espace/' . $r['slug'], 'ligne' => $r['lieu'], 'genre' => 'reunion',
             'badge' => ['badge-equipe', 'Réunion' . ($r['parent_titre'] ? ' · ' . $r['parent_titre'] : '')]];

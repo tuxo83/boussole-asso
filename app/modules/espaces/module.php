@@ -73,9 +73,9 @@ return [
                 'parent' => $espace['parent_id'] ? db_one('SELECT * FROM espace WHERE id = ?', [$espace['parent_id']]) : null,
                 'enfants' => array_filter(db_all('SELECT * FROM espace WHERE parent_id = ? AND archive = 0 AND type <> "evenement" ORDER BY titre', [$espace['id']]), fn($e) => espace_peut_voir($member, $e)),
                 // Événements rattachés à cet espace : à venir d'abord, puis les passés récents
-                'evenements_espace' => array_values(array_filter(db_all('SELECT s.*, e.debut, e.lieu FROM espace s LEFT JOIN evenement e ON e.espace_id = s.id
+                'evenements_espace' => array_values(array_filter(db_all('SELECT s.*, e.debut, e.fin, e.lieu FROM espace s LEFT JOIN evenement e ON e.espace_id = s.id
                     WHERE s.parent_id = ? AND s.type = "evenement" AND s.archive = 0 AND (e.debut IS NULL OR e.debut >= CURDATE() - INTERVAL 6 MONTH)
-                    ORDER BY e.debut IS NULL, e.debut < CURDATE(), CASE WHEN e.debut >= CURDATE() THEN e.debut END, e.debut DESC', [$espace['id']]), fn($e) => espace_peut_voir($member, $e))),
+                    ORDER BY e.debut IS NULL, COALESCE(e.fin, e.debut) < CURDATE(), CASE WHEN COALESCE(e.fin, e.debut) >= CURDATE() THEN e.debut END, e.debut DESC', [$espace['id']]), fn($e) => espace_peut_voir($member, $e))),
                 'equipe' => db_all('SELECT m.*, em.niveau, em.libelle FROM espace_membre em JOIN membre m ON m.id = em.membre_id WHERE em.espace_id = ? ORDER BY FIELD(em.niveau, "n1", "n2", "membre", "associe"), m.nom, m.email', [$espace['id']]),
                 'jalons' => db_all('SELECT * FROM jalon WHERE espace_id = ? ORDER BY fait, date_jalon', [$espace['id']]),
                 'fichiers' => db_all('SELECT f.*, m.prenom, m.nom AS nom_membre, m.email FROM fichier f LEFT JOIN membre m ON m.id = f.depose_par WHERE f.espace_id = ? ORDER BY f.depose_le DESC', [$espace['id']]),
@@ -239,17 +239,9 @@ return [
                 flash('erreur', 'Fichier absent ou trop lourd (20 Mo maximum).');
                 redirect('/espace/' . $espace['slug']);
             }
-            // Nom de stockage aléatoire, hors du dossier public ; le nom d'origine n'est qu'une étiquette
-            $stockage = bin2hex(random_bytes(16));
-            if (!move_uploaded_file($file['tmp_name'], BOUSSOLE_ROOT . '/stockage/' . $stockage)) {
+            if (fichier_enregistrer($espace, $member, (string) $file['name'], (int) $file['size'], fn(string $chemin) => move_uploaded_file($file['tmp_name'], $chemin)) === null) {
                 flash('erreur', "Le fichier n'a pas pu être enregistré.");
-                redirect('/espace/' . $espace['slug']);
             }
-            $nom = mb_substr(preg_replace('/[\x00-\x1f\/\\\\]/', '_', (string) $file['name']), 0, 255) ?: 'fichier';
-            $mime = (new finfo(FILEINFO_MIME_TYPE))->file(BOUSSOLE_ROOT . '/stockage/' . $stockage) ?: 'application/octet-stream';
-            db_query('INSERT INTO fichier (espace_id, nom, stockage, taille, type_mime, depose_par) VALUES (?, ?, ?, ?, ?, ?)',
-                [$espace['id'], $nom, $stockage, (int) $file['size'], $mime, $member['id']]);
-            journal($espace['id'], $member, "Fichier déposé : $nom");
             redirect('/espace/' . $espace['slug']);
         }],
         // Téléchargement : uniquement pour qui peut voir l'espace, en pièce jointe ;
