@@ -446,7 +446,7 @@ function api_evenements(): array
     evenements_cloturer_echus();
     $member = current_member();
     $list = [];
-    foreach (db_all('SELECT s.* FROM espace s LEFT JOIN evenement e ON e.espace_id = s.id WHERE s.type = "evenement" AND s.archive = 0 AND (e.debut IS NULL OR e.debut >= CURDATE()) ORDER BY e.debut') as $espace) {
+    foreach (db_all('SELECT s.* FROM espace s LEFT JOIN evenement e ON e.espace_id = s.id WHERE s.type = "evenement" AND s.archive = 0 AND (e.debut IS NULL OR COALESCE(e.fin, e.debut) >= CURDATE()) ORDER BY e.debut') as $espace) {
         if (!espace_peut_voir($member, $espace)) {
             continue;
         }
@@ -531,6 +531,29 @@ function api_image_ajouter(string $base64): array
         throw new ApiErreur($erreur);
     }
     return ['chemin' => $chemin, 'url' => absolute_url('/' . $chemin), 'bloc' => ['type' => 'image', 'data' => ['chemin' => $chemin, 'legende' => '', 'alt' => '']]];
+}
+
+// Fichier joint à un espace ou un événement (flyer, compte rendu) : mêmes droits et même limite que sur le site
+function api_fichier_ajouter(string $slug, string $nom, string $base64): array
+{
+    api_ecriture();
+    $member = current_member();
+    $espace = espace_par_slug($slug);
+    if ($espace === null || !espace_peut_contribuer($member, $espace)) {
+        throw new ApiErreur('Espace introuvable ou droits insuffisants', 403);
+    }
+    $data = base64_decode(preg_replace('/^data:[^,]*,/', '', $base64), true);
+    if ($data === false || $data === '' || strlen($data) > FICHIER_TAILLE_MAX) {
+        throw new ApiErreur('Fichier absent, mal encodé (base64) ou trop lourd (20 Mo maximum)');
+    }
+    if (trim($nom) === '') {
+        throw new ApiErreur('Nom du fichier obligatoire');
+    }
+    $id = fichier_enregistrer($espace, $member, trim($nom), strlen($data), fn(string $chemin) => file_put_contents($chemin, $data) === strlen($data));
+    if ($id === null) {
+        throw new ApiErreur("Le fichier n'a pas pu être enregistré", 500);
+    }
+    return ['id' => $id, 'nom' => trim($nom), 'url' => absolute_url('/fichier/' . $id)] + api_espace($slug);
 }
 
 // Invitation de bienvenue (clé « administration », droit « membres ») : un e-mail, ou tous ceux qui ne se sont jamais connectés

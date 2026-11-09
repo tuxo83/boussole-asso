@@ -39,7 +39,7 @@ check "bob : liste des membres refusée" "$(api "$BOB_WRITE" "$U/api/membres")" 
 check "MCP initialize" "$(mcp "$BOB_WRITE" '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"test","version":"1"}}}')$(grep -o '"protocolVersion":"[^"]*"' "$B")" '200"protocolVersion":"2025-06-18"'
 check "MCP notification : 202 sans corps" "$(mcp "$BOB_WRITE" '{"jsonrpc":"2.0","method":"notifications/initialized"}')$(wc -c < "$B")" "2020"
 # shellcheck disable=SC2016
-check "MCP tools/list : 24 outils" "$(mcp "$BOB_WRITE" '{"jsonrpc":"2.0","id":2,"method":"tools/list"}'; php -r 'echo count(json_decode(file_get_contents($argv[1]),true)["result"]["tools"]);' "$B")" "20024"
+check "MCP tools/list : 25 outils" "$(mcp "$BOB_WRITE" '{"jsonrpc":"2.0","id":2,"method":"tools/list"}'; php -r 'echo count(json_decode(file_get_contents($argv[1]),true)["result"]["tools"]);' "$B")" "20025"
 check "MCP ajouter_date_cle" "$(mcp "$BOB_WRITE" '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"ajouter_date_cle","arguments":{"slug":"projet-bob","date":"2027-03-01","libelle":"Rendu"}}}'; grep -o '"isError":[a-z]*' "$B")" '200"isError":false'
 check "MCP modifier_espace : archiver puis désarchiver" "$(mcp "$BOB_WRITE" '{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"modifier_espace","arguments":{"slug":"projet-bob","archive":true}}}' >/dev/null; sql "SELECT archive FROM espace WHERE slug = 'projet-bob'"; mcp "$BOB_WRITE" '{"jsonrpc":"2.0","id":6,"method":"tools/call","params":{"name":"modifier_espace","arguments":{"slug":"projet-bob","archive":false}}}' >/dev/null; sql "SELECT archive FROM espace WHERE slug = 'projet-bob'")" "1
 0"
@@ -94,9 +94,21 @@ check "MCP creer_espace : commission créée" "$(mcpcall "$ADMIN_KEY" creer_espa
 check "MCP creer_espace : sous-espace événement" "$(mcpcall "$ADMIN_KEY" creer_espace '{"type":"evenement","titre":"Concert du trinôme","visibilite":"public","parent":"trinome-academique"}' | grep -o '"isError":[a-z]*') $(sql "SELECT p.slug FROM espace e JOIN espace p ON p.id = e.parent_id WHERE e.slug = 'concert-du-trinome'")" '"isError":false trinome-academique'
 check "MCP regler_evenement" "$(mcpcall "$ADMIN_KEY" regler_evenement '{"slug":"concert-du-trinome","debut":"2027-03-12 18:30","lieu":"Palais Neptune, Toulon","mode":"ouvert"}' | grep -o '"isError":[a-z]*') $(sql "SELECT CONCAT(debut, ' ', lieu) FROM evenement e JOIN espace s ON s.id = e.espace_id WHERE s.slug = 'concert-du-trinome'")" '"isError":false 2027-03-12 18:30:00 Palais Neptune, Toulon'
 check "MCP regler_evenement : erreur claire" "$(mcpcall "$ADMIN_KEY" regler_evenement '{"slug":"concert-du-trinome","mode":"auto"}' | grep -c 'nombre de places')" "1"
+# Événement sur plusieurs jours (exposition) : commencé hier, il reste à venir jusqu'à sa fin
+hier=$(date -d yesterday '+%F'); dans3=$(date -d '+3 days' '+%F')
+check "MCP regler_evenement : sur plusieurs jours" "$(mcpcall "$ADMIN_KEY" regler_evenement "{\"slug\":\"concert-du-trinome\",\"debut\":\"$hier 09:00\",\"fin\":\"$dans3 18:00\"}" | grep -o '"isError":[a-z]*')" '"isError":false'
+check "événement en cours : encore dans les événements à venir" "$(mcpcall "$ADMIN_KEY" lister_evenements '{}' | grep -c 'concert-du-trinome')" "1"
+mcpcall "$ADMIN_KEY" creer_page '{"titre":"Rendez-vous","publiee":true,"blocs":{"blocks":[{"type":"boussole","data":{"bloc":"agenda"}}]}}' >/dev/null
+check "agenda : l'exposition en cours, du premier au dernier jour" "$(as visiteur; c "$U/page/rendez-vous" >/dev/null; grep -c 'href=\"[^\"]*/espace/concert-du-trinome\"' "$B") $(grep -c "· 9 h – [a-z]* $(date -d '+3 days' '+%-d') " "$B")" "1 1"
+# Fichier joint par le MCP (flyer) : droits de contribution, taille, base64
+check "MCP ajouter_fichier : flyer joint" "$(mcpcall "$ADMIN_KEY" ajouter_fichier "{\"slug\":\"concert-du-trinome\",\"nom\":\"flyer.pdf\",\"base64\":\"$(printf '%%PDF-1.4 essai' | base64 -w0)\"}" | grep -o '"isError":[a-z]*') $(sql "SELECT CONCAT(f.nom, ' ', f.type_mime, ' ', f.taille) FROM fichier f JOIN espace s ON s.id = f.espace_id WHERE s.slug = 'concert-du-trinome'") $(sql "SELECT COUNT(*) FROM journal j JOIN espace s ON s.id = j.espace_id WHERE s.slug = 'concert-du-trinome' AND j.action LIKE 'Fichier déposé : flyer.pdf'")" '"isError":false flyer.pdf application/pdf 14 1'
+check "MCP ajouter_fichier : base64 invalide refusé" "$(mcpcall "$ADMIN_KEY" ajouter_fichier '{"slug":"concert-du-trinome","nom":"x.pdf","base64":"@@@"}' | grep -c 'mal encodé')" "1"
+mcpcall "$ADMIN_KEY" regler_evenement '{"slug":"concert-du-trinome","debut":"2027-03-12 18:30","fin":""}' >/dev/null
 sql "UPDATE membre SET actif = 1 WHERE email = 'bob@example.org'"
+check "MCP ajouter_fichier : clé en lecture refusée" "$(mcpcall "$BOB_READ" ajouter_fichier '{"slug":"projet-bob","nom":"x.txt","base64":"eA=="}' | grep -o '"isError":[a-z]*')" '"isError":true'
 BOB2="bsl_0000aaaa_$(printf 'b%.0s' {1..40})"
 sql "INSERT INTO cle_api (membre_id, libelle, prefixe, empreinte, portee, expire_le) SELECT id, 'Bob 2', '0000aaaa', SHA2('$BOB2', 256), 'ecriture', NULL FROM membre WHERE email = 'bob@example.org'"
+check "MCP ajouter_fichier : espace d'un autre refusé" "$(mcpcall "$BOB2" ajouter_fichier '{"slug":"comite-secret","nom":"x.txt","base64":"eA=="}' | grep -o '"isError":[a-z]*') $(sql "SELECT COUNT(*) FROM fichier WHERE nom = 'x.txt'")" '"isError":true 0'
 check "MCP ajouter_equipe" "$(mcpcall "$ADMIN_KEY" ajouter_equipe '{"slug":"trinome-academique","email":"bob@example.org","niveau":"n1","libelle":"Responsable"}' | grep -o '"isError":[a-z]*')" '"isError":false'
 check "MCP creer_espace : un simple membre ne crée pas d'espace au premier niveau" "$(mcpcall "$BOB2" creer_espace '{"type":"projet","titre":"X"}' | grep -o '"isError":[a-z]*')" '"isError":true'
 

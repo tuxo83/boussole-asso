@@ -283,3 +283,20 @@ function fichier_apercu(array $fichier): ?string
     }
     return FICHIER_APERCU_TYPES[(string) ($fichier['type_mime'] ?? '')] ?? null;
 }
+
+// Range un fichier reçu dans un espace (formulaire ou API) : nom de stockage aléatoire, hors du dossier public ;
+// le nom d'origine n'est qu'une étiquette. $deplacer : la fonction qui pose le contenu à l'emplacement donné
+function fichier_enregistrer(array $espace, array $member, string $nom, int $taille, callable $deplacer): ?int
+{
+    $stockage = bin2hex(random_bytes(16));
+    $chemin = BOUSSOLE_ROOT . '/stockage/' . $stockage;
+    if (!$deplacer($chemin)) {
+        return null;
+    }
+    $nom = mb_substr(preg_replace('/[\x00-\x1f\/\\\\]/', '_', $nom), 0, 255) ?: 'fichier';
+    $mime = (new finfo(FILEINFO_MIME_TYPE))->file($chemin) ?: 'application/octet-stream';
+    db_query('INSERT INTO fichier (espace_id, nom, stockage, taille, type_mime, depose_par) VALUES (?, ?, ?, ?, ?, ?)',
+        [$espace['id'], $nom, $stockage, $taille, $mime, $member['id']]);
+    journal($espace['id'], $member, "Fichier déposé : $nom");
+    return (int) db()->lastInsertId();
+}
