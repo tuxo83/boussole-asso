@@ -158,8 +158,11 @@ check "page réservée et pages internes : noindex" "$(as admin; c "$U/page/note
 mcpcall "$ADM" creer_page '{"titre":"Nous écrire","publiee":true,"blocs":{"blocks":[{"type":"boussole","data":{"bloc":"contact"}}]}}' >/dev/null
 as visiteur
 check "contact : formulaire affiché, aucune adresse en clair" "$(c "$U/page/nous-ecrire" >/dev/null; grep -c 'action=\"[^\"]*/contact\"' "$B") $(grep -c 'mailto:' "$B")" "1 0"
-check "contact : message envoyé, retour à la page" "$(hpost "$U/page/nous-ecrire" "$U/contact" -d 'retour=/page/nous-ecrire&nom=Jean Dupont&email=jean@example.org&objet=Conférence&message=Bonjour, une question.')" "303 $U/page/nous-ecrire"
+check "contact : message envoyé, retour à la page" "$(hpost "$U/page/nous-ecrire" "$U/contact" -d 'retour=/page/nous-ecrire&motif=Autre question&nom=Jean Dupont&email=jean@example.org&objet=Conférence&message=Bonjour, une question.')" "303 $U/page/nous-ecrire"
 check "contact : message gardé, transmis par e-mail avec répondre-à" "$(sql "SELECT CONCAT(nom, ' ', transmis) FROM message_contact WHERE email = 'jean@example.org'") $(grep -c 'De : Jean Dupont <jean@example.org>' "$MAIL")" "Jean Dupont 1 1"
+check "contact : motifs en cartes, fichier joint possible, pas de champ « Objet »" "$(c "$U/page/nous-ecrire" >/dev/null; grep -o 'name="motif"' "$B" | wc -l) $(grep -c 'name="piece" accept="application/pdf' "$B") $(grep -c 'enctype="multipart/form-data"' "$B") $(grep -c 'name="objet"' "$B")" "4 1 1 0"
+check "contact : le motif devient l'objet" "$(sql "SELECT objet FROM message_contact WHERE email = 'jean@example.org'")" "Autre question : Conférence"
+check "contact : sans motif, refusé" "$(hpost "$U/page/nous-ecrire" "$U/contact" -d 'retour=/page/nous-ecrire&nom=SansMotif&email=sm@example.org&message=x' >/dev/null; sql "SELECT COUNT(*) FROM message_contact WHERE nom = 'SansMotif'")" "0"
 check "contact : sans le défi anti-robot, refusé" "$(post "$U/page/nous-ecrire" "$U/contact" -d 'retour=/&nom=Robot&email=r@example.org&message=spam' | cut -c1-3) $(sql "SELECT COUNT(*) FROM message_contact WHERE email = 'r@example.org'")" "400 0"
 check "contact : e-mail invalide refusé" "$(hpost "$U/page/nous-ecrire" "$U/contact" -d 'retour=/page/nous-ecrire&nom=X&email=pas-une-adresse&message=x' >/dev/null; sql "SELECT COUNT(*) FROM message_contact WHERE nom = 'X'")" "0"
 as admin
@@ -167,6 +170,23 @@ check "admin : messages reçus lisibles, puis marqués lus" "$(c "$U/admin/messa
 MID=$(sql "SELECT id FROM message_contact WHERE email = 'jean@example.org'")
 check "admin : suppression d'un message" "$(post "$U/admin/messages" "$U/admin/messages/$MID/supprimer" >/dev/null; sql "SELECT COUNT(*) FROM message_contact")" "0"
 check "contact : messages plus vieux que la durée réglée effacés par les tâches" "$(sql "INSERT INTO message_contact (nom, email, objet, message, recu_le) VALUES ('Ancien', 'a@example.org', 'o', 'm', NOW() - INTERVAL 13 MONTH), ('Récent', 'b@example.org', 'o', 'm', NOW() - INTERVAL 2 MONTH)"; php "$ROOT/app/bin/cli.php" cron >/dev/null; sql "SELECT GROUP_CONCAT(nom) FROM message_contact")" "Récent"
+# PDF joint (un CV par exemple) : PDF seulement, gardé avec le message, joint au mail, effacé avec lui
+printf '%%PDF-1.4\n%%%%EOF\n' > "$W/mon cv.pdf"
+printf '<html><script>alert(1)</script></html>' > "$W/faux.pdf"
+as visiteur
+check "contact : PDF joint accepté" "$(hpostf "$U/page/nous-ecrire" "$U/contact" -F 'retour=/page/nous-ecrire' -F 'motif=Devenir membre auditeur' -F 'nom=Claire Candidate' -F 'email=claire@example.org' -F 'message=Ma candidature.' -F "piece=@$W/mon cv.pdf;type=application/pdf") $(sql "SELECT CONCAT(pj_nom, ' ', transmis) FROM message_contact WHERE email = 'claire@example.org'")" "303 $U/page/nous-ecrire mon cv.pdf 1"
+PJ=$(sql "SELECT pj_stockage FROM message_contact WHERE email = 'claire@example.org'")
+check "contact : PDF rangé hors du dossier public, joint au mail" "$([ -f "$ROOT/app/stockage/$PJ" ] && echo rangé) $(grep -c '\[Pièce jointe\] mon cv.pdf (application/pdf' "$MAIL") $(grep -c 'Fichier joint : mon cv.pdf' "$MAIL")" "rangé 1 1"
+check "contact : faux PDF refusé, message non gardé" "$(hpostf "$U/page/nous-ecrire" "$U/contact" -F 'retour=/page/nous-ecrire' -F 'motif=Autre question' -F 'nom=Faux' -F 'email=faux@example.org' -F 'message=x' -F "piece=@$W/faux.pdf;type=application/pdf" >/dev/null; sql "SELECT COUNT(*) FROM message_contact WHERE email = 'faux@example.org'")" "0"
+MID=$(sql "SELECT id FROM message_contact WHERE email = 'claire@example.org'")
+check "contact : PDF réservé à l'administrateur" "$(c "$U/admin/messages/$MID/piece" | cut -c1-3)" "303"
+as admin
+check "admin : le PDF se télécharge (jamais affiché)" "$(c -D "$W/entetes.txt" "$U/admin/messages/$MID/piece" | cut -c1-3) $(grep -ci '^content-type: application/pdf' "$W/entetes.txt") $(grep -ci '^content-disposition: attachment' "$W/entetes.txt") $(head -c 5 "$B")" "200 1 1 %PDF-"
+check "admin : la liste montre le PDF joint" "$(c "$U/admin/messages" >/dev/null; grep -c "/admin/messages/$MID/piece" "$B")" "1"
+check "admin : supprimer le message efface le PDF" "$(post "$U/admin/messages" "$U/admin/messages/$MID/supprimer" >/dev/null; [ -f "$ROOT/app/stockage/$PJ" ] && echo reste || echo effacé)" "effacé"
+sql "REPLACE INTO parametre (cle, valeur) VALUES ('contact_motifs', ''), ('contact_piece_jointe', '0')"
+check "contact sans motifs ni fichier : le champ « Objet » revient" "$(as visiteur; c "$U/page/nous-ecrire" >/dev/null; grep -c 'name="motif"' "$B") $(grep -c 'name="piece"' "$B") $(grep -c 'name="objet"' "$B")" "0 0 1"
+sql "DELETE FROM parametre WHERE cle IN ('contact_motifs', 'contact_piece_jointe')"
 as visiteur
 check "contact : messages réservés à l'administrateur" "$(c "$U/admin/messages" | cut -c1-3)" "303"
 bilan

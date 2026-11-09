@@ -36,6 +36,12 @@ hpost() { # formulaire protégé par le captcha invisible
     sleep 2
     c --data-urlencode "_csrf=$t" --data-urlencode "_h_defi=$d" -d "_h_preuve=$(proof "$d")" "$@" "$action"
 }
+hpostf() { # formulaire anti-robot envoyé en multipart (fichier joint)
+    local page=$1 action=$2; shift 2
+    c "$page" >/dev/null; local t d; t=$(tok); d=$(grep -o 'name="_h_defi" value="[^"]*"' "$B" | sed 's/.*value="//;s/"//')
+    sleep 2
+    c -F "_csrf=$t" -F "_h_defi=$d" -F "_h_preuve=$(proof "$d")" "$@" "$action"
+}
 as() { J="$W/cookies-$1"; } # change d'utilisateur (un jeu de cookies par personne)
 login_link() { # login_link <nom> <e-mail> : connexion par lien magique
     as "$1"; hpost "$U/connexion" "$U/connexion" -d "email=$2" >/dev/null

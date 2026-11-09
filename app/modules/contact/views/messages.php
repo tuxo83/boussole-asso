@@ -7,6 +7,7 @@
   <h2><?= e($m['objet']) ?></h2>
   <p><strong><?= e($m['nom']) ?></strong> · <a href="mailto:<?= e($m['email']) ?>?subject=<?= e(rawurlencode('Re: ' . $m['objet'])) ?>"><?= e($m['email']) ?></a></p>
   <p class="message-texte"><?= nl2br(e($m['message']), false) ?></p>
+  <?php if (!empty($m['pj_stockage'])): ?><p><a href="<?= e(url('/admin/messages/' . (int) $m['id'] . '/piece')) ?>" download><?= c_icone('dossier') ?> <?= e($m['pj_nom']) ?></a> <span class="discret petit">(<?= e(number_format((int) $m['pj_taille'] / 1048576, 1, ',', ' ')) ?> Mo, PDF)</span></p><?php endif ?>
   <form method="post" action="<?= e(url('/admin/messages/' . (int) $m['id'] . '/supprimer')) ?>"><?= csrf_field() ?><button type="submit" class="lien-bouton lien-danger" data-confirmer="Supprimer ce message ?">Supprimer</button></form>
 </article>
 <?php endforeach ?>
