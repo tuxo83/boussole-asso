@@ -275,12 +275,24 @@ function bloc_dynamique(string $bloc): string
         case 'contact':
             // L'adresse de l'association n'apparaît pas : le message passe par le site (Administration → Messages reçus)
             $moi = current_member();
-            return '<form method="post" action="' . e(url('/contact')) . '" class="formulaire formulaire-contact">' . csrf_field() . humain_champs()
+            // Le motif en cartes (pas d'objet à inventer) ; un PDF peut être joint (CV d'un candidat…)
+            $motifs = contact_motifs();
+            $cartes = '';
+            foreach ($motifs as $libelle => $aide) {
+                $cartes .= '<label class="carte-choix"><input type="radio" name="motif" value="' . e($libelle) . '" required>'
+                    . '<span class="carte-choix-texte"><strong>' . e($libelle) . '</strong>' . ($aide !== '' ? '<small>' . e($aide) . '</small>' : '') . '</span></label>';
+            }
+            $piece = contact_piece_active();
+            return '<form method="post" action="' . e(url('/contact')) . '" class="formulaire formulaire-contact"' . ($piece ? ' enctype="multipart/form-data"' : '') . '>' . csrf_field() . humain_champs()
                 . '<input type="hidden" name="retour" value="' . e(request_path()) . '">'
+                . ($motifs ? '<fieldset class="choix-motif"><legend>Pourquoi nous écrivez-vous ?</legend><div class="choix-cartes">' . $cartes . '</div></fieldset>' : '')
                 . c_champ('nom', 'Votre nom', ['requis' => true, 'max' => 100, 'valeur' => $moi ? membre_nom($moi) : ''])
                 . c_champ('email', 'Votre adresse e-mail', ['type' => 'email', 'requis' => true, 'valeur' => $moi['email'] ?? '', 'aide' => 'Pour vous répondre.'])
-                . c_champ('objet', 'Objet', ['max' => 200])
+                . ($motifs ? '' : c_champ('objet', 'Objet', ['max' => 200]))
                 . c_champ('message', 'Votre message', ['type' => 'textarea', 'requis' => true, 'max' => 5000])
+                . ($piece ? '<div class="champ"><label for="champ-piece">Joindre un fichier <span class="discret">(facultatif)</span></label>'
+                    . '<input type="file" id="champ-piece" name="piece" accept="application/pdf,.pdf" data-taille-max="' . contact_piece_max_mo() * 1024 * 1024 . '">'
+                    . '<small>Un CV, une présentation… PDF seulement, ' . contact_piece_max_mo() . ' Mo au plus.</small></div>' : '')
                 . '<p class="petit">Vos coordonnées servent seulement à vous répondre (<a href="' . e(url('/page/confidentialite')) . '">confidentialité</a>).</p>'
                 . '<button type="submit" class="bouton bouton-principal">Envoyer</button></form>';
         case 'agenda':

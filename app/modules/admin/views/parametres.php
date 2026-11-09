@@ -25,6 +25,12 @@
     <?= c_champ('construction_code', "Code d'accès (6 chiffres)", ['valeur' => $v['construction_code'] ?? '', 'aide' => 'À transmettre aux personnes invitées à voir le site. Vide : un code est tiré au hasard. Les membres connectés n\'en ont pas besoin. Changer le code ferme l\'accès à ceux qui avaient l\'ancien.', 'erreur' => $erreurs['construction_code'] ?? null]) ?>
   </fieldset>
   <fieldset>
+    <legend>Formulaire de contact</legend>
+    <?= c_champ('contact_motifs', 'Motifs proposés (« Pourquoi nous écrivez-vous ? »)', ['type' => 'textarea', 'lignes' => 5, 'valeur' => $v['contact_motifs'] ?? CONTACT_MOTIFS_DEFAUT, 'aide' => 'Un par ligne : « Libellé : explication courte ». Deux à quatre motifs, c\'est l\'idéal. Vide : un simple champ « Objet ».']) ?>
+    <label class="case"><input type="checkbox" name="contact_piece_jointe" value="1"<?= ($v['contact_piece_jointe'] ?? '1') === '1' ? ' checked' : '' ?>> Permettre de joindre un fichier PDF (CV, présentation…), gardé avec le message et effacé avec lui</label>
+    <?= c_champ('contact_piece_max_mo', 'Taille maximale du PDF (Mo)', ['type' => 'number', 'valeur' => $v['contact_piece_max_mo'] ?? '5', 'aide' => 'De 1 à 10 Mo.']) ?>
+  </fieldset>
+  <fieldset>
     <legend>Conservation</legend>
     <?= c_champ('contact_conservation_mois', 'Garder les messages du formulaire de contact pendant (mois)', ['type' => 'number', 'valeur' => $v['contact_conservation_mois'] ?? '12', 'aide' => 'De 1 à 60 mois, puis effacement automatique.']) ?>
     <?= c_champ('journal_conservation_ans', 'Garder le journal des actions pendant (années)', ['type' => 'number', 'valeur' => $v['journal_conservation_ans'] ?? '3', 'aide' => 'De 1 à 10 ans. Les lignes plus anciennes sont effacées automatiquement. À indiquer dans la page de confidentialité.']) ?>
