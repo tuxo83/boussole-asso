@@ -22,6 +22,7 @@ require __DIR__ . '/auth.php';
 require __DIR__ . '/appareils.php';
 require __DIR__ . '/humain.php';
 require __DIR__ . '/espaces.php';
+require __DIR__ . '/contact.php';
 require __DIR__ . '/blocs.php';
 require __DIR__ . '/images.php';
 require __DIR__ . '/evenements.php';

@@ -29,7 +29,8 @@ function mail_reglages(array $autres = []): array
 }
 
 // $reglages fourni : test réel, même en développement (pas de fichier à la place de l'envoi)
-function mail_send(string $to, string $subject, string $body, ?array $reglages = null, ?string $repondre_a = null): bool
+// $pieces : fichiers joints, chacun ['nom' => …, 'type' => …, 'contenu' => …]
+function mail_send(string $to, string $subject, string $body, ?array $reglages = null, ?string $repondre_a = null, array $pieces = []): bool
 {
     $test = $reglages !== null;
     $reglages ??= mail_reglages();
@@ -49,10 +50,24 @@ function mail_send(string $to, string $subject, string $body, ?array $reglages =
         $headers['Reply-To'] = $repondre_a;
     }
     $body64 = chunk_split(base64_encode($body));
+    if ($pieces) {
+        // Texte puis fichiers, chaque partie en base64 : aucune ligne ne commence par « . »
+        $frontiere = 'bsl-' . bin2hex(random_bytes(12));
+        $headers['Content-Type'] = "multipart/mixed; boundary=\"$frontiere\"";
+        unset($headers['Content-Transfer-Encoding']);
+        $body64 = "--$frontiere\nContent-Type: text/plain; charset=utf-8\nContent-Transfer-Encoding: base64\n\n" . chunk_split(base64_encode($body), 76, "\n");
+        foreach ($pieces as $piece) {
+            $nom = mail_encode(str_replace(['"', '\\', "\r", "\n"], '_', (string) $piece['nom']));
+            $body64 .= "--$frontiere\nContent-Type: {$piece['type']}; name=\"$nom\"\nContent-Disposition: attachment; filename=\"$nom\"\n"
+                . "Content-Transfer-Encoding: base64\n\n" . chunk_split(base64_encode((string) $piece['contenu']), 76, "\n");
+        }
+        $body64 .= "--$frontiere--\n";
+    }
 
     // Développement : les e-mails sont écrits dans un fichier au lieu d'être envoyés
     if (!$test && !empty(config()['mail_fichier'])) {
-        file_put_contents(config()['mail_fichier'], "To: $to\nSubject: $subject\n\n$body\n----\n", FILE_APPEND | LOCK_EX);
+        $joints = implode('', array_map(fn($p) => "[Pièce jointe] {$p['nom']} ({$p['type']}, " . strlen((string) $p['contenu']) . " octets)\n", $pieces));
+        file_put_contents(config()['mail_fichier'], "To: $to\nSubject: $subject\n\n$body\n$joints----\n", FILE_APPEND | LOCK_EX);
         return true;
     }
     if ($reglages['smtp_hote'] !== '') {
