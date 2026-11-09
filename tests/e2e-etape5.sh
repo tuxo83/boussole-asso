@@ -102,6 +102,9 @@ mcpcall "$ADMIN_KEY" creer_page '{"titre":"Rendez-vous","publiee":true,"blocs":{
 check "agenda : l'exposition en cours, du premier au dernier jour" "$(as visiteur; c "$U/page/rendez-vous" >/dev/null; grep -c 'href=\"[^\"]*/espace/concert-du-trinome\"' "$B") $(grep -c "· 9 h – [a-z]* $(date -d '+3 days' '+%-d') " "$B")" "1 1"
 # Fichier joint par le MCP (flyer) : droits de contribution, taille, base64
 check "MCP ajouter_fichier : flyer joint" "$(mcpcall "$ADMIN_KEY" ajouter_fichier "{\"slug\":\"concert-du-trinome\",\"nom\":\"flyer.pdf\",\"base64\":\"$(printf '%%PDF-1.4 essai' | base64 -w0)\"}" | grep -o '"isError":[a-z]*') $(sql "SELECT CONCAT(f.nom, ' ', f.type_mime, ' ', f.taille) FROM fichier f JOIN espace s ON s.id = f.espace_id WHERE s.slug = 'concert-du-trinome'") $(sql "SELECT COUNT(*) FROM journal j JOIN espace s ON s.id = j.espace_id WHERE s.slug = 'concert-du-trinome' AND j.action LIKE 'Fichier déposé : flyer.pdf'")" '"isError":false flyer.pdf application/pdf 14 1'
+# shellcheck disable=SC2016
+id_rendu=$(mcpcall "$ADMIN_KEY" ajouter_fichier '{"slug":"concert-du-trinome","nom":"programme.txt","base64":"eA=="}' | php -r 'echo json_decode(json_decode(stream_get_contents(STDIN), true)["result"]["content"][0]["text"], true)["id"] ?? "rien";')
+check "MCP ajouter_fichier : renvoie l'identifiant du fichier" "$id_rendu" "$(sql "SELECT id FROM fichier WHERE nom = 'programme.txt'")"
 check "MCP ajouter_fichier : base64 invalide refusé" "$(mcpcall "$ADMIN_KEY" ajouter_fichier '{"slug":"concert-du-trinome","nom":"x.pdf","base64":"@@@"}' | grep -c 'mal encodé')" "1"
 mcpcall "$ADMIN_KEY" regler_evenement '{"slug":"concert-du-trinome","debut":"2027-03-12 18:30","fin":""}' >/dev/null
 sql "UPDATE membre SET actif = 1 WHERE email = 'bob@example.org'"
