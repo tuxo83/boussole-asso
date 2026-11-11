@@ -459,9 +459,9 @@ function api_page_ecrire(?int $id, array $args): array
     return api_page($id);
 }
 
+// Lecture seule (annotation MCP readOnlyHint) : la clôture des vœux échus reste aux tâches planifiées
 function api_evenements(): array
 {
-    evenements_cloturer_echus();
     $member = current_member();
     $list = [];
     foreach (db_all('SELECT s.* FROM espace s LEFT JOIN evenement e ON e.espace_id = s.id WHERE s.type = "evenement" AND s.archive = 0 AND (e.debut IS NULL OR COALESCE(e.fin, e.debut) >= CURDATE()) ORDER BY e.debut') as $espace) {
