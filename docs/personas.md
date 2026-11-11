@@ -37,6 +37,7 @@ Le panel s'appuie sur une association de référence : des membres issus d'une f
 | **Anne** | Bénévole d'une autre association (sport, culture…) | Que rien ne soit spécifique à l'association de référence : universalité |
 | **Julien** | Référencement et partage (SEO) | Plan du site et consignes aux robots, titres et descriptions, adresse canonique, aperçus de partage (réseaux, messageries), données structurées (association, événements), performance perçue. Avec Nadia, il veille à ce que **rien de réservé ni d'interne** ne soit proposé aux moteurs, et rien du tout tant que le site est en construction. |
 | **Hélène** | Juriste, droit du numérique et des associations | Mentions légales (LCEN), information des personnes (RGPD, art. 13 et 14), cookies (lignes directrices de la CNIL), conditions d'adhésion. Elle vise des textes sobres et incontestables, et respecte la discrétion voulue : on dit ce que la loi exige, pas où ni comment les données sont gardées. Pas de zèle : elle distingue l'obligation réelle et risquée de la simple recommandation, et laisse le bureau trancher les risques faibles. |
+| **Yann** | Intégration MCP et API (protocole Model Context Protocol, JSON-RPC 2.0) | Conformité à la spécification MCP en vigueur : négociation de version, `tools/list` (schémas d'entrée valides, `title`, annotations `readOnlyHint`, `destructiveHint`, `idempotentHint`, `openWorldHint` justes pour chaque outil), erreurs de protocole ou d'outil (`isError`), descriptions claires pour un modèle. Il vérifie qu'une lecture n'oblige pas à demander une autorisation et qu'aucune annotation ne minimise le risque d'un outil : dans le doute, la plus prudente. |
 
 ## Règles du panel
 
@@ -45,4 +46,5 @@ Le panel s'appuie sur une association de référence : des membres issus d'une f
 - Paul a un droit de veto sur la complexité : une fonction qui complique sans bénéfice clair est retirée ou simplifiée.
 - Thomas et Sophie relisent toute modification qui touche à la connexion ou aux données personnelles.
 - Hélène relit les pages juridiques (mentions légales, confidentialité) et tout changement des données collectées.
+- Yann relit tout ajout ou changement d'outil MCP ou de point d'API.
 - Julien relit toute nouvelle page publique ou tout changement de ce qui est visible sans connexion.
