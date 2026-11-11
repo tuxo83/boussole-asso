@@ -4,6 +4,45 @@ declare(strict_types=1);
 
 const MCP_VERSIONS = ['2025-06-18', '2025-03-26', '2024-11-05'];
 
+final class McpOutilInconnu extends RuntimeException
+{
+}
+
+// Annotations MCP (spécification 2025-03-26 et suivantes) : sans elles, un client suppose qu'un outil
+// peut tout détruire et agit hors du site, et demande une autorisation pour chaque appel, même une lecture.
+// Nature : lecture (aucune écriture, même indirecte) ; ajout (rien n'est écrasé) ; modification ou suppression (destructif) ;
+// idempotent quand le refaire avec les mêmes arguments ne change rien de plus (le journal n'est qu'une trace) ;
+// hors du site : peut envoyer des e-mails. Dans le doute, la valeur la plus prudente (relecture : Yann).
+const MCP_ANNOTATIONS = [
+    // nom => [titre, nature, idempotent, hors du site]
+    'moi' => ['Qui suis-je', 'lecture', true, false],
+    'ma_cotisation' => ['Ma cotisation', 'lecture', true, false],
+    'lister_espaces' => ['Lister les espaces', 'lecture', true, false],
+    'lire_espace' => ['Lire un espace', 'lecture', true, false],
+    'lister_pages' => ['Lister les pages', 'lecture', true, false],
+    'lire_page' => ['Lire une page', 'lecture', true, false],
+    'lister_evenements' => ['Lister les événements', 'lecture', true, false],
+    'lister_membres' => ['Lister les membres', 'lecture', true, false],
+    'lister_cotisations' => ['Lister les cotisations', 'lecture', true, false],
+    'creer_espace' => ['Créer un espace', 'ajout', false, false],
+    'creer_page' => ['Créer une page', 'modification', false, false],   // en accueil, retire l'accueil à l'autre page
+    'ajouter_membre' => ['Ajouter un membre', 'ajout', true, false],       // un e-mail déjà connu est refusé
+    'ajouter_date_cle' => ['Ajouter une date clé', 'ajout', false, false],
+    'ajouter_fichier' => ['Joindre un fichier', 'ajout', false, false],
+    'ajouter_image' => ['Envoyer une image', 'ajout', false, false],
+    'inviter_membres' => ['Inviter des membres (e-mail)', 'modification', false, true], // un e-mail ne se reprend pas
+    'ajouter_equipe' => ["Ajouter à l'équipe ou changer le niveau", 'modification', true, false], // remplace le niveau existant
+    'modifier_espace' => ['Modifier un espace', 'modification', true, false],
+    'regler_evenement' => ['Régler un événement', 'modification', true, true],     // plus de places : e-mail à la liste d'attente
+    'modifier_page' => ['Modifier une page', 'modification', true, false],
+    'modifier_membre' => ['Modifier un membre', 'modification', true, false],
+    'regler_site' => ['Régler le site', 'modification', true, false],
+    'marquer_cotisation' => ['Noter une cotisation', 'modification', false, false], // remplace celle de la période ; date du jour par défaut
+    'inscription_evenement' => ["S'inscrire ou se désister", 'modification', true, true], // se désister libère la place : e-mail au suivant
+    'retirer_equipe' => ["Retirer de l'équipe", 'suppression', true, false],
+    'effacer_membre' => ['Effacer un membre', 'suppression', true, false],
+];
+
 return [
     'ordre' => 98,
     'routes' => [
@@ -61,7 +100,7 @@ function mcp_outils(): array
 {
     $texte = fn(string $description) => ['type' => 'string', 'description' => $description];
     $objet = fn(array $props, array $requis = []) => ['type' => 'object', 'properties' => (object) $props, 'required' => $requis];
-    return [
+    $outils = [
         ['name' => 'moi', 'description' => 'Qui suis-je : membre de la clé, ses droits, la portée de la clé.', 'inputSchema' => $objet([])],
         ['name' => 'lister_espaces', 'description' => 'Espaces visibles (comités, commissions, projets, événements), avec météo et alertes.', 'inputSchema' => $objet([])],
         ['name' => 'lire_espace', 'description' => "Détail d'un espace : équipe, dates clés, fichiers.", 'inputSchema' => $objet(['slug' => $texte("Identifiant de l'espace")], ['slug'])],
@@ -119,6 +158,19 @@ function mcp_outils(): array
             'inputSchema' => $objet(['email' => $texte('E-mail du membre'), 'confirmation' => $texte('Le même e-mail, pour confirmer')], ['email', 'confirmation'])],
         ['name' => 'lister_membres', 'description' => 'Membres (droit « membres » nécessaire).', 'inputSchema' => $objet([])],
     ];
+    return array_map(fn(array $outil) => $outil + mcp_annotations($outil['name']), $outils);
+}
+
+function mcp_annotations(string $nom): array
+{
+    // Un outil oublié ici est annoncé comme le pire cas (destructif, hors du site), comme le suppose la spécification
+    [$titre, $nature, $idempotent, $exterieur] = MCP_ANNOTATIONS[$nom] ?? [$nom, 'suppression', false, true];
+    $annotations = ['title' => $titre, 'readOnlyHint' => $nature === 'lecture'];
+    if ($nature !== 'lecture') {
+        $annotations += ['destructiveHint' => $nature === 'modification' || $nature === 'suppression', 'idempotentHint' => $idempotent];
+    }
+    $annotations['openWorldHint'] = $exterieur;
+    return ['title' => $titre, 'annotations' => $annotations];
 }
 
 function mcp_appeler(string $name, array $a): array
@@ -150,7 +202,7 @@ function mcp_appeler(string $name, array $a): array
         'modifier_membre' => api_membre_modifier($a),
         'effacer_membre' => api_membre_effacer($a),
         'lister_membres' => api_membres(),
-        default => throw new ApiErreur("Outil inconnu : $name", 404),
+        default => throw new McpOutilInconnu("Outil inconnu : $name"),
     };
 }
 
@@ -200,6 +252,9 @@ function mcp_repondre(): void
             try {
                 $result = mcp_appeler((string) ($params['name'] ?? ''), is_array($params['arguments'] ?? null) ? $params['arguments'] : []);
                 $reply(['result' => ['content' => [['type' => 'text', 'text' => json_encode($result, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT)]], 'isError' => false]]);
+            } catch (McpOutilInconnu $erreur) {
+                // Outil inconnu : erreur de protocole (spécification MCP), pas un résultat d'outil
+                $reply(['error' => ['code' => -32602, 'message' => $erreur->getMessage()]]);
             } catch (ApiErreur $erreur) {
                 $reply(['result' => ['content' => [['type' => 'text', 'text' => $erreur->getMessage()]], 'isError' => true]]);
             }
